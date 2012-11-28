@@ -17,9 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+
 #include <reset.h>
-#include <arch/io.h>
-#include <arch/romcc_io.h>
+#include <arch/io.h>		/*inb, outb*/
+#include <arch/romcc_io.h>	/*pci_read_config32, device_t, PCI_DEV*/
 
 #define HT_INIT_CONTROL		0x6C
 #define HTIC_BIOSR_Detect	(1<<5)
@@ -32,12 +33,13 @@
 
 static inline void set_bios_reset(void)
 {
-	u32 nodes, htic;
+	u32 nodes;
+	u32 htic;
 	device_t dev;
 	int i;
 
 	nodes = ((pci_read_config32(PCI_DEV(CONFIG_CBB, CONFIG_CDB, 0), 0x60) >> 4) & 7) + 1;
-	for (i = 0; i < nodes; i++) {
+	for(i = 0; i < nodes; i++) {
 		dev = NODE_PCI(i, 0);
 		htic = pci_read_config32(dev, HT_INIT_CONTROL);
 		htic &= ~HTIC_BIOSR_Detect;
@@ -61,3 +63,4 @@ void soft_reset(void)
 	/* link reset */
 	outb(0x06, 0x0cf9);
 }
+

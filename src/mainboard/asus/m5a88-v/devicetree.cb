@@ -1,13 +1,13 @@
 # sample config for advansus/A785E-I
-chip northbridge/amd/amdfam10/root_complex
+chip northbridge/amd/agesa/family15/root_complex
 	device lapic_cluster 0 on
-		chip cpu/amd/socket_AM3  #L1 and DDR3
+		chip cpu/amd/agesa/family15
 			 device lapic 0 on end
 		end
 	end
 	device pci_domain 0 on
 		subsystemid 0x1043 0x843e inherit #TODO: Set the correctly subsystem id.
-		chip northbridge/amd/amdfam10
+	    chip northbridge/amd/agesa/family15 # CPU side of HT root complex
 			device pci 18.0 on #  northbridge
 				chip southbridge/amd/rs780
 					device pci 0.0 on end # HT  	0x9600
