@@ -41,6 +41,7 @@
 #include "superio/ite/it8721f/early_serial.c"
 #include "drivers/pc80/i8254.c"
 #include "drivers/pc80/i8259.c"
+#include "southbridge/amd/rs780/early_setup.c"
 #include <sb_cimx.h>
 #include <SBPLATFORM.h> /* SB OEM constants */
 
@@ -59,6 +60,9 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	post_code(0x32);
 	/* Halt if there was a built in self test failure */
 	report_bist_failure(bist);
+
+    enable_rs780_dev8();
+	sb800_clk_output_48Mhz();
 
 	it8721f_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
 	uart_init();
@@ -92,12 +96,16 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	}
 
 	post_code(0x3B);
+    rs780_early_setup();
 	printk(BIOS_DEBUG, "agesawrapper_amdinitearly ");
 	val = agesawrapper_amdinitearly();
 	if (val)
 		printk(BIOS_DEBUG, "error level: %x \n", val);
 	else
 		printk(BIOS_DEBUG, "passed.\n");    	/* Reset for HT, FIDVID, PLL and errata changes to take affect. */
+
+
+    rs780_htinit();
 
 	if (!warm_reset_detect(0)) {
 		print_info("...WARM RESET...\n\n\n");
@@ -130,6 +138,8 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	/* Initialize i8254 timers */
 	post_code(0x42);
 	setup_i8254();  
+
+    rs780_before_pci_init();
 
 	post_code(0x50);
 	print_debug("Disabling cache as ram ");
