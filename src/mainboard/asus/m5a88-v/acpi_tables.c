@@ -83,12 +83,26 @@ unsigned long acpi_fill_mcfg(unsigned long current)
 
 unsigned long acpi_fill_madt(unsigned long current)
 {
-	/* create all subtables for processors */
+     u32 apicid_sb800;
+     /*
+	 * AGESA v5 Apply apic enumeration rules
+	 * For systems with >= 16 APICs, put the IO-APICs at 0..n and
+	 * put the local-APICs at m..z
+	 * For systems with < 16 APICs, put the Local-APICs at 0..n and
+	 * put the IO-APICs at (n + 1)..z
+	 */
+#if CONFIG_MAX_CPUS >= 16
+	apicid_sb800 = 0x0;
+#else
+	apicid_sb800 = CONFIG_MAX_CPUS + 1;
+#endif  
+
+    /* create all subtables for processors */
 	current = acpi_create_madt_lapics(current);
 
 	/* Write SB800 IOAPIC, only one */
-	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *) current, 2,
-					   IO_APIC_ADDR, 0);
+	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *) current,
+            apicid_sb800, IO_APIC_ADDR, 0);
 
 	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
 						current, 0, 0, 2, 0);
@@ -100,7 +114,8 @@ unsigned long acpi_fill_madt(unsigned long current)
 	/* 5 mean: 0101 --> Edige-triggered, Active high */
 
 	/* create all subtables for processors */
-	/* current = acpi_create_madt_lapic_nmis(current, 5, 1); */
+	current += acpi_create_madt_lapic_nmi((acpi_madt_lapic_nmi_t *)current, 0, 5, 1);
+	current += acpi_create_madt_lapic_nmi((acpi_madt_lapic_nmi_t *)current, 1, 5, 1);
 	/* 1: LINT1 connect to NMI */
 
 	return current;

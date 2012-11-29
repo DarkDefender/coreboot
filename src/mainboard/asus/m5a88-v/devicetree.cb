@@ -120,6 +120,7 @@ chip northbridge/amd/agesa/family15/root_complex
 			device pci 18.2 on end
 			device pci 18.3 on end
 			device pci 18.4 on end
+            device pci 18.5 on end #f15
 		end
 	end #pci_domain
 end
