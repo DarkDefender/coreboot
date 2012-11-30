@@ -92,6 +92,7 @@
 #define AGESA_ENTRY_INIT_LATE_RESTORE             FALSE
 #define AGESA_ENTRY_INIT_GENERAL_SERVICES         FALSE
 
+#define BLDOPT_REMOVE_DMI             TRUE
 /*
  * Agesa configuration values selection.
  * Uncomment and specify the value for the configuration options
@@ -114,18 +115,9 @@ CONST AP_MTRR_SETTINGS ROMDATA OntarioApMtrrSettingsList[] =
   { AMD_AP_MTRR_FIX4k_F8000, 0x1818181818181818 },
   { CPU_LIST_TERMINAL }
 };
-#define BLDOPT_REMOVE_EARLY_SAMPLES		FALSE
 #define BLDCFG_PCI_MMIO_BASE                    CONFIG_MMCONF_BASE_ADDRESS
 #define BLDCFG_PCI_MMIO_SIZE                    CONFIG_MMCONF_BUS_NUMBER
  
-#if CONFIG_GFXUMA
-#define BLDCFG_UMA_ALIGNMENT                      UMA_4MB_ALIGNED
-#define BLDCFG_UMA_ALLOCATION_MODE		  UMA_SPECIFIED
-//#define BLDCFG_UMA_ALLOCATION_SIZE      	  0x1000//0x1800//0x1000 /* (1000 << 16) = 256M*/
-#define BLDCFG_UMA_ALLOCATION_SIZE      	  0x2000//512M
-#define BLDCFG_UMA_ABOVE4G_SUPPORT                FALSE
-#endif 
-
 #define BLDCFG_VRM_CURRENT_LIMIT                 120000
 #define BLDCFG_VRM_LOW_POWER_THRESHOLD           0
 #define BLDCFG_VRM_INRUSH_CURRENT_LIMIT          0
@@ -144,7 +136,7 @@ CONST AP_MTRR_SETTINGS ROMDATA OntarioApMtrrSettingsList[] =
 #define BLDCFG_PLATFORM_CSTATE_MODE             CStateModeC6
 #define BLDCFG_PLATFORM_CSTATE_OPDATA           0x840
 #define BLDCFG_PLATFORM_CSTATE_IO_BASE_ADDRESS  0x840
-//#define BLDCFG_PLATFORM_CPB_MODE                CpbModeAuto
+#define BLDCFG_PLATFORM_CPB_MODE                CpbModeDisabled
 #define BLDCFG_CORE_LEVELING_MODE               CORE_LEVEL_LOWEST
 #define BLDCFG_AP_MTRR_SETTINGS_LIST            &OntarioApMtrrSettingsList
 #define BLDCFG_AMD_PLATFORM_TYPE                AMD_PLATFORM_DESKTOP
@@ -205,6 +197,10 @@ CONST AP_MTRR_SETTINGS ROMDATA OntarioApMtrrSettingsList[] =
 //#define BLDCFG_SCRUB_DC_RATE                    0
 //#define BLDCFG_ECC_SYNC_FLOOD                   0
 //#define BLDCFG_ECC_SYMBOL_SIZE                  0
+#define BLDCFG_UMA_ALLOCATION_MODE              UMA_AUTO
+#define BLDCFG_UMA_ALLOCATION_SIZE              0
+#define BLDCFG_UMA_ABOVE4G_SUPPORT              FALSE
+#define BLDCFG_UMA_ALIGNMENT                    NO_UMA_ALIGNED
 #define BLDCFG_HEAP_DRAM_ADDRESS                0xB0000
 #define BLDCFG_CFG_TEMP_PCIE_MMIO_BASE_ADDRESS  0xD0000000
 

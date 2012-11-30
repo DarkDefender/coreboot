@@ -34,6 +34,7 @@
 #include "Dispatcher.h"
 #include "cpuCacheInit.h"
 #include "amdlib.h"
+#include "PlatformGnbPcieComplex.h"
 #include "Filecode.h"
 #include "heapManager.h"
 #include <cpuFamilyTranslation.h> /* CPU_SPECIFIC_SERVICES */
@@ -75,7 +76,6 @@ VOID *AcpiAlib    = NULL;
  *                          L O C A L    F U N C T I O N S
  *---------------------------------------------------------------------------------------
  */
-extern VOID OemCustomizeInitEarly(IN  OUT AMD_EARLY_PARAMS *InitEarly);
 
 static UINT32 agesawrapper_amdinitcpuio(VOID)
 {
