@@ -101,11 +101,7 @@
  * @brief INCHIP Sata Controller Mode
  *   NOTE: DO NOT ALLOW SATA & IDE use same mode
  */
-<<<<<<< HEAD
-#define SATA_MODE		   CONFIG_SB800_SATA_MODE 
-=======
 #define SATA_MODE			CONFIG_SB800_SATA_MODE
->>>>>>> upstream/master
 
 /**
  * @brief INCHIP Sata IDE Controller Mode

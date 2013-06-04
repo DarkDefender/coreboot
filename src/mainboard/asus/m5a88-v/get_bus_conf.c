@@ -90,7 +90,7 @@ void get_bus_conf(void)
 
 	sbdn_sb800 = 0;
 
-	for (i = 0; i < 0; i++) {
+	for (i = 0; i < ARRAY_SIZE(bus_sb800); i++) {
 		bus_sb800[i] = 0;
 	}
 	for (i = 0; i < ARRAY_SIZE(bus_rs780); i++) {
