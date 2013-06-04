@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /*----------------------------------------------------------------------------------------
@@ -281,7 +281,7 @@ agesawrapper_amdinitmmio (
   /* Set ROM cache onto WP to decrease post time */
   MsrReg = (0x0100000000ull - CONFIG_ROM_SIZE) | 5ull;
   LibAmdMsrWrite (0x20C, &MsrReg, &StdHeader);
-  MsrReg = (0x1000000000000ull - CONFIG_ROM_SIZE) | 0x800ull;
+  MsrReg = ((1ULL << CONFIG_CPU_ADDR_BITS) - CONFIG_ROM_SIZE) | 0x800ull;
   LibAmdMsrWrite (0x20D, &MsrReg, &StdHeader);
 
   /* Clear all pending SMI. On S3 clear power button enable so it wll not generate an SMI */

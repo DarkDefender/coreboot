@@ -20,12 +20,8 @@
 #include <string.h>
 #include <vendorcode/google/chromeos/chromeos.h>
 #include <arch/io.h>
-#ifdef __PRE_RAM__
-#include <arch/romcc_io.h>
-#else
 #include <device/device.h>
 #include <device/pci.h>
-#endif
 #include <southbridge/intel/bd82x6x/pch.h>
 
 #define GPIO_SPI_WP	68
@@ -37,7 +33,7 @@
 #define FLAG_DEV_MODE	2
 
 #ifndef __PRE_RAM__
-#include <arch/coreboot_tables.h>
+#include <boot/coreboot_tables.h>
 
 #define GPIO_COUNT	6
 #define ACTIVE_LOW	0

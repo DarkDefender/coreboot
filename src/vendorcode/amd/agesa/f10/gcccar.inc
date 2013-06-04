@@ -100,7 +100,7 @@ CU_CFG3                  =      0x0C001102B      /* Combined Unit Configuration 
     COMBINE_CR0_CD       =      49               /*   Combine CR0.CD for both cores of a compute unit */                  
                                                                                                              
                                                                                                              
-CR0_PE                  = 1           # Protection Enable
+CR0_PE                  = 0           # Protection Enable
 CR0_NW                  = 29          # Not Write-through
 CR0_CD                  = 30          # Cache Disable
 CR0_PG                  = 31          # Paging Enable
@@ -989,7 +989,7 @@ fam15_enable_stack_hook_exit:
 
     mov     $CU_CFG3, %ecx                # MSR:C001_102B
     _RDMSR
-    bts     $(COMBINE_CR0_CD - 32), %eax         # Set CombineCr0Cd bit
+    bts     $(COMBINE_CR0_CD - 32), %edx         # Set CombineCr0Cd bit
     _WRMSR
 
 fam15_disable_stack_hook_exit:

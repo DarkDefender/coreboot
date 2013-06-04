@@ -152,7 +152,7 @@ void smp_write_processors(struct mp_config_table *mc)
 	for(cpu = all_devices; cpu; cpu = cpu->next) {
 		unsigned long cpu_flag;
 		if ((cpu->path.type != DEVICE_PATH_APIC) ||
-			(cpu->bus->dev->path.type != DEVICE_PATH_APIC_CLUSTER))
+			(cpu->bus->dev->path.type != DEVICE_PATH_CPU_CLUSTER))
 		{
 			continue;
 		}
@@ -502,7 +502,7 @@ unsigned long __attribute__((weak)) write_smp_table(unsigned long addr)
 					break;
 				}
 
-				if (parent->path.type == DEVICE_PATH_PCI_DOMAIN) {
+				if (parent->path.type == DEVICE_PATH_DOMAIN) {
 					printk(BIOS_WARNING, "no IRQ found for %s\n", dev_path(dev));
 					break;
 				}

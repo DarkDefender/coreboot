@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <stdint.h>
@@ -24,7 +24,6 @@
 #include <arch/io.h>
 #include <arch/stages.h>
 #include <device/pnp_def.h>
-#include <arch/romcc_io.h>
 #include <cpu/x86/lapic.h>
 #include <console/console.h>
 #include <console/loglevel.h>
@@ -126,7 +125,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 
 	post_code(0x43);
-	copy_and_run(0);
+	copy_and_run();
 	printk(BIOS_ERR, "Error: copy_and_run returned!\n");
 
 	post_code(0x44);	// Should never see this post code.

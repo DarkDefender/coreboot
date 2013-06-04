@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <cpu/x86/lapic.h>
@@ -32,6 +32,7 @@
 #include <smp/spinlock.h>
 #include <cpu/cpu.h>
 #include <cpu/intel/speedstep.h>
+#include <thread.h>
 
 #if CONFIG_SMP && CONFIG_MAX_CPUS > 1
 /* This is a lot more paranoid now, since Linux can NOT handle
@@ -52,11 +53,29 @@ int  lowmem_backup_size;
 #endif
 
 extern char _secondary_start[];
+extern char _secondary_gdt_addr[];
+extern char gdt[];
+extern char gdt_end[];
+
+static inline void setup_secondary_gdt(void)
+{
+	u16 *gdt_limit;
+	u32 *gdt_base;
+
+	gdt_limit = (void *)&_secondary_gdt_addr;
+	gdt_base = (void *)&gdt_limit[1];
+
+	*gdt_limit = (u32)&gdt_end - (u32)&gdt - 1;
+	*gdt_base = (u32)&gdt;
+}
 
 static void copy_secondary_start_to_lowest_1M(void)
 {
 	extern char _secondary_start_end[];
 	unsigned long code_size;
+
+	/* Fill in secondary_start's local gdt. */
+	setup_secondary_gdt();
 
 	code_size = (unsigned long)_secondary_start_end - (unsigned long)_secondary_start;
 
@@ -274,6 +293,7 @@ int start_cpu(device_t cpu)
 	info = (struct cpu_info *)stack_end;
 	info->index = index;
 	info->cpu   = cpu;
+	thread_init_cpu_info_non_bsp(info);
 
 	/* Advertise the new stack and index to start_cpu */
 	secondary_stack = stack_end;
@@ -408,7 +428,7 @@ static __inline__ __attribute__((always_inline)) void writecr4(unsigned long Dat
 #endif
 
 /* C entry point of secondary cpus */
-void __attribute__((regparm(0))) secondary_cpu_init(unsigned int index)
+void asmlinkage secondary_cpu_init(unsigned int index)
 {
 	atomic_inc(&active_cpus);
 #if CONFIG_SERIAL_CPU_INIT

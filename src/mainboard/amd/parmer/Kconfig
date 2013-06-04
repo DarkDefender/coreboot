@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
 if BOARD_AMD_PARMER
@@ -37,7 +37,6 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select AMDMCT
 	select HAVE_ACPI_TABLES
 	select BOARD_ROMSIZE_KB_4096
-	select TINY_BOOTBLOCK
 	select GFXUMA
 	select UDELAY_LAPIC
 
@@ -85,10 +84,6 @@ config HEAP_SIZE
 	hex
 	default 0xc0000
 
-config STACK_SIZE
-	hex
-	default 0x10000
-
 config RAMBASE
 	hex
 	default 0x200000
@@ -101,8 +96,8 @@ config VGA_BIOS_ID
 	string
 	default "1002,9900"
 
-config WARNINGS_ARE_ERRORS
+config HUDSON_LEGACY_FREE
 	bool
-	default n
+	default y
 
 endif # BOARD_AMD_PARMER

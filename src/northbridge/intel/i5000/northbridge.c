@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -28,9 +28,6 @@
 #include <cpu/cpu.h>
 #include <arch/acpi.h>
 #include <cbmem.h>
-#if CONFIG_WRITE_HIGH_TABLES
-#include <cbmem.h>
-#endif
 
 static void intel_set_subsystem(device_t dev, unsigned vendor, unsigned device)
 {
@@ -114,12 +111,10 @@ static void mc_read_resources(device_t dev)
 	resource->flags = IORESOURCE_MEM | IORESOURCE_RESERVE |
 	    IORESOURCE_FIXED | IORESOURCE_STORED | IORESOURCE_ASSIGNED;
 
-#if CONFIG_WRITE_HIGH_TABLES
 	/* Leave some space for ACPI, PIRQ and MP tables */
 	high_tables_base = tolm - HIGH_MEMORY_SIZE;
 	high_tables_size = HIGH_MEMORY_SIZE;
 	printk(BIOS_DEBUG, "high_tables_base: %08llx, size %lld\n", high_tables_base, high_tables_size);
-#endif
 }
 
 static struct pci_operations intel_pci_ops = {
@@ -183,9 +178,9 @@ static struct device_operations pci_domain_ops = {
 static void enable_dev(device_t dev)
 {
 	/* Set the operations if it is a special bus type */
-	if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
-	} else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
+	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
 		dev->ops = &cpu_bus_ops;
 	}
 }

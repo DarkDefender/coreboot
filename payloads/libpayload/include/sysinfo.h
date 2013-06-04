@@ -39,6 +39,12 @@
 
 struct cb_serial;
 
+/*
+ * All pointers in here shall be virtual.
+ *
+ * If a relocation happens after the last call to lib_get_sysinfo(),
+ * it is up to the user to call lib_get_sysinfo() again.
+ */
 struct sysinfo_t {
 	unsigned int cpu_khz;
 	struct cb_serial *serial;
@@ -88,9 +94,16 @@ struct sysinfo_t {
 	struct cb_mainboard *mainboard;
 
 #ifdef CONFIG_CHROMEOS
+	void	*vboot_handoff;
+	u32	vboot_handoff_size;
 	void	*vdat_addr;
 	u32	vdat_size;
 #endif
+
+#ifdef CONFIG_ARCH_X86
+	int x86_rom_var_mtrr_index;
+#endif
+
 	void	*tstamp_table;
 	void	*cbmem_cons;
 	void	*mrc_cache;

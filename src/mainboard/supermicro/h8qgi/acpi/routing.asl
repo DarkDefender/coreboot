@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /*
@@ -89,7 +89,7 @@ Scope(\_SB) {
 	Name(APR0, Package(){
 		/* NB devices in APIC mode */
 		/* Bus 0, Dev 0 - SR5650 HT */
-		Package() { 0xFFFF, Zero, Zero, 16 },
+		Package() { 0xFFFF, Zero, Zero, 55 },
 
 		/* Bus 0, Dev 1 - CLKCONFIG */
 

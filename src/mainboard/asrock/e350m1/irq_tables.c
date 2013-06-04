@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -23,8 +23,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <arch/pirq_routing.h>
-//#include <cpu/amd/amdfam10_sysconf.h>
-
+#include <cpu/amd/amdfam14.h>
 
 
 static void write_pirq_info(struct irq_info *pirq_info, u8 bus, u8 devfn,

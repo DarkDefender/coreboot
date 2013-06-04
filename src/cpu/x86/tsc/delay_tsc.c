@@ -4,9 +4,18 @@
 #include <cpu/x86/tsc.h>
 #include <smp/spinlock.h>
 #include <delay.h>
+#include <thread.h>
+
+#if !defined(__PRE_RAM__)
 
 static unsigned long clocks_per_usec;
 
+#if CONFIG_TSC_CONSTANT_RATE
+static unsigned long calibrate_tsc(void)
+{
+	return tsc_freq_mhz();
+}
+#else /* CONFIG_TSC_CONSTANT_RATE */
 #if !CONFIG_TSC_CALIBRATE_WITH_IO
 #define CLOCK_TICK_RATE	1193180U /* Underlying HZ */
 
@@ -139,6 +148,7 @@ static unsigned long long calibrate_tsc(void)
 
 
 #endif /* CONFIG_TSC_CALIBRATE_WITH_IO */
+#endif /* CONFIG_TSC_CONSTANT_RATE */
 
 void init_timer(void)
 {
@@ -148,19 +158,71 @@ void init_timer(void)
 	}
 }
 
+static inline unsigned long get_clocks_per_usec(void)
+{
+	init_timer();
+	return clocks_per_usec;
+}
+#else /* !defined(__PRE_RAM__) */
+/* romstage calls into cpu/board specific function every time. */
+static inline unsigned long get_clocks_per_usec(void)
+{
+	return tsc_freq_mhz();
+}
+#endif /* !defined(__PRE_RAM__) */
+
 void udelay(unsigned us)
 {
-        unsigned long long count;
-        unsigned long long stop;
-        unsigned long long clocks;
+	unsigned long long start;
+	unsigned long long current;
+	unsigned long long clocks;
 
-	init_timer();
+	if (!thread_yield_microseconds(us))
+		return;
+
+	start = rdtscll();
 	clocks = us;
-	clocks *= clocks_per_usec;
-        count = rdtscll();
-        stop = clocks + count;
-        while(stop > count) {
+	clocks *= get_clocks_per_usec();
+	current = rdtscll();
+	while((current - start) < clocks) {
 		cpu_relax();
-		count = rdtscll();
-        }
+		current = rdtscll();
+	}
 }
+
+#if CONFIG_TSC_MONOTONIC_TIMER && !defined(__PRE_RAM__) && !defined(__SMM__)
+#include <timer.h>
+
+static struct monotonic_counter {
+	int initialized;
+	struct mono_time time;
+	uint64_t last_value;
+} mono_counter;
+
+void timer_monotonic_get(struct mono_time *mt)
+{
+	uint64_t current_tick;
+	uint64_t ticks_elapsed;
+
+	if (!mono_counter.initialized) {
+		init_timer();
+		mono_counter.last_value = rdtscll();
+		mono_counter.initialized = 1;
+	}
+
+	current_tick = rdtscll();
+	ticks_elapsed = current_tick - mono_counter.last_value;
+
+	/* Update current time and tick values only if a full tick occurred. */
+	if (ticks_elapsed >= clocks_per_usec) {
+		uint64_t usecs_elapsed;
+
+		usecs_elapsed = ticks_elapsed / clocks_per_usec;
+		mono_time_add_usecs(&mono_counter.time, (long)usecs_elapsed);
+		mono_counter.last_value = current_tick;
+	}
+
+	/* Save result. */
+	*mt = mono_counter.time;
+}
+#endif

@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SUPERIO_ITE_IT8772F_IT8772F_H
@@ -105,7 +105,6 @@
 #define GPIO_REG_ENABLE(x)   (0xc0 + (x))
 #define GPIO_REG_OUTPUT(x)   (0xc8 + (x))
 
-#ifndef __ROMCC__
 u8 it8772f_sio_read(u8 index);
 void it8772f_sio_write(u8 index, u8 value);
 void it8772f_enable_serial(device_t dev, u16 iobase);
@@ -115,6 +114,4 @@ void it8772f_enable_3vsbsw(void);
 void it8772f_ac_resume_southbridge(void);
 void it8772f_gpio_setup(int set, u8 func_select, u8 polarity, u8 pullup,
 			u8 output, u8 enable);
-#endif
-
 #endif

@@ -15,16 +15,16 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
 chip northbridge/intel/i440bx		# Northbridge
-  device lapic_cluster 0 on		# APIC cluster
+  device cpu_cluster 0 on		# APIC cluster
     chip cpu/intel/slot_1		# CPU
       device lapic 0 on end		# APIC
     end
   end
-  device pci_domain 0 on		# PCI domain
+  device domain 0 on		# PCI domain
     device pci 0.0 on end		# Host bridge
     device pci 1.0 on end		# PCI/AGP bridge
     chip southbridge/intel/i82371eb	# Southbridge

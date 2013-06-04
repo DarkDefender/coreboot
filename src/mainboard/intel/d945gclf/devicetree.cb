@@ -19,13 +19,13 @@
 
 chip northbridge/intel/i945
 
-        device lapic_cluster 0 on
+        device cpu_cluster 0 on
                 chip cpu/intel/socket_441
                         device lapic 0 on end
                 end
         end
 
-        device pci_domain 0 on
+        device domain 0 on
                 subsystemid 0x8086 0x464c inherit
                 device pci 00.0 on end # host bridge
 		device pci 01.0 off end # i945 PCIe root port

@@ -9,26 +9,9 @@
 #include <string.h>
 #include <delay.h>
 #include <smbios.h>
-
-#if CONFIG_WRITE_HIGH_TABLES
 #include <cbmem.h>
-#endif
 
-#define CMOS_ADDR_PORT 0x70
-#define CMOS_DATA_PORT 0x71
-#define HIGH_RAM_ADDR 0x35
-#define LOW_RAM_ADDR 0x34
-
-static unsigned long qemu_get_memory_size(void)
-{
-	unsigned long tomk;
-	outb (HIGH_RAM_ADDR, CMOS_ADDR_PORT);
-	tomk = ((unsigned long) inb(CMOS_DATA_PORT)) << 14;
-	outb (LOW_RAM_ADDR, CMOS_ADDR_PORT);
-	tomk |= ((unsigned long) inb(CMOS_DATA_PORT)) << 6;
-	tomk += 16 * 1024;
-	return tomk;
-}
+#include "memory.c"
 
 static void cpu_pci_domain_set_resources(device_t dev)
 {
@@ -52,11 +35,9 @@ static void cpu_pci_domain_set_resources(device_t dev)
 	ram_resource(dev, idx++, 0, 640);
 	ram_resource(dev, idx++, 768, tolmk - 768);
 
-#if CONFIG_WRITE_HIGH_TABLES
 	/* Leave some space for ACPI, PIRQ and MP tables */
 	high_tables_base = (tomk * 1024) - HIGH_MEMORY_SIZE;
 	high_tables_size = HIGH_MEMORY_SIZE;
-#endif
 
 	assign_resources(dev->link_list);
 }
@@ -149,10 +130,10 @@ static struct device_operations pci_domain_ops = {
 #endif
 };
 
-static void enable_dev(struct device *dev)
+static void northbridge_enable(struct device *dev)
 {
 	/* Set the operations if it is a special bus type */
-	if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
 		pci_set_method(dev);
 	}
@@ -160,5 +141,5 @@ static void enable_dev(struct device *dev)
 
 struct chip_operations mainboard_emulation_qemu_x86_ops = {
 	CHIP_NAME("QEMU Northbridge")
-	.enable_dev = enable_dev,
+	.enable_dev = northbridge_enable,
 };

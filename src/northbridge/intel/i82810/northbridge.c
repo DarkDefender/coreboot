@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -27,6 +27,7 @@
 #include <device/pci_ids.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cbmem.h>
 #include <cpu/cpu.h>
 #include "northbridge.h"
 #include "i82810.h"
@@ -67,10 +68,6 @@ static int translate_i82810_to_mb[] = {
 /* DRP	0  1 (2) 3   4   5   6   7   8   9   A   B   C    D    E    F */
 /* MB */0, 8, 0, 16, 16, 24, 32, 32, 48, 64, 64, 96, 128, 128, 192, 256,
 };
-
-#if CONFIG_WRITE_HIGH_TABLES
-#include <cbmem.h>
-#endif
 
 static void pci_domain_set_resources(device_t dev)
 {
@@ -124,11 +121,10 @@ static void pci_domain_set_resources(device_t dev)
 	ram_resource(dev, idx++, 768, tomk - 768);
 	uma_resource(dev, idx++, uma_memory_base >> 10, uma_memory_size >> 10);
 
-#if CONFIG_WRITE_HIGH_TABLES
 	/* Leave some space for ACPI, PIRQ and MP tables */
 	high_tables_base = (tomk_stolen * 1024) - HIGH_MEMORY_SIZE;
 	high_tables_size = HIGH_MEMORY_SIZE;
-#endif
+
 	assign_resources(dev->link_list);
 }
 
@@ -160,10 +156,10 @@ static struct device_operations cpu_bus_ops = {
 static void enable_dev(struct device *dev)
 {
 	/* Set the operations if it is a special bus type */
-	if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
 		pci_set_method(dev);
-	} else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
+	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
 		dev->ops = &cpu_bus_ops;
 	}
 }

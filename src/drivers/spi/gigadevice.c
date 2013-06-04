@@ -131,6 +131,7 @@ static int gigadevice_write(struct spi_flash *flash, u32 offset,
 	page_size = min(1 << stm->params->l2_page_size, CONTROLLER_PAGE_LIMIT);
 	byte_addr = offset % page_size;
 
+	flash->spi->rw = SPI_WRITE_FLAG;
 	ret = spi_claim_bus(flash->spi);
 	if (ret) {
 		printk(BIOS_WARNING,
@@ -175,9 +176,12 @@ static int gigadevice_write(struct spi_flash *flash, u32 offset,
 		byte_addr = 0;
 	}
 
-	printk(BIOS_INFO,
+#if CONFIG_DEBUG_SPI_FLASH
+	printk(BIOS_SPEW,
 	       "SF gigadevice.c: Successfully programmed %zu bytes @ %#x\n",
 	       len, (unsigned int)(offset - len));
+#endif
+
 	ret = 0;
 
 out:

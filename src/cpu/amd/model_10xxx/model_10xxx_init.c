@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -37,26 +37,6 @@
 #include <cpu/amd/model_10xxx_msr.h>
 
 #define MCI_STATUS 0x401
-
-msr_t rdmsr_amd(u32 index)
-{
-	msr_t result;
-	__asm__ __volatile__(
-		"rdmsr"
-		:"=a"(result.lo), "=d"(result.hi)
-		:"c"(index), "D"(0x9c5a203a)
-	);
-	return result;
-}
-
-void wrmsr_amd(u32 index, msr_t msr)
-{
-	__asm__ __volatile__(
-		"wrmsr"
-		:	/* No outputs */
-		:"c"(index), "a"(msr.lo), "d"(msr.hi), "D"(0x9c5a203a)
-	);
-}
 
 static void model_10xxx_init(device_t dev)
 {

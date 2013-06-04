@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef __NORTHBRIDGE_INTEL_SANDYBRIDGE_SANDYBRIDGE_H__
@@ -233,8 +233,6 @@ struct mrc_data_container {
 
 struct mrc_data_container *find_current_mrc_cache(void);
 #if !defined(__PRE_RAM__)
-void update_mrc_cache(void);
-
 #include "gma.h"
 int init_igd_opregion(igd_opregion_t *igd_opregion);
 #endif

@@ -25,6 +25,10 @@
 #ifndef _SMDK5250_SETUP_H
 #define _SMDK5250_SETUP_H
 
+struct exynos5_dmc;
+enum ddr_mode;
+struct exynos5_phy_control;
+
 /* TZPC : Register Offsets */
 #define TZPC0_BASE		0x10100000
 #define TZPC1_BASE		0x10110000
@@ -683,7 +687,8 @@ enum {
 };
 
 /* Functions common between LPDDR2 and DDR3 */
-void sdelay(unsigned long);
+/* FIXME(dhendrix): conflicts with arch system.h version of sdelay()... */
+//void sdelay(unsigned long);
 
 /* CPU info initialization code */
 void cpu_info_init(void);
@@ -697,13 +702,11 @@ void mem_ctrl_init(void);
  *			which the DMC uses to decide how to split a memory
  *			chunk into smaller chunks to support concurrent
  *			accesses; may vary across boards.
+ * @param mem_reset	Reset memory during initialization.
  * @return 0 if ok, SETUP_ERR_... if there is a problem
  */
-int ddr3_mem_ctrl_init(struct mem_timings *mem, unsigned long mem_iv_size);
-
-/* FIXME(dhendrix): why is this here? commenting it out and we'll use
-   clock_init.h instead */
-//void system_clock_init(void);
+int ddr3_mem_ctrl_init(struct mem_timings *mem, unsigned long mem_iv_size,
+		       int mem_reset);
 
 void tzpc_init(void);
 /*

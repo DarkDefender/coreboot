@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "coreinfo.h"
@@ -271,11 +271,16 @@ int main(void)
 {
 	int i, j;
 
+#if defined(CONFIG_USB)
+	usb_initialize();
+#endif
+
 	initscr();
 
+	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_GREEN);
-	init_pair(2, COLOR_BLACK, COLOR_WHITE);
-	init_pair(3, COLOR_WHITE, COLOR_WHITE);
+	init_pair(2, COLOR_WHITE, COLOR_BLACK);
+	init_pair(3, COLOR_BLACK, COLOR_WHITE);
 
 	modwin = newwin(SCREEN_Y - 3, SCREEN_X, 1, 0);
 	menuwin = newwin(2, SCREEN_X, SCREEN_Y - 2, 0);
@@ -290,6 +295,9 @@ int main(void)
 		for (j = 0; j < categories[i].count; j++)
 			categories[i].modules[j]->init();
 	}
+
+	noecho(); /* don't let curses echo keyboard chars */
+	keypad(stdscr, TRUE); /* allow KEY_F(n) keys to be seen */
 
 	loop();
 

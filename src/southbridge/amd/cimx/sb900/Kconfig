@@ -14,7 +14,7 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
 config SOUTHBRIDGE_AMD_CIMX_SB900
@@ -53,13 +53,21 @@ config BOOTBLOCK_SOUTHBRIDGE_INIT
         string
         default "southbridge/amd/cimx/sb900/bootblock.c"
 
-config S3_VOLATILE_POS
+config S3_DATA_POS
 	hex "S3 volatile storage position"
 	default 0xFFFF0000
 	depends on HAVE_ACPI_RESUME
 	help
 	  For a system with S3 feature, the BIOS needs to save some data to
-	  non-volitile storage at cold boot stage.
+	  non-volatile storage at cold boot stage.
+
+config S3_DATA_SIZE
+	int "S3 volatile storage size"
+	default 32768
+	depends on HAVE_ACPI_RESUME
+	help
+	  For a system with S3 feature, the BIOS needs to save some data to
+	  non-volatile storage at cold boot stage.
 
 endif #SOUTHBRIDGE_AMD_CIMX_SB900
 

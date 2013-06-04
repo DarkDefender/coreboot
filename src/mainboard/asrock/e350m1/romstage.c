@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <stdint.h>
@@ -24,7 +24,6 @@
 #include <arch/io.h>
 #include <arch/stages.h>
 #include <device/pnp_def.h>
-#include <arch/romcc_io.h>
 #include <arch/cpu.h>
 #include <cpu/x86/lapic.h>
 #include <console/console.h>
@@ -35,7 +34,7 @@
 #include "cpu/x86/lapic/boot_cpu.c"
 #include "drivers/pc80/i8254.c"
 #include "drivers/pc80/i8259.c"
-#include "sb_cimx.h"
+#include <sb_cimx.h>
 #include "SBPLATFORM.h"
 
 void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx);
@@ -45,7 +44,6 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx);
 void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 {
 	u32 val;
-	u8 reg8;
 
 	/*
 	 * All cores: allow caching of flash chip code and data
@@ -124,7 +122,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	setup_i8254();
 
 	post_code(0x50);
-	copy_and_run(0);
+	copy_and_run();
 	printk(BIOS_ERR, "Error: copy_and_run() returned!\n");
 
 	post_code(0x54);	/* Should never see this post code. */

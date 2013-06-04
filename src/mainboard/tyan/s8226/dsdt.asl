@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /* DefinitionBlock Statement */
@@ -23,7 +23,7 @@ DefinitionBlock (
 	"DSDT",		/* Signature */
 	0x02,		/* DSDT Revision, needs to be 2 for 64bit */
 	"AMD   ",	/* OEMID */
-	"S8226   ",	/* TABLE ID */
+	"COREBOOT",	/* TABLE ID */
 	0x00010001	/* OEM Revision */
 	)
 {	/* Start of ASL file */

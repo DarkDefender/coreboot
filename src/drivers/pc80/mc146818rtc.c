@@ -21,7 +21,7 @@ static void rtc_update_cmos_date(u8 has_century)
 	cmos_write(1, RTC_CLK_HOUR);
 	cmos_write(COREBOOT_BUILD_WEEKDAY_BCD + 1, RTC_CLK_DAYOFWEEK);
 	cmos_write(COREBOOT_BUILD_DAY_BCD, RTC_CLK_DAYOFMONTH);
-	cmos_write(COREBOOT_BUILD_MONTH_BCD, RTC_CLK_MINUTE);
+	cmos_write(COREBOOT_BUILD_MONTH_BCD, RTC_CLK_MONTH);
 	cmos_write(COREBOOT_BUILD_YEAR_BCD, RTC_CLK_YEAR);
 	if (has_century) cmos_write(0x20, RTC_CLK_ALTCENTURY);
 }
@@ -190,7 +190,8 @@ int get_option(void *dest, const char *name)
 	namelen = strnlen(name, CMOS_MAX_NAME_LENGTH);
 
 	/* find the requested entry record */
-	ct=cbfs_find_file("cmos_layout.bin", CBFS_COMPONENT_CMOS_LAYOUT);
+	ct = cbfs_get_file_content(CBFS_DEFAULT_MEDIA, "cmos_layout.bin",
+				   CBFS_COMPONENT_CMOS_LAYOUT);
 	if (!ct) {
 		printk(BIOS_ERR, "RTC: cmos_layout.bin could not be found. "
 						"Options are disabled\n");
@@ -268,7 +269,8 @@ int set_option(const char *name, void *value)
 	namelen = strnlen(name, CMOS_MAX_NAME_LENGTH);
 
 	/* find the requested entry record */
-	ct=cbfs_find_file("cmos_layout.bin", CBFS_COMPONENT_CMOS_LAYOUT);
+	ct = cbfs_get_file_content(CBFS_DEFAULT_MEDIA, "cmos_layout.bin",
+				   CBFS_COMPONENT_CMOS_LAYOUT);
 	if (!ct) {
 		printk(BIOS_ERR, "cmos_layout.bin could not be found. Options are disabled\n");
 		return(-2);

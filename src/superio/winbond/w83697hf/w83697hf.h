@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SUPERIO_WINBOND_W83697HF_W83697HF_H
@@ -32,8 +32,5 @@
 #define W83697HF_ACPI           10   /* ACPI */
 #define W83697HF_HWM            11   /* Hardware monitor */
 
-#ifndef __ROMCC__
 void w83697hf_set_clksel_48(device_t);
-#endif
-
 #endif

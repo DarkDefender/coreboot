@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "AGESA.h"
@@ -31,7 +31,7 @@
  *  OemCustomizeInitEarly
  *
  *  Description:
- *    This is the stub function will call the host environment through the binary block
+ *    This stub function will call the host environment through the binary block
  *    interface (call-out port) to provide a user hook opportunity
  *
  *  Parameters:

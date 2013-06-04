@@ -17,11 +17,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA  02110-1335, USA
+# Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA
 #
 
-CROSSGCC_DATE="November 15th, 2012"
-CROSSGCC_VERSION="1.19"
+CROSSGCC_DATE="April 19th, 2013"
+CROSSGCC_VERSION="1.21"
 
 # default settings
 TARGETDIR=`pwd`/xgcc
@@ -33,14 +33,10 @@ GMP_VERSION=5.0.5
 MPFR_VERSION=3.1.1
 MPC_VERSION=1.0.1
 LIBELF_VERSION=0.8.13
-GCC_VERSION=4.7.2
+GCC_VERSION=4.7.3
 GCC_AUTOCONF_VERSION=2.64
 BINUTILS_VERSION=2.23
 GDB_VERSION=7.5
-W32API_VERSION=3.17-2
-W32API_VERSION_SHORT=3.17
-MINGWRT_VERSION=3.20-2
-MINGWRT_VERSION_SHORT=3.20
 IASL_VERSION=20121114
 PYTHON_VERSION=2.7.3
 EXPAT_VERSION=2.1.0
@@ -53,9 +49,7 @@ LIBELF_ARCHIVE="http://www.mr511.de/software/libelf-${LIBELF_VERSION}.tar.gz"
 GCC_ARCHIVE="http://ftpmirror.gnu.org/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2"
 BINUTILS_ARCHIVE="http://ftpmirror.gnu.org/binutils/binutils-${BINUTILS_VERSION}.tar.gz"
 GDB_ARCHIVE="http://ftpmirror.gnu.org/gdb/gdb-${GDB_VERSION}.tar.bz2"
-W32API_ARCHIVE="http://downloads.sourceforge.net/project/mingw/MinGW/Base/w32api/w32api-${W32API_VERSION_SHORT}/w32api-${W32API_VERSION}-mingw32-src.tar.lzma"
-MINGWRT_ARCHIVE="http://downloads.sourceforge.net/project/mingw/MinGW/Base/mingw-rt/mingwrt-${MINGWRT_VERSION_SHORT}/mingwrt-${MINGWRT_VERSION}-mingw32-src.tar.lzma"
-IASL_ARCHIVE="http://www.acpica.org/download/acpica-unix-${IASL_VERSION}.tar.gz"
+IASL_ARCHIVE="http://www.acpica.org/sites/acpica/files/acpica-unix-${IASL_VERSION}.tar.gz"
 PYTHON_ARCHIVE="http://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.bz2"
 EXPAT_ARCHIVE="http://downloads.sourceforge.net/sourceforge/expat/expat-${EXPAT_VERSION}.tar.gz"
 
@@ -66,8 +60,6 @@ LIBELF_DIR="libelf-${LIBELF_VERSION}"
 GCC_DIR="gcc-${GCC_VERSION}"
 BINUTILS_DIR="binutils-${BINUTILS_VERSION}"
 GDB_DIR="gdb-${GDB_VERSION}"
-W32API_DIR="w32api-${W32API_VERSION}-mingw32"
-MINGWRT_DIR="mingwrt-${MINGWRT_VERSION}-mingw32"
 IASL_DIR="acpica-unix-${IASL_VERSION}"
 PYTHON_DIR="Python-${PYTHON_VERSION}"
 EXPAT_DIR="expat-${EXPAT_VERSION}"
@@ -85,6 +77,17 @@ BLUE='\033[1;34m'
 cyan='\033[0;36m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
+
+normalize_dirs()
+{
+	mkdir -p $DESTDIR$TARGETDIR/lib
+	test -d $DESTDIR$TARGETDIR/lib32 && mv $DESTDIR$TARGETDIR/lib32/* $DESTDIR$TARGETDIR/lib
+	test -d $DESTDIR$TARGETDIR/lib64 && mv $DESTDIR$TARGETDIR/lib64/* $DESTDIR$TARGETDIR/lib
+	rmdir -p $DESTDIR$TARGETDIR/lib32 $DESTDIR$TARGETDIR/lib64
+
+	perl -pi -e "s,/lib32,/lib," $DESTDIR$TARGETDIR/lib/*.la
+	perl -pi -e "s,/lib64,/lib," $DESTDIR$TARGETDIR/lib/*.la
+}
 
 searchgnu()
 {
@@ -129,7 +132,7 @@ cleanup()
 {
 	printf "Cleaning up temporary files... "
 	rm -rf build-* combined gcc-* gmp-* mpfr-* mpc-* libelf-* binutils-*
-	rm -rf gdb-* w32api-* mingwrt-* acpica-* python-* expat-*
+	rm -rf gdb-* acpica-* python-* expat-*
 	printf "${green}ok${NC}\n"
 }
 
@@ -212,12 +215,22 @@ while true ; do
 		-G|--gdb)	shift; SKIPGDB=0;;
 		-S|--scripting) shift; SKIPPYTHON=0;;
 		-y|--ccache)	shift; USECCACHE=1;;
-		--)		shift; break;;
+		--)		shift;;
 		-*)		printf "Invalid option\n\n"; myhelp; exit 1;;
-		*)		break;;
+		*)		;;
 	esac
 done
 
+case "$TARGETARCH" in
+	armv7a-eabi)	;;
+	i386-elf)	;;
+	i386-mingw32)	;;
+	i386*)		TARGETARCH=i386-elf;;
+	arm*)		TARGETARCH=armv7a-eabi;;
+	*)		printf "Invalid architecture\n\n"; myhelp; exit 1;;
+esac
+
+echo "Target arch is now $TARGETARCH"
 GDB_PACKAGE="GDB"
 PYTHON_PACKAGE="PYTHON"
 EXPAT_PACKAGE="EXPAT"
@@ -237,37 +250,15 @@ if [ $SKIPPYTHON -eq 1 ]; then
 	EXPAT_PACKAGE=""
 fi
 
-MINGW_ARCHIVES=""
-if [ "$TARGETARCH" = "i386-mingw32" ]; then
-	MINGW_ARCHIVES="$W32API_ARCHIVE $MINGWRT_ARCHIVE"
-fi
-
 # coreboot does not like the GOLD linker
 # USE_GOLD="--enable-gold"
 USE_GOLD=""
 GCC_OPTIONS="--enable-lto"
 
-if [ ${GCC_VERSION} = "trunk" ]; then
-  if [ ! -r tarballs/gcc-core-${GCC_VERSION}.tar.bz2 ]; then
-    printf "Pre-Release GCC ${GCC_VERSION}, checking out subversion trunk\n"
-    mkdir -p tarballs/.tmp
-    cd tarballs/.tmp
-    rm -rf gcc-${GCC_VERSION}
-    svn export -q svn://gcc.gnu.org/svn/gcc/trunk gcc-${GCC_VERSION}
-    printf "done. Now creating tar ball...\n"
-    tar cjf ../gcc-core-${GCC_VERSION}.tar.bz2 gcc-${GCC_VERSION}
-    printf "done. Now cleaning up...\n"
-    cd ..
-    rm -rf .tmp
-    cd ..
-    printf "done.\n"
-  fi
-fi
-
 printf "Downloading tar balls ... \n"
 mkdir -p tarballs
 for ARCHIVE in $GMP_ARCHIVE $MPFR_ARCHIVE $MPC_ARCHIVE $LIBELF_ARCHIVE  \
-	    $GCC_ARCHIVE $BINUTILS_ARCHIVE $GDB_ARCHIVE $MINGW_ARCHIVES \
+	    $GCC_ARCHIVE $BINUTILS_ARCHIVE $GDB_ARCHIVE \
 	    $IASL_ARCHIVE $PYTHON_ARCHIVE $EXPAT_ARCHIVE; do
 	FILE=`basename $ARCHIVE`
 	printf " * $FILE "
@@ -284,14 +275,9 @@ done
 printf "Downloaded tar balls ... "
 printf "${green}ok${NC}\n"
 
-MINGW_PACKAGES=""
-if [ "$TARGETARCH" = "i386-mingw32" ]; then
-	MINGW_PACKAGES="W32API MINGWRT"
-fi
-
 printf "Unpacking and patching ... \n"
 for PACKAGE in GMP MPFR MPC LIBELF GCC BINUTILS $PYTHON_PACKAGE \
-	    $EXPAT_PACKAGE $GDB_PACKAGE $MINGW_PACKAGES IASL; do
+	    $EXPAT_PACKAGE $GDB_PACKAGE IASL; do
 	archive=$PACKAGE"_ARCHIVE"
 	archive="`eval echo '$'$archive`"
 	dir=$PACKAGE"_DIR"
@@ -315,12 +301,6 @@ done
 printf "Unpacked and patched ... "
 printf "${green}ok${NC}\n"
 
-if [ "$TARGETARCH" = "i386-mingw32" ]; then
-	mkdir -p $TARGETDIR/i386-mingw32/sys-include
-	mv $MINGWRT_DIR/include/* $W32API_DIR/include/* \
-				  $TARGETDIR/i386-mingw32/sys-include
-fi
-
 CC=cc
 if [ `uname` = "Darwin" ]; then
 	#GCC_OPTIONS="$GCC_OPTIONS --enable-threads=posix"
@@ -336,12 +316,11 @@ if [ `uname` = "Darwin" ]; then
 		OPTIONS="ABI=32"
 	fi
 
-	# In Xcode 4 the default compiler was switched to gcc-llvm.
-	# However, this compiler fails to compile gcc 4.6.x. As a
-	# workaround it's possible to compile gcc with gcc-4.2 or
-	# clang.
+	# In Xcode 4.5.2 the default compiler is clang.
+	# However, this compiler fails to compile gcc 4.7.x. As a
+	# workaround it's possible to compile gcc with llvm-gcc.
 	if $CC -v 2>&1 | grep -q LLVM; then
-		CC=clang
+		CC=llvm-gcc
 	fi
 fi
 
@@ -351,6 +330,10 @@ fi
 
 mkdir -p build-gmp build-mpfr build-mpc build-libelf build-binutils \
 		build-gcc build-python build-expat
+
+mkdir -p $DESTDIR$TARGETDIR/bin
+export PATH=$DESTDIR$TARGETDIR/bin:$PATH
+
 if [ $SKIPGDB -eq 0 ]; then
 	mkdir -p build-gdb
 fi
@@ -365,17 +348,15 @@ printf "Building GMP ${GMP_VERSION} ... "
 		|| touch .failed
 	$MAKE $JOBS || touch .failed
 	$MAKE install DESTDIR=$DESTDIR || touch .failed
+
+	normalize_dirs
+
 	if [ ! -f .failed ]; then touch .success; fi
 ) > build-gmp/crossgcc-build.log 2>&1
 test -r build-gmp/.failed && printf "${RED}failed${NC}\n" || \
 	printf "${green}ok${NC}\n"
 test -r build-gmp/.failed && exit 1
 fi
-
-#if [ "$DESTDIR" != "" -a ! -x $TARGETDIR ]; then
-#	# create compat link
-#	ln -s $DESTDIR$TARGETDIR $TARGETDIR
-#fi
 
 # Now set CFLAGS to match GMP CFLAGS but strip out -pedantic
 # as GCC 4.6.x fails if it's there.
@@ -397,6 +378,8 @@ printf "Building MPFR ${MPFR_VERSION} ... "
 	$MAKE $JOBS || touch .failed
 	$MAKE install DESTDIR=$DESTDIR || touch .failed
 
+	normalize_dirs
+
 	# work around build problem of libgmp.la
 	if [ "$DESTDIR" != "" ]; then
 	    perl -pi -e "s,$DESTDIR,," $DESTDIR$TARGETDIR/libgmp.la
@@ -414,7 +397,6 @@ if [ -f build-mpc/.success ]; then
 else
 printf "Building MPC ${MPC_VERSION} ... "
 (
-	#test `uname` = "Darwin" && CFLAGS="$CFLAGS -force_cpusubtype_ALL"
 	cd build-mpc
 	rm -f .failed
 	CC="$CC" ../${MPC_DIR}/configure --disable-shared --prefix=$TARGETDIR \
@@ -423,6 +405,8 @@ printf "Building MPC ${MPC_VERSION} ... "
 		touch .failed
 	$MAKE $JOBS || touch .failed
 	$MAKE install DESTDIR=$DESTDIR || touch .failed
+
+	normalize_dirs
 
 	if [ ! -f .failed ]; then touch .success; fi
 ) > build-mpc/crossgcc-build.log 2>&1
@@ -444,6 +428,8 @@ printf "Building libelf ${LIBELF_VERSION} ... "
 		--infodir=$TARGETDIR/info CFLAGS="$HOSTCFLAGS" || touch .failed
 	$MAKE $JOBS || touch .failed
 	$MAKE install DESTDIR=$DESTDIR || touch .failed
+
+	normalize_dirs
 
 	if [ ! -f .failed ]; then touch .success; fi
 ) > build-libelf/crossgcc-build.log 2>&1
@@ -496,7 +482,6 @@ printf "Building GCC ${GCC_VERSION} ... "
 	cd ..
 	# Now, finally, we can build gcc:
 	cd build-gcc
-	export PATH=$PATH:$DESTDIR$TARGETDIR/bin
 	rm -f .failed
 	# GCC does not honour HOSTCFLAGS at all. CFLAGS are used for
 	# both target and host object files. This is pretty misdesigned.
@@ -508,14 +493,20 @@ printf "Building GCC ${GCC_VERSION} ... "
 		--prefix=$TARGETDIR --libexecdir=$TARGETDIR/lib \
 		--target=${TARGETARCH} --disable-werror --disable-shared \
 		--disable-libssp --disable-bootstrap --disable-nls \
-		--disable-libquadmath \
+		--disable-libquadmath --without-headers \
 		$GCC_OPTIONS --enable-languages="c" $USE_GOLD \
 		--with-gmp=$DESTDIR$TARGETDIR --with-mpfr=$DESTDIR$TARGETDIR \
 		--with-mpc=$DESTDIR$TARGETDIR --with-libelf=$DESTDIR$TARGETDIR \
 		--with-pkgversion="coreboot toolchain v$CROSSGCC_VERSION $CROSSGCC_DATE" \
 		|| touch .failed
-	$MAKE $JOBS CFLAGS_FOR_BUILD="$HOSTCFLAGS" || touch .failed
-	$MAKE install DESTDIR=$DESTDIR || touch .failed
+	$MAKE $JOBS CFLAGS_FOR_BUILD="$HOSTCFLAGS" all-gcc || touch .failed
+	$MAKE install-gcc DESTDIR=$DESTDIR || touch .failed
+
+	if [ "`echo $TARGETARCH | grep -c -- -mingw32`" -eq 0 ]; then
+		$MAKE $JOBS CFLAGS_FOR_BUILD="$HOSTCFLAGS" all-target-libgcc || touch .failed
+		$MAKE install-target-libgcc DESTDIR=$DESTDIR || touch .failed
+	fi
+
 	if [ ! -f .failed ]; then touch .success; fi
 ) > build-gcc/crossgcc-build.log 2>&1
 test -r build-gcc/.failed && printf "${RED}failed${NC}\n" || \
@@ -531,12 +522,14 @@ else
 printf "Building Expat ${EXPAT_VERSION} ... "
 (
 	cd build-expat
-	export PATH=$PATH:$DESTDIR$TARGETDIR/bin
 	rm -f .failed
 	CC="$CC" CFLAGS="$HOSTCFLAGS" ../${EXPAT_DIR}/configure --disable-shared \
 		--prefix=$TARGETDIR --target=${TARGETARCH} || touch .failed
 	$MAKE || touch .failed
 	$MAKE install DESTDIR=$DESTDIR || touch .failed
+
+	normalize_dirs
+
 	if [ ! -f .failed ]; then touch .success; fi
 ) > build-expat/crossgcc-build.log 2>&1
 test -r build-expat/.failed && printf "${RED}failed${NC}\n" || \
@@ -553,12 +546,14 @@ else
 printf "Building Python ${PYTHON_VERSION} ... "
 (
 	cd build-python
-	export PATH=$PATH:$DESTDIR$TARGETDIR/bin
 	rm -f .failed
 	CC="$CC" CFLAGS="$HOSTCFLAGS" ../${PYTHON_DIR}/configure --prefix=$TARGETDIR \
 		--target=${TARGETARCH} || touch .failed
 	$MAKE $JOBS || touch .failed
 	$MAKE install DESTDIR=$DESTDIR || touch .failed
+
+	normalize_dirs
+
 	if [ ! -f .failed ]; then touch .success; fi
 ) > build-python/crossgcc-build.log 2>&1
 test -r build-python/.failed && printf "${RED}failed${NC}\n" || \
@@ -575,7 +570,6 @@ else
 printf "Building GDB ${GDB_VERSION} ... "
 (
 	cd build-gdb
-	export PATH=$PATH:$DESTDIR$TARGETDIR/bin
 	export PYTHONHOME=$DESTDIR$TARGETDIR
 	rm -f .failed
 	LDFLAGS="-Wl,-rpath,\$\$ORIGIN/../lib/ -L$DESTDIR$TARGETDIR/lib \
@@ -598,19 +592,21 @@ else
 printf "Building IASL ${IASL_VERSION} ... "
 (
 	cd $IASL_DIR/generate/unix
-	export PATH=$PATH:$DESTDIR$TARGETDIR/bin
-	rm -f ../../source/compiler/.failed
+	rm -f .failed
 	CFLAGS="$HOSTCFLAGS"
-	$MAKE CC="$CC" || touch ../../source/compiler/.failed
-	rm -f $DESTDIR$TARGETDIR/bin/iasl || touch ../../source/compiler/.failed
-	if [ -d bin32 ]; then cp bin32/iasl $DESTDIR$TARGETDIR/bin || touch ../../source/compiler/.failed ; fi
-	if [ -d bin64 ]; then cp bin64/iasl $DESTDIR$TARGETDIR/bin || touch ../../source/compiler/.failed ; fi
-	if [ ! -f ../../source/compiler/.failed ]; then touch ../../source/compiler/.success; fi
+	$MAKE CC="$CC" iasl || touch .failed
+	rm -f $DESTDIR$TARGETDIR/bin/iasl || touch .failed
+	if [ -d bin32 ]; then cp bin32/iasl $DESTDIR$TARGETDIR/bin || touch .failed ; fi
+	if [ -d bin64 ]; then cp bin64/iasl $DESTDIR$TARGETDIR/bin || touch .failed ; fi
+	if [ ! -f .failed ]; then touch .success; fi
 ) > $IASL_DIR/source/compiler/crossgcc-build.log 2>&1
-test -r $IASL_DIR/source/compiler/.failed && printf "${RED}failed${NC}\n" || \
+test -r $IASL_DIR/generate/unix/.failed && printf "${RED}failed${NC}\n" || \
 	     printf "${green}ok${NC}\n"
-test -r $IASL_DIR/source/compiler/.failed && exit 1
+test -r $IASL_DIR/generate/unix/.failed && exit 1
 fi
+
+rm -f $DESTDIR$TARGETDIR/$0.commit.*
+cp $0 $DESTDIR$TARGETDIR/"$0.commit.`git describe`"
 
 if [ $SAVETEMPS -eq 0 ]; then
 	printf "Cleaning up... "

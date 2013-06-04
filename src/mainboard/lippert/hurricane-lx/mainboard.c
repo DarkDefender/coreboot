@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /* Based on mainboard.c from the SpaceRunner-LX mainboard. */
@@ -77,11 +77,11 @@ static void init(struct device *dev)
 	printk(BIOS_DEBUG, "LiPPERT Hurricane-LX EXIT %s\n", __func__);
 }
 
-static void enable_dev(struct device *dev)
+static void mainboard_enable(struct device *dev)
 {
 	dev->ops->init = init;
 }
 
 struct chip_operations mainboard_ops = {
-	.enable_dev = enable_dev,
+	.enable_dev = mainboard_enable,
 };

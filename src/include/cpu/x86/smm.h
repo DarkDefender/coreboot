@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /* AMD64 SMM State-Save Area
@@ -24,9 +24,16 @@
 #ifndef CPU_X86_SMM_H
 #define CPU_X86_SMM_H
 
+#define SMM_DEFAULT_BASE 0x30000
+#define SMM_DEFAULT_SIZE 0x10000
+
 /* used only by C programs so far */
 #define SMM_BASE 0xa0000
 
+#define SMM_ENTRY_OFFSET 0x8000
+#define SMM_SAVE_STATE_BEGIN(x) (SMM_ENTRY_OFFSET + (x))
+
+#include <arch/cpu.h>
 #include <types.h>
 typedef struct {
 	u16	es_selector;
@@ -202,11 +209,17 @@ typedef struct {
 
 
 /* Intel Revision 30101 SMM State-Save Area
- * Used in SandyBridge/IvyBridge architecture
- * starts @ 0x7d00
+ * The following processor architectures use this:
+ * - SandyBridge
+ * - IvyBridge
+ * - Haswell
  */
+#define SMM_EM64T101_ARCH_OFFSET 0x7c00
+#define SMM_EM64T101_SAVE_STATE_OFFSET \
+	SMM_SAVE_STATE_BEGIN(SMM_EM64T101_ARCH_OFFSET)
 typedef struct {
-	u8	reserved0[208];
+	u8	reserved0[256];
+	u8	reserved1[208];
 
 	u32	gdtr_upper_base;
 	u32	ldtr_upper_base;
@@ -219,25 +232,29 @@ typedef struct {
 	u64	io_rcx;
 	u64	io_rsi;
 
-	u8	reserved1[52];
+	u8	reserved2[52];
 	u32	shutdown_auto_restart;
-	u8	reserved2[8];
+	u8	reserved3[8];
 	u32	cr4;
 
-	u8	reserved3[72];
+	u8	reserved4[72];
 
 	u32	gdtr_base;
-	u8	reserved4[4];
-	u32	idtr_base;
 	u8	reserved5[4];
+	u32	idtr_base;
+	u8	reserved6[4];
 	u32	ldtr_base;
 
-	u8	reserved6[68];
+	u8	reserved7[56];
+	/* EPTP fields are only on Haswell according to BWGs, but Intel was
+	 * wise and reused the same revision number. */
+	u64	eptp;
+	u32	eptp_en;
 	u32	cs_base;
-	u8	reserved7[4];
+	u8	reserved8[4];
 	u32	iedbase;
 
-	u8	reserved8[8];
+	u8	reserved9[8];
 
 	u32	smbase;
 	u32	smm_revision;
@@ -245,7 +262,7 @@ typedef struct {
 	u16	io_restart;
 	u16	autohalt_restart;
 
-	u8	reserved9[24];
+	u8	reserved10[24];
 
 	u64	r15;
 	u64	r14;
@@ -366,6 +383,14 @@ int __attribute__((weak)) mainboard_io_trap_handler(int smif);
 
 void southbridge_smi_set_eos(void);
 
+#if CONFIG_SMM_MODULES
+void cpu_smi_handler(void);
+void northbridge_smi_handler(void);
+void southbridge_smi_handler(void);
+void mainboard_smi_gpi(u16 gpi_sts);
+int  mainboard_smi_apmc(u8 data);
+void mainboard_smi_sleep(u8 slp_typ);
+#else
 void __attribute__((weak)) cpu_smi_handler(unsigned int node, smm_state_save_area_t *state_save);
 void __attribute__((weak)) northbridge_smi_handler(unsigned int node, smm_state_save_area_t *state_save);
 void __attribute__((weak)) southbridge_smi_handler(unsigned int node, smm_state_save_area_t *state_save);
@@ -373,10 +398,14 @@ void __attribute__((weak)) southbridge_smi_handler(unsigned int node, smm_state_
 void __attribute__((weak)) mainboard_smi_gpi(u16 gpi_sts);
 int __attribute__((weak)) mainboard_smi_apmc(u8 data);
 void __attribute__((weak)) mainboard_smi_sleep(u8 slp_typ);
+#endif /* CONFIG_SMM_MODULES */
 
 #if !CONFIG_SMM_TSEG
 void smi_release_lock(void);
 #define tseg_relocate(ptr)
+#elif CONFIG_SMM_MODULES
+#define tseg_relocate(ptr)
+#define smi_get_tseg_base() 0
 #else
 /* Return address of TSEG base */
 u32 smi_get_tseg_base(void);
@@ -386,5 +415,73 @@ void tseg_relocate(void **ptr);
 
 /* Get PMBASE address */
 u16 smm_get_pmbase(void);
+
+#if CONFIG_SMM_MODULES
+
+struct smm_runtime {
+	u32 smbase;
+	u32 save_state_size;
+	/* The apic_id_to_cpu provides a mapping from APIC id to cpu number.
+	 * The cpu number is indicated by the index into the array by matching
+	 * the deafult APIC id and value at the index. The stub loader
+	 * initializes this array with a 1:1 mapping. If the APIC ids are not
+	 * contiguous like the 1:1 mapping it is up to the caller of the stub
+	 * loader to adjust this mapping. */
+	u8 apic_id_to_cpu[CONFIG_MAX_CPUS];
+} __attribute__ ((packed));
+
+typedef void asmlinkage (*smm_handler_t)(void *arg, int cpu,
+                                         const struct smm_runtime *runtime);
+
+#ifdef __SMM__
+/* SMM Runtime helpers. */
+
+/* Entry point for SMM modules. */
+void smm_handler_start(void *arg, int cpu, const struct smm_runtime *runtime);
+
+/* Retrieve SMM save state for a given CPU. WARNING: This does not take into
+ * account CPUs which are configured to not save their state to RAM. */
+void *smm_get_save_state(int cpu);
+
+#else
+/* SMM Module Loading API */
+
+/* Ths smm_loader_params structure provides direction to the SMM loader:
+ * - stack_top - optional external stack provided to loader. It must be at
+ *               least per_cpu_stack_size * num_concurrent_stacks in size.
+ * - per_cpu_stack_size - stack size per cpu for smm modules.
+ * - num_concurrent_stacks - number of concurrent cpus in handler needing stack
+ *                           optional for setting up relocation handler.
+ * - per_cpu_save_state_size - the smm save state size per cpu
+ * - num_concurrent_save_states - number of concurrent cpus needing save state
+ *                                space
+ * - handler - optional handler to call. Only used during SMM relocation setup.
+ * - handler_arg - optional argument to handler for SMM relocation setup. For
+ *                 loading the SMM module, the handler_arg is filled in with
+ *                 the address of the module's parameters (if present).
+ * - runtime - this field is a result only. The SMM runtime location is filled
+ *             into this field so the code doing the loading can manipulate the
+ *             runtime's assumptions. e.g. updating the apic id to cpu map to
+ *             handle sparse apic id space.
+ */
+struct smm_loader_params {
+	void *stack_top;
+	int per_cpu_stack_size;
+	int num_concurrent_stacks;
+
+	int per_cpu_save_state_size;
+	int num_concurrent_save_states;
+
+	smm_handler_t handler;
+	void *handler_arg;
+
+	struct smm_runtime *runtime;
+};
+
+/* Both of these return 0 on success, < 0 on failure. */
+int smm_setup_relocation_handler(struct smm_loader_params *params);
+int smm_load_module(void *smram, int size, struct smm_loader_params *params);
+#endif /* __SMM__ */
+#endif /* CONFIG_SMM_MODULES */
 
 #endif

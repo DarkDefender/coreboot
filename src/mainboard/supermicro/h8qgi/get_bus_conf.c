@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -79,7 +79,7 @@ void get_bus_conf(void)
 
 	sbdn_sp5100 = 0;
 
-	for (i = 0; i < 0; i++) {
+	for (i = 0; i < ARRAY_SIZE(bus_sp5100); i++) {
 		bus_sp5100[i] = 0;
 	}
 	for (i = 0; i < ARRAY_SIZE(bus_sr5650); i++) {

@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -32,7 +32,7 @@
 static void vga_init(device_t dev)
 {
 	printk(BIOS_INFO, "Starting Graphics Initialization\n");
-	struct cbfs_file *file = cbfs_find("mbi.bin");
+	struct cbfs_file *file = cbfs_get_file(CBFS_DEFAULT_MEDIA, "mbi.bin");
 	void *mbi = NULL;
 	unsigned int mbi_len = 0;
 

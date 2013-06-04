@@ -114,17 +114,18 @@
 /* Line Control Settings */
 #define UART_LCS	CONFIG_TTYS0_LCS
 
-#ifndef __ROMCC__
+#if CONFIG_CONSOLE_SERIAL8250
 unsigned char uart8250_rx_byte(unsigned base_port);
 int uart8250_can_rx_byte(unsigned base_port);
 void uart8250_tx_byte(unsigned base_port, unsigned char data);
 void uart8250_tx_flush(unsigned base_port);
-
 /* Yes it is silly to have three different uart init functions. But we used to
  * have three different sets of uart code, so it's an improvement.
  */
 void uart8250_init(unsigned base_port, unsigned divisor);
 void uart_init(void);
+#endif
+#if CONFIG_CONSOLE_SERIAL8250MEM
 void uartmem_init(void);
 
 /* and the same for memory mapped uarts */
@@ -134,17 +135,14 @@ void uart8250_mem_tx_byte(unsigned base_port, unsigned char data);
 void uart8250_mem_tx_flush(unsigned base_port);
 void uart8250_mem_init(unsigned base_port, unsigned divisor);
 u32 uart_mem_init(void);
-u32 uartmem_getbaseaddr(void);
 
-#if defined(__PRE_RAM__) && CONFIG_DRIVERS_OXFORD_OXPCIE && \
-	CONFIG_CONSOLE_SERIAL8250MEM
+#if defined(__PRE_RAM__) && CONFIG_DRIVERS_OXFORD_OXPCIE
 /* and special init for OXPCIe based cards */
 extern int oxford_oxpcie_present;
 
 void oxford_init(void);
 #endif
-
-#endif /* __ROMCC__ */
+#endif
 
 #endif /* CONFIG_CONSOLE_SERIAL8250 || CONFIG_CONSOLE_SERIAL8250MEM */
 

@@ -14,16 +14,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /* DefinitionBlock Statement */
 DefinitionBlock (
-	"DSDT.AML",           /* Output filename */
-	"DSDT",                 /* Signature */
+	"DSDT.AML",	/* Output filename */
+	"DSDT",		/* Signature */
 	0x02,		/* DSDT Revision, needs to be 2 for 64bit */
-	"ASROCK",               /* OEMID */
-	"939A785GM",     /* TABLE ID */
+	"ASROCK",	/* OEMID */
+	"COREBOOT",	/* TABLE ID */
 	0x00010001	/* OEM Revision */
 	)
 {	/* Start of ASL file */
@@ -43,13 +43,13 @@ DefinitionBlock (
 		PRQD, 0x00000008,  /* Offset: 1h */
 	}
 	IndexField(PRQI, PRQD, ByteAcc, NoLock, Preserve) {
-		PINA, 0x00000008,	/* Index 0  */
+		PINA, 0x00000008,	/* Index 0 */
 		PINB, 0x00000008,	/* Index 1 */
 		PINC, 0x00000008,	/* Index 2 */
 		PIND, 0x00000008,	/* Index 3 */
 		AINT, 0x00000008,	/* Index 4 */
-		SINT, 0x00000008,	/*  Index 5 */
-		, 0x00000008,	             /* Index 6 */
+		SINT, 0x00000008,	/* Index 5 */
+		, 0x00000008,		/* Index 6 */
 		AAUD, 0x00000008,	/* Index 7 */
 		AMOD, 0x00000008,	/* Index 8 */
 		PINE, 0x00000008,	/* Index 9 */

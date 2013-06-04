@@ -16,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -147,6 +147,7 @@ static int spansion_write(struct spi_flash *flash,
 	page_addr = offset / page_size;
 	byte_addr = offset % page_size;
 
+	flash->spi->rw = SPI_WRITE_FLAG;
 	ret = spi_claim_bus(flash->spi);
 	if (ret) {
 		printk(BIOS_WARNING, "SF: Unable to claim SPI bus\n");
@@ -189,8 +190,10 @@ static int spansion_write(struct spi_flash *flash,
 		byte_addr = 0;
 	}
 
-	printk(BIOS_INFO, "SF: SPANSION: Successfully programmed %zu bytes @ 0x%x\n",
+#if CONFIG_DEBUG_SPI_FLASH
+	printk(BIOS_SPEW, "SF: SPANSION: Successfully programmed %zu bytes @ 0x%x\n",
 	      len, offset);
+#endif
 
 	spi_release_bus(flash->spi);
 	return ret;

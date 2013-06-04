@@ -10,12 +10,12 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -271,9 +271,7 @@ static const struct pci_driver northbridge_driver __pci_driver = {
 	.device = PCI_DEVICE_ID_NS_GX2,
 };
 
-#if CONFIG_WRITE_HIGH_TABLES
 #include <cbmem.h>
-#endif
 
 static void pci_domain_set_resources(device_t dev)
 {
@@ -292,11 +290,9 @@ static void pci_domain_set_resources(device_t dev)
 		ram_resource(dev, idx++, 0, 640);
 		ram_resource(dev, idx++, 768, tomk - 768);	/* Systop - 0xc0000 -> KB */
 
-#if CONFIG_WRITE_HIGH_TABLES
 		/* Leave some space for ACPI, PIRQ and MP tables */
 		high_tables_base = (tomk * 1024) - HIGH_MEMORY_SIZE;
 		high_tables_size = HIGH_MEMORY_SIZE;
-#endif
 	}
 
 	assign_resources(dev->link_list);
@@ -349,9 +345,9 @@ static void enable_dev(struct device *dev)
 		    __func__, dev->path.type);
 
 	/* Set the operations if it is a special bus type */
-	if (dev->path.type == DEVICE_PATH_PCI_DOMAIN)
+	if (dev->path.type == DEVICE_PATH_DOMAIN)
 		dev->ops = &pci_domain_ops;
-	else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER)
+	else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER)
 		dev->ops = &cpu_bus_ops;
 }
 

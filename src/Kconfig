@@ -15,7 +15,7 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
 mainmenu "coreboot configuration"
@@ -46,6 +46,15 @@ config CBFS_PREFIX
 	help
 	  Select the prefix to all files put into the image. It's "fallback"
 	  by default, "normal" is a common alternative.
+
+config ALT_CBFS_LOAD_PAYLOAD
+	bool "Use alternative cbfs_load_payload() implementation."
+	default n
+	help
+	 Either board or southbridge provide an alternative cbfs_load_payload()
+	 implementation. This may be used, for example, if accessing the ROM
+	 through memory-mapped I/O is slow and a faster alternative can be
+	 provided.
 
 choice
 	prompt "Compiler to use"
@@ -162,16 +171,25 @@ config INCLUDE_CONFIG_FILE
 	    (empty)                        0x8e480    null         3610440
 
 config EARLY_CBMEM_INIT
-	bool "Initialize CBMEM while in ROM stage"
+	bool
 	default n
 	help
-	  Make coreboot initialize the cbmem structures while running in ROM
-	  stage. This could be useful when the ROM stage wants to communicate
-	  some, for instance, execution timestamps.
+	  Make coreboot initialize the CBMEM structures while running in ROM
+	  stage. This is useful when the ROM stage wants to communicate
+	  some, for instance, execution timestamps. It needs support in
+	  romstage.c and should be enabled by the board's Kconfig.
+
+config DYNAMIC_CBMEM
+	bool "The CBMEM space is dynamically grown."
+	default n
+	help
+	  Instead of reserving a static amount of CBMEM space the CBMEM
+	  area grows dynamically.  CBMEM can be used both in romstage (after
+	  memory initialization) and ramstage.
 
 config COLLECT_TIMESTAMPS
 	bool "Create a table of timestamps collected during boot"
-	depends on EARLY_CBMEM_INIT
+	depends on (EARLY_CBMEM_INIT || DYNAMIC_CBMEM)
 	help
 	  Make coreboot create a table of timer-ID/timer-value pairs to
 	  allow measuring time spent at different phases of the boot process.
@@ -184,15 +202,14 @@ config USE_BLOBS
 	  might be required for some chipsets or boards.
 	  This flag ensures that a "Free" option remains available for users.
 
-config REQUIRES_BLOB
-	bool
+config COVERAGE
+	bool "Code coverage support"
+	depends on COMPILER_GCC
 	default n
 	help
-	  This option can be configured by boards that require the blobs
-	  repository for the default configuration. It will make the build
-	  fail if USE_BLOBS is disabled. Users that still desire to do a
-	  coreboot build for such a board can override this manually, but
-	  this option serves as warning that it might fail.
+	  Add code coverage support for coreboot. This will store code
+	  coverage information in CBMEM for extraction from user space.
+	  If unsure, say N.
 
 endmenu
 
@@ -203,11 +220,20 @@ source src/mainboard/Kconfig
 config ARCH_X86
 	bool
 	default n
+	select PCI
+
+config ARCH_ARMV7
+	bool
+	default n
 
 # Warning: The file is included whether or not the if is here.
 # but the if controls how the evaluation occurs.
 if ARCH_X86
 source src/arch/x86/Kconfig
+endif
+
+if ARCH_ARMV7
+source src/arch/armv7/Kconfig
 endif
 
 menu "Chipset"
@@ -225,7 +251,7 @@ source src/ec/Kconfig
 
 endmenu
 
-source src/devices/Kconfig
+source src/device/Kconfig
 
 menu "Generic Drivers"
 source src/drivers/Kconfig
@@ -252,9 +278,14 @@ source src/console/Kconfig
 # This should default to N and be set by SuperI/O drivers that have an UART
 config HAVE_UART_IO_MAPPED
 	bool
-	default y
+	default y if ARCH_X86
+	default n if ARCH_ARMV7
 
 config HAVE_UART_MEMORY_MAPPED
+	bool
+	default n
+
+config HAVE_UART_SPECIAL
 	bool
 	default n
 
@@ -282,13 +313,36 @@ config HAVE_INIT_TIMER
 	default n if UDELAY_IO
 	default y
 
+config HAVE_MONOTONIC_TIMER
+	def_bool n
+	help
+	 The board/chipset provides a monotonic timer.
+
+config TIMER_QUEUE
+	def_bool n
+	depends on HAVE_MONOTONIC_TIMER
+	help
+	  Provide a timer queue for performing time-based callbacks. 
+
+config COOP_MULTITASKING
+	def_bool n
+	depends on TIMER_QUEUE && ARCH_X86
+	help
+	  Cooperative multitasking allows callbacks to be multiplexed on the
+	  main thread of ramstage. With this enabled it allows for multiple
+	  execution paths to take place when they have udelay() calls within
+	  their code.
+
+config NUM_THREADS
+	int
+	default 4
+	depends on COOP_MULTITASKING
+	help
+	  How many execution threads to cooperatively multitask with.
+
 config HIGH_SCRATCH_MEMORY_SIZE
 	hex
 	default 0x0
-
-config USE_OPTION_TABLE
-	bool
-	default n
 
 config HAVE_OPTION_TABLE
 	bool
@@ -343,6 +397,25 @@ config GFXUMA
 	help
 	  Enable Unified Memory Architecture for graphics.
 
+config RELOCATABLE_MODULES
+	bool "Relocatable Modules"
+	default n
+	help
+	 If RELOCATABLE_MODULES is selected then support is enabled for
+	 building relocatable modules in the ram stage. Those modules can be
+	 loaded anywhere and all the relocations are handled automatically.
+
+config RELOCATABLE_RAMSTAGE
+	depends on (RELOCATABLE_MODULES && DYNAMIC_CBMEM)
+	bool "Build the ramstage to be relocatable in 32-bit address space."
+	default n
+	help
+	 The reloctable ramstage support allows for the ramstage to be built
+	 as a relocatable module. The stage loader can identify a place
+	 out of the OS way so that copying memory is unnecessary during an S3
+	 wake. When selecting this option the romstage is responsible for
+	 determing a stack location to use for loading the ramstage.
+
 config HAVE_ACPI_TABLES
 	bool
 	help
@@ -383,13 +456,10 @@ config MAX_PIRQ_LINKS
 
 menu "System tables"
 
-config WRITE_HIGH_TABLES
-	bool "Write 'high' tables to avoid being overwritten in F segment"
-	default y
-
 config MULTIBOOT
 	bool "Generate Multiboot tables (for GRUB2)"
 	default y
+	depends on ARCH_X86
 
 config GENERATE_ACPI_TABLES
 	prompt "Generate ACPI tables" if HAVE_ACPI_TABLES
@@ -476,6 +546,15 @@ config PAYLOAD_FILO
 
 	  See http://coreboot.org/Payloads for more information.
 
+config PAYLOAD_TIANOCORE
+	bool "Tiano Core"
+	help
+	  Select this option if you want to build a coreboot image
+	  with a Tiano Core payload. If you don't know what this is
+	  about, just leave it enabled.
+
+	  See http://coreboot.org/Payloads for more information.
+
 endchoice
 
 choice
@@ -484,7 +563,7 @@ choice
 	depends on PAYLOAD_SEABIOS
 
 config SEABIOS_STABLE
-	bool "1.7.1"
+	bool "1.7.2.1"
 	help
 	  Stable SeaBIOS version
 config SEABIOS_MASTER
@@ -523,11 +602,18 @@ config PAYLOAD_FILE
 	depends on PAYLOAD_FILO
 	default "payloads/external/FILO/filo/build/filo.elf"
 
+config PAYLOAD_FILE
+	string "Tianocore firmware volume"
+	depends on PAYLOAD_TIANOCORE
+	default "COREBOOT.fd"
+	help
+	  The result of a corebootPkg build
+
 # TODO: Defined if no payload? Breaks build?
 config COMPRESSED_PAYLOAD_LZMA
 	bool "Use LZMA compression for payloads"
 	default y
-	depends on PAYLOAD_ELF || PAYLOAD_SEABIOS || PAYLOAD_FILO
+	depends on PAYLOAD_ELF || PAYLOAD_SEABIOS || PAYLOAD_FILO || PAYLOAD_TIANOCORE
 	help
 	  In order to reduce the size payloads take up in the ROM chip
 	  coreboot can compress them using the LZMA algorithm.
@@ -558,7 +644,6 @@ config GDB_WAIT
 config DEBUG_CBFS
 	bool "Output verbose CBFS debug messages"
 	default n
-	depends on TPM
 	help
 	  This option enables additional CBFS related debug messages.
 
@@ -841,14 +926,6 @@ config DEBUG_INTEL_ME
 	  is present on Intel 6-series chipsets.
 endif
 
-config LLSHELL
-	bool "Built-in low-level shell"
-	default n
-	help
-	  If enabled, you will have a low level shell to examine your machine.
-	  Put llshell() in your (romstage) code to start the shell.
-	  See src/arch/x86/llshell/llshell.inc for details.
-
 config TRACE
 	bool "Trace function calls"
 	default n
@@ -858,13 +935,18 @@ config TRACE
 	  the 0xaaaabbbb is the actual function and 0xccccdddd is EIP
 	  of calling function. Please note some printk releated functions
 	  are omitted from trace to have good looking console dumps.
+
+config DEBUG_COVERAGE
+	bool "Debug code coverage"
+	default n
+	depends on COVERAGE
+	help
+	  If enabled, the code coverage hooks in coreboot will output some
+	  information about the coverage data that is dumped.
+
 endmenu
 
 # These probably belong somewhere else, but they are needed somewhere.
-config AP_CODE_IN_CAR
-	bool
-	default n
-
 config RAMINIT_SYSINFO
 	bool
 	default n

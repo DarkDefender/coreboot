@@ -2,6 +2,7 @@
  * This file is part of the coreboot project.
  *
  * Copyright (C) 2008 Jordan Crouse <jordan@cosmicpenguin.net>
+ * Copyright (C) 2013 The Chromium OS Authors. All rights reserved.
  *
  * This file is dual-licensed. You can choose between:
  *   - The GNU GPL, version 2, as published by the Free Software Foundation
@@ -49,14 +50,63 @@
 #ifndef _CBFS_H_
 #define _CBFS_H_
 
-#include "cbfs_core.h"
-#include <boot/coreboot_tables.h>
+#include <cbfs_core.h>
 
-void *cbfs_load_payload(struct lb_memory *lb_mem, const char *name);
-void *cbfs_load_stage(const char *name);
-int cbfs_execute_stage(const char *name);
-void *cbfs_load_optionrom(u16 vendor, u16 device, void * dest);
+int cbfs_execute_stage(struct cbfs_media *media, const char *name);
+void *cbfs_load_optionrom(struct cbfs_media *media, uint16_t vendor,
+			  uint16_t device, void * dest);
+void *cbfs_load_payload(struct cbfs_media *media, const char *name);
+void *cbfs_load_stage(struct cbfs_media *media, const char *name);
+
+/* Simple buffer for streaming media. */
+struct cbfs_simple_buffer {
+	char *buffer;
+	size_t allocated;
+	size_t size;
+	size_t last_allocate;
+};
+
+void *cbfs_simple_buffer_map(struct cbfs_simple_buffer *buffer,
+			     struct cbfs_media *media,
+			     size_t offset, size_t count);
+
+void *cbfs_simple_buffer_unmap(struct cbfs_simple_buffer *buffer,
+			       const void *address);
+
+// Utility functions
 int run_address(void *f);
-int selfboot(struct lb_memory *mem, struct cbfs_payload *payload);
+
+/* Defined in src/lib/selfboot.c */
+struct lb_memory;
+void *selfload(struct lb_memory *mem, struct cbfs_payload *payload);
+void selfboot(void *entry);
+
+/* Defined in individual arch / board implementation. */
+int init_default_cbfs_media(struct cbfs_media *media);
+
+#if CONFIG_RELOCATABLE_RAMSTAGE && defined(__PRE_RAM__)
+/* The cache_loaded_ramstage() and load_cached_ramstage() functions are defined
+ * to be weak so that board and chipset code may override them. Their job is to
+ * cache and load the ramstage for quick S3 resume. By default a copy of the
+ * relocated ramstage is saved using the cbmem infrastructure. These
+ * functions are only valid during romstage. */
+
+struct romstage_handoff;
+struct cbmem_entry;
+
+/* The implementer of cache_loaded_ramstage() may use the romstage_handoff
+ * structure to store information, but note that the handoff variable can be
+ * NULL. The ramstage cbmem_entry represents the region occupied by the loaded
+ * ramstage. */
+void __attribute__((weak))
+cache_loaded_ramstage(struct romstage_handoff *handoff,
+                      const struct cbmem_entry *ramstage, void *entry_point);
+/* Return NULL on error or entry point on success. The ramstage cbmem_entry is
+ * the region where to load the cached contents to. */
+void * __attribute__((weak))
+load_cached_ramstage(struct romstage_handoff *handoff,
+                     const struct cbmem_entry *ramstage);
+#endif /* CONFIG_RELOCATABLE_RAMSTAGE */
+
 #endif
 

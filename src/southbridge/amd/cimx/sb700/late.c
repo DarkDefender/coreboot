@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -78,6 +78,13 @@ static void lpc_init(device_t dev)
 	printk(BIOS_DEBUG, "SB700 - Late.c - lpc_init - Start.\n");
 
 	rtc_check_update_cmos_date(RTC_HAS_ALTCENTURY);
+
+	/* Initialize the real time clock.
+	 * The 0 argument tells rtc_init not to
+	 * update CMOS unless it is invalid.
+	 * 1 tells rtc_init to always initialize the CMOS.
+	 */
+	rtc_init(0);
 
 	printk(BIOS_DEBUG, "SB700 - Late.c - lpc_init - End.\n");
 }

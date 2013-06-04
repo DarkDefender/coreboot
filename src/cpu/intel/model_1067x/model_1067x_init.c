@@ -37,15 +37,15 @@
 #include "chip.h"
 
 static const uint32_t microcode_updates[] = {
-	#include "microcode-2618-m441067AA07.h"
-	#include "microcode-2626-m1010677705.h"
-	#include "microcode-2498-m101067660C.h"
-	#include "microcode-2497-m041067660C.h"
-	#include "microcode-2499-m401067660C.h"
-	#include "microcode-2617-m111067AA07.h"
-	#include "microcode-2619-mA01067AA07.h"
-	#include "microcode-2623-m011067660C.h"
-	#include "microcode-2501-m801067660C.h"
+	#include "microcode-m011067660F.h"
+	#include "microcode-m041067660F.h"
+	#include "microcode-m101067660F.h"
+	#include "microcode-m101067770A.h"
+	#include "microcode-m111067AA0B.h"
+	#include "microcode-m401067660F.h"
+	#include "microcode-m441067AA0B.h"
+	#include "microcode-m801067660F.h"
+	#include "microcode-mA01067AA0B.h"
 
 	/*  Dummy terminator  */
         0x0, 0x0, 0x0, 0x0,
@@ -98,11 +98,7 @@ static void enable_vmx(void)
 	wrmsr(IA32_FEATURE_CONTROL, msr);
 }
 
-#define PMG_CST_CONFIG_CONTROL	0xe2
-#define PMG_IO_BASE_ADDR	0xe3
-#define PMG_IO_CAPTURE_ADDR	0xe4
 #define MSR_BBL_CR_CTL3		0x11e
-#define MSR_FSB_FREQ		0xcd
 
 static void configure_c_states(const int quad)
 {
@@ -123,7 +119,7 @@ static void configure_c_states(const int quad)
 
 	const int cst_range = (c6 ? 6 : (c5 ? 5 : 4)) - 2; /* zero means lvl2 */
 
-	msr = rdmsr(PMG_CST_CONFIG_CONTROL);
+	msr = rdmsr(MSR_PMG_CST_CONFIG_CONTROL);
 	msr.lo &= ~(1 << 9); // Issue a  single stop grant cycle upon stpclk
 	msr.lo |=  (1 << 8);
 	if (quad) {
@@ -140,17 +136,17 @@ static void configure_c_states(const int quad)
 	msr.lo |= (1 << 10); /* Enable IO MWAIT redirection. */
 	if (c6)
 		msr.lo |= (1 << 25);
-	wrmsr(PMG_CST_CONFIG_CONTROL, msr);
+	wrmsr(MSR_PMG_CST_CONFIG_CONTROL, msr);
 
 	/* Set Processor MWAIT IO BASE */
 	msr.hi = 0;
 	msr.lo = ((PMB0_BASE + 4) & 0xffff) | (((PMB1_BASE + 9) & 0xffff) << 16);
-	wrmsr(PMG_IO_BASE_ADDR, msr);
+	wrmsr(MSR_PMG_IO_BASE_ADDR, msr);
 
 	/* Set IO Capture Address */
 	msr.hi = 0;
 	msr.lo = ((PMB0_BASE + 4) & 0xffff) | ((cst_range & 0xffff) << 16);
-	wrmsr(PMG_IO_CAPTURE_ADDR, msr);
+	wrmsr(MSR_PMG_IO_CAPTURE_ADDR, msr);
 
 	if (c5) {
 		msr = rdmsr(MSR_BBL_CR_CTL3);
@@ -188,10 +184,10 @@ static void configure_p_states(const char stepping, const char cores)
 		wrmsr(IA32_PERF_CTL, msr);
 	}
 
-	msr = rdmsr(PMG_CST_CONFIG_CONTROL);
+	msr = rdmsr(MSR_PMG_CST_CONFIG_CONTROL);
 	msr.lo &= ~(1 << 11); /* Enable hw coordination. */
 	msr.lo |= (1 << 15); /* Lock config until next reset. */
-	wrmsr(PMG_CST_CONFIG_CONTROL, msr);
+	wrmsr(MSR_PMG_CST_CONFIG_CONTROL, msr);
 }
 
 #define MSR_EMTTM_CR_TABLE(x)	(0xa8 + (x))

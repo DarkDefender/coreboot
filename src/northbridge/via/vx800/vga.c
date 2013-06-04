@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /* Note: Some of the VGA control registers are located on the memory controller.
@@ -34,7 +34,7 @@
 #include <arch/interrupt.h>
 #include <x86emu/regs.h>
 #if CONFIG_PCI_OPTION_ROM_RUN_REALMODE
-#include <devices/oprom/realmode/x86.h>
+#include <device/oprom/realmode/x86.h>
 #endif
 
 /* PCI Domain 1 Device 0 Function 0 */

@@ -22,7 +22,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <cpu/x86/stack.h>
@@ -264,17 +264,12 @@ testok:
 	movl	%eax, %cr0
 	invd
 
-	/* Clear boot_complete flag. */
-	xorl	%ebp, %ebp
 __main:
 	post_code(POST_PREPARE_RAMSTAGE)
 	cld			/* Clear direction flag. */
 
-	movl	%ebp, %esi
-
 	movl	$ROMSTAGE_STACK, %esp
 	movl	%esp, %ebp
-	pushl	%esi
 	call	copy_and_run
 
 .Lhlt:

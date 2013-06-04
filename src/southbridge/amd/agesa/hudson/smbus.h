@@ -14,13 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SB800_SMBUS_H
-#define SB800_SMBUS_H
+#ifndef HUDSON_SMBUS_H
+#define HUDSON_SMBUS_H
 
-//#include <stdint.h>
+#include <stdint.h>
 
 #define SMBHSTSTAT 0x0
 #define SMBSLVSTAT 0x1

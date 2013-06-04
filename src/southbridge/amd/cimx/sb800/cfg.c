@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -112,6 +112,7 @@ void sb800_cimx_config(AMDSBCFG *sb_config)
 	sb_config->BuildParameters.PCIBSsid = PCIB_SSID;
 	sb_config->BuildParameters.SpreadSpectrumType = Spread_Spectrum_Type;
 	sb_config->BuildParameters.HpetBase = HPET_BASE_ADDRESS;
+	sb_config->BuildParameters.ImcEnableOverWrite = IMC_ENABLE_OVER_WRITE;
 
 	/* General */
 	sb_config->SpreadSpectrum = SPREAD_SPECTRUM;

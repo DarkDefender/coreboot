@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SUPERIO_ITE_IT8712F_IT8712F_H
@@ -35,11 +35,8 @@
 #define IT8712F_GAME 0x09 /* GAME port */
 #define IT8712F_IR   0x0a /* Consumer IR */
 
-#ifndef __ROMCC__
 void it8712f_kill_watchdog(void);
 void it8712f_enable_serial(device_t dev, u16 iobase);
 void it8712f_24mhz_clkin(void);
 void it8712f_enable_3vsbsw(void);
-#endif
-
 #endif

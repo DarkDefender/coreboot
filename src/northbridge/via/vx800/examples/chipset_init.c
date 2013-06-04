@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #if CONFIG_HAVE_ACPI_RESUME
@@ -604,7 +604,7 @@ void init_VIA_chipset(void)
  *	In the dev_enumerate() phase,
  */
 
-void hardwaremain(int boot_complete)
+void hardwaremain(void)
 {
 	struct lb_memory *lb_mem;
 #if CONFIG_HAVE_ACPI_RESUME

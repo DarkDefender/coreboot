@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -25,6 +25,7 @@
 #include <delay.h>
 #include <cpu/intel/model_206ax/model_206ax.h>
 #include <cpu/x86/msr.h>
+#include <cpu/x86/mtrr.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
@@ -58,11 +59,6 @@ int bridge_silicon_revision(void)
  */
 static const int legacy_hole_base_k = 0xa0000 / 1024;
 static const int legacy_hole_size_k = 384;
-
-void cbmem_post_handling(void)
-{
-	update_mrc_cache();
-}
 
 static int get_pcie_bar(u32 *base, u32 *len)
 {
@@ -127,10 +123,14 @@ static void add_fixed_resources(struct device *dev, int index)
 		    IORESOURCE_FIXED | IORESOURCE_STORED | IORESOURCE_ASSIGNED;
 	}
 
-	mmio_resource(dev, index++, legacy_hole_base_k, legacy_hole_size_k);
+	mmio_resource(dev, index++, legacy_hole_base_k,
+			(0xc0000 >> 10) - legacy_hole_base_k);
+	reserved_ram_resource(dev, index++, 0xc0000 >> 10,
+			(0x100000 - 0xc0000) >> 10);
 
 #if CONFIG_CHROMEOS_RAMOOPS
-	mmio_resource(dev, index++, CONFIG_CHROMEOS_RAMOOPS_RAM_START >> 10,
+	reserved_ram_resource(dev, index++,
+			CONFIG_CHROMEOS_RAMOOPS_RAM_START >> 10,
 			CONFIG_CHROMEOS_RAMOOPS_RAM_SIZE >> 10);
 #endif
 
@@ -259,11 +259,9 @@ static void pci_domain_set_resources(device_t dev)
 
 	assign_resources(dev->link_list);
 
-#if CONFIG_WRITE_HIGH_TABLES
 	/* Leave some space for ACPI, PIRQ and MP tables */
 	high_tables_base = (tomk * 1024) - HIGH_MEMORY_SIZE;
 	high_tables_size = HIGH_MEMORY_SIZE;
-#endif
 }
 
 	/* TODO We could determine how many PCIe busses we need in
@@ -484,6 +482,8 @@ static const struct pci_driver mc_driver_1 __pci_driver = {
 static void cpu_bus_init(device_t dev)
 {
 	initialize_cpus(dev->link_list);
+	/* Enable ROM caching if option was selected. */
+	x86_mtrr_enable_rom_caching();
 }
 
 static void cpu_bus_noop(device_t dev)
@@ -501,9 +501,9 @@ static struct device_operations cpu_bus_ops = {
 static void enable_dev(device_t dev)
 {
 	/* Set the operations if it is a special bus type */
-	if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
-	} else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
+	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
 		dev->ops = &cpu_bus_ops;
 	}
 }

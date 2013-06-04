@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -23,7 +23,7 @@
 #include <pc80/mc146818rtc.h>
 #include <spd.h>
 #include <string.h>
-#include <arch/romcc_io.h>
+#include <arch/io.h>
 #include "raminit.h"
 #include "i945.h"
 #include <cbmem.h>
@@ -295,18 +295,18 @@ static void sdram_detect_errors(struct sys_info *sysinfo)
 	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa2, reg8);
 
 	/* clear self refresh status if check is disabled or not a resume */
-	if (!CONFIG_CHECK_SLFRCS_ON_RESUME || sysinfo->boot_path != 2) {
-		MCHBAR8(0xf14) |= 3;
+	if (!CONFIG_CHECK_SLFRCS_ON_RESUME || sysinfo->boot_path != BOOT_PATH_RESUME) {
+		MCHBAR8(SLFRCS) |= 3;
 	} else {
 		/* Validate self refresh config */
 		if (((sysinfo->dimm[0] != SYSINFO_DIMM_NOT_POPULATED) ||
 		     (sysinfo->dimm[1] != SYSINFO_DIMM_NOT_POPULATED)) &&
-		    !(MCHBAR8(0xf14) & (1<<0))) {
+		    !(MCHBAR8(SLFRCS) & (1<<0))) {
 			do_reset = 1;
 		}
 		if (((sysinfo->dimm[2] != SYSINFO_DIMM_NOT_POPULATED) ||
 		     (sysinfo->dimm[3] != SYSINFO_DIMM_NOT_POPULATED)) &&
-		    !(MCHBAR8(0xf14) & (1<<1))) {
+		    !(MCHBAR8(SLFRCS) & (1<<1))) {
 			do_reset = 1;
 		}
 	}

@@ -29,8 +29,8 @@
 
 // #define USB_DEBUG
 
+#include <keycodes.h>
 #include <usb/usb.h>
-#include <curses.h>
 
 enum { hid_subclass_none = 0, hid_subclass_boot = 1 };
 typedef enum { hid_proto_boot = 0, hid_proto_report = 1 } hid_proto;
@@ -407,11 +407,11 @@ static int usb_hid_set_layout (const char *country)
 
 		/* Found, changing keyboard layout */
 		map = &keyboard_layouts[i];
-		printf("  Keyboard layout '%s'\n", map->country);
+		usb_debug("  Keyboard layout '%s'\n", map->country);
 		return 0;
 	}
 
-	printf("  Keyboard layout '%s' not found, using '%s'\n",
+	usb_debug("  Keyboard layout '%s' not found, using '%s'\n",
 			country, map->country);
 
 	/* Nothing found, not changed */

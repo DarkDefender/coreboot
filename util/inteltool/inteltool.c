@@ -25,10 +25,8 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include "inteltool.h"
-#if defined(__FreeBSD__)
 #include <unistd.h>
-#endif
+#include "inteltool.h"
 
 /*
  * http://pci-ids.ucw.cz/read/PC/8086
@@ -119,38 +117,38 @@ static const struct {
 	{ PCI_VENDOR_ID_INTEL, 0x3b14, "3420" },
 	{ PCI_VENDOR_ID_INTEL, 0x3b16, "3450" },
 	{ PCI_VENDOR_ID_INTEL, 0x3b1e, "B55" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c44, "Z68" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c46, "P67" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c47, "UM67" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c49, "HM65" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c4a, "H67" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c4b, "HM67" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c4c, "Q65" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c4d, "QS67" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c4e, "Q67" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c4f, "QM67" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c50, "B65" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c52, "C202" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c54, "C204" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c56, "C206" },
-	{ PCI_VENDOR_ID_INTEL, 0x1c5c, "H61" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_Z68, "Z68" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_P67, "P67" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UM67, "UM67" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HM65, "HM65" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_H67, "H67" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HM67, "HM67" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_Q65, "Q65" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QS67, "QS67" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_Q67, "Q67" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QM67, "QM67" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_B65, "B65" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_C202, "C202" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_C204, "C204" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_C206, "C206" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_H61, "H61" },
 	{ PCI_VENDOR_ID_INTEL, 0x1d40, "X79" },
 	{ PCI_VENDOR_ID_INTEL, 0x1d41, "X79" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e44, "Z77" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e46, "Z75" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e47, "Q77" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e48, "Q75" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e49, "B75" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e4a, "H77" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e53, "C216" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e55, "QM77" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e56, "QS77" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e57, "HM77" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e58, "UM77" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e59, "HM76" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e5d, "HM75" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e5e, "HM70" },
-	{ PCI_VENDOR_ID_INTEL, 0x1e5f, "NM70" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_Z77, "Z77" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_Z75, "Z75" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_Q77, "Q77" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_Q75, "Q75" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_B75, "B75" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_H77, "H77" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_C216, "C216" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QM77, "QM77" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QS77, "QS77" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HM77, "HM77" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UM77, "UM77" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HM76, "HM76" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HM75, "HM75" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HM70, "HM70" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_NM70, "NM70" },
 	{ PCI_VENDOR_ID_INTEL, 0x2310, "DH89xxCC" },
 };
 
@@ -197,11 +195,12 @@ void print_version(void)
 
 void print_usage(const char *name)
 {
-	printf("usage: %s [-vh?grpmedPMa]\n", name);
+	printf("usage: %s [-vh?gGrpmedPMa]\n", name);
 	printf("\n"
 	     "   -v | --version:                   print the version\n"
 	     "   -h | --help:                      print this help\n\n"
 	     "   -g | --gpio:                      dump soutbridge GPIO registers\n"
+	     "   -G | --gpio-diffs:                show GPIO differences from defaults\n"
 	     "   -r | --rcba:                      dump soutbridge RCBA registers\n"
 	     "   -p | --pmbase:                    dump soutbridge Power Management registers\n\n"
 	     "   -m | --mchbar:                    dump northbridge Memory Controller registers\n"
@@ -227,11 +226,13 @@ int main(int argc, char *argv[])
 	int dump_gpios = 0, dump_mchbar = 0, dump_rcba = 0;
 	int dump_pmbase = 0, dump_epbar = 0, dump_dmibar = 0;
 	int dump_pciexbar = 0, dump_coremsrs = 0, dump_ambs = 0;
+	int show_gpio_diffs = 0;
 
 	static struct option long_options[] = {
 		{"version", 0, 0, 'v'},
 		{"help", 0, 0, 'h'},
 		{"gpios", 0, 0, 'g'},
+		{"gpio-diffs", 0, 0, 'G'},
 		{"mchbar", 0, 0, 'm'},
 		{"rcba", 0, 0, 'r'},
 		{"pmbase", 0, 0, 'p'},
@@ -244,7 +245,7 @@ int main(int argc, char *argv[])
 		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "vh?grpmedPMaA",
+	while ((opt = getopt_long(argc, argv, "vh?gGrpmedPMaA",
                                   long_options, &option_index)) != EOF) {
 		switch (opt) {
 		case 'v':
@@ -253,6 +254,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'g':
 			dump_gpios = 1;
+			break;
+		case 'G':
+			show_gpio_diffs = 1;
 			break;
 		case 'm':
 			dump_mchbar = 1;
@@ -277,6 +281,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'a':
 			dump_gpios = 1;
+			show_gpio_diffs = 1;
 			dump_mchbar = 1;
 			dump_rcba = 1;
 			dump_pmbase = 1;
@@ -299,11 +304,7 @@ int main(int argc, char *argv[])
 	}
 
 #if defined(__FreeBSD__)
-	int io_fd;
-#endif
-
-#if defined(__FreeBSD__)
-	if ((io_fd = open("/dev/io", O_RDWR)) < 0) {
+	if (open("/dev/io", O_RDWR) < 0) {
 		perror("/dev/io");
 #else
 	if (iopl(3)) {
@@ -393,7 +394,10 @@ int main(int argc, char *argv[])
 	/* Now do the deed */
 
 	if (dump_gpios) {
-		print_gpios(sb);
+		print_gpios(sb, 1, show_gpio_diffs);
+		printf("\n\n");
+	} else if (show_gpio_diffs) {
+		print_gpios(sb, 0, show_gpio_diffs);
 		printf("\n\n");
 	}
 

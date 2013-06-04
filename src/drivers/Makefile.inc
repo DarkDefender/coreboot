@@ -14,7 +14,7 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
 subdirs-y += ati
@@ -22,12 +22,14 @@ subdirs-y += dec
 subdirs-y += emulation
 subdirs-y += generic
 subdirs-y += i2c
+subdirs-y += maxim
 subdirs-y += oxford
 subdirs-y += realtek
 subdirs-y += sil
 subdirs-y += trident
 subdirs-y += ics
 subdirs-y += spi
+subdirs-y += ti 
 subdirs-y += ipmi
 subdirs-y += elog
 subdirs-$(CONFIG_ARCH_X86) += pc80

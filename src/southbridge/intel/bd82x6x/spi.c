@@ -29,12 +29,11 @@
 #include <console/console.h>
 #include <device/pci_ids.h>
 
-#include <spi.h>
+#include <spi-generic.h>
 
 #define min(a, b) ((a)<(b)?(a):(b))
 
 #ifdef __SMM__
-#include <arch/romcc_io.h>
 #include <northbridge/intel/sandybridge/pcie_config.c>
 #define pci_read_config_byte(dev, reg, targ)\
 	*(targ) = pcie_read_config8(dev, reg)

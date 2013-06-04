@@ -6,7 +6,6 @@
 #include <device/pci_ids.h>
 #include <stdlib.h>
 #include <string.h>
-#include "northbridge.h"
 #include <cpu/amd/gx1def.h>
 #include <cpu/x86/cache.h>
 #include <cpu/cpu.h>
@@ -64,9 +63,7 @@ static const struct pci_driver northbridge_driver __pci_driver = {
 	.device = PCI_DEVICE_ID_CYRIX_PCI_MASTER,
 };
 
-#if CONFIG_WRITE_HIGH_TABLES
 #include <cbmem.h>
-#endif
 
 static void pci_domain_set_resources(device_t dev)
 {
@@ -111,11 +108,9 @@ static void pci_domain_set_resources(device_t dev)
 			tolmk = tomk;
 		}
 
-#if CONFIG_WRITE_HIGH_TABLES
 		/* Leave some space for ACPI, PIRQ and MP tables */
 		high_tables_base = (tolmk * 1024) - HIGH_MEMORY_SIZE;
 		high_tables_size = HIGH_MEMORY_SIZE;
-#endif
 
 		/* Report the memory regions */
 		idx = 10;
@@ -154,13 +149,13 @@ static void enable_dev(struct device *dev)
 {
         printk(BIOS_SPEW, "%s:%s()\n", NORTHBRIDGE_FILE, __func__);
         /* Set the operations if it is a special bus type */
-        if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
-        	printk(BIOS_SPEW, "DEVICE_PATH_PCI_DOMAIN\n");
+        if (dev->path.type == DEVICE_PATH_DOMAIN) {
+        	printk(BIOS_SPEW, "DEVICE_PATH_DOMAIN\n");
                 dev->ops = &pci_domain_ops;
 		pci_set_method(dev);
         }
-        else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
-        	printk(BIOS_SPEW, "DEVICE_PATH_APIC_CLUSTER\n");
+        else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
+        	printk(BIOS_SPEW, "DEVICE_PATH_CPU_CLUSTER\n");
                 dev->ops = &cpu_bus_ops;
         } else {
         	printk(BIOS_SPEW, "device path type %d\n",dev->path.type);

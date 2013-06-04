@@ -218,7 +218,7 @@ struct lb_vdat {
 	uint32_t tag;
 	uint32_t size;
 
-	void	*vdat_addr;
+	uint64_t vdat_addr;
 	uint32_t vdat_size;
 };
 
@@ -229,7 +229,7 @@ struct lb_cbmem_ref {
 	uint32_t tag;
 	uint32_t size;
 
-	void	*cbmem_addr;
+	uint64_t cbmem_addr;
 };
 
 #define LB_TAG_VBNV		0x0019
@@ -239,6 +239,23 @@ struct lb_vbnv {
 
 	uint32_t vbnv_start;
 	uint32_t vbnv_size;
+};
+
+#define LB_TAB_VBOOT_HANDOFF	0x0020
+struct lb_vboot_handoff {
+	uint32_t tag;
+	uint32_t size;
+
+	uint64_t vboot_handoff_addr;
+	uint32_t vboot_handoff_size;
+};
+
+#define LB_TAG_X86_ROM_MTRR	0x0021
+struct lb_x86_rom_mtrr {
+	uint32_t tag;
+	uint32_t size;
+	/* The variable range MTRR index covering the ROM. */
+	uint32_t index;
 };
 
 /* The following structures are for the cmos definitions table */
@@ -313,5 +330,21 @@ struct	cmos_checksum {
 #define CHECKSUM_NONE	0
 #define CHECKSUM_PCBIOS	1
 };
+
+/* function prototypes for building the coreboot table */
+
+unsigned long write_coreboot_table(
+	unsigned long low_table_start, unsigned long low_table_end,
+	unsigned long rom_table_start, unsigned long rom_table_end);
+
+void lb_add_memory_range(struct lb_memory *mem,
+	uint32_t type, uint64_t start, uint64_t size);
+
+/* Routines to extract part so the coreboot table or information
+ * from the coreboot table.
+ */
+struct lb_memory *get_lb_mem(void);
+
+void fill_lb_gpios(struct lb_gpios *gpios);
 
 #endif /* COREBOOT_TABLES_H */

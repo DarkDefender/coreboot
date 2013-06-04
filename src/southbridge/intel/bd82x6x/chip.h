@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SOUTHBRIDGE_INTEL_BD82X6X_CHIP_H
@@ -69,6 +69,17 @@ struct southbridge_intel_bd82x6x_config {
 	uint8_t sata_port_map;
 	uint32_t sata_port0_gen3_tx;
 	uint32_t sata_port1_gen3_tx;
+
+	/**
+	 * SATA Interface Speed Support Configuration
+	 *
+	 * Only the lower two bits have a meaning:
+	 * 00 - No effect (leave as chip default)
+	 * 01 - 1.5 Gb/s maximum speed
+	 * 10 - 3.0 Gb/s maximum speed
+	 * 11 - 6.0 Gb/s maximum speed
+	 */
+	uint8_t sata_interface_speed_support;
 
 	uint32_t gen1_dec;
 	uint32_t gen2_dec;

@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
 TMPFILE=""
@@ -40,7 +40,7 @@ testcc() {
 	local tmp_c="$TMPFILE.c"
 	local tmp_o="$TMPFILE.o"
 	rm -f "$tmp_c" "$tmp_o"
-	echo "_start(void) {}" >"$tmp_c"
+	echo "void _start(void) {}" >"$tmp_c"
 	"$1" -nostdlib -Werror $2 "$tmp_c" -o "$tmp_o" >/dev/null 2>&1
 }
 
@@ -106,24 +106,19 @@ detect_special_flags() {
 		CFLAGS="$CFLAGS -Wl,--build-id=none"
 
 	case "$architecture" in
-		arm )
-			# testcc "$CC" "$CFLAGS -mcpu=cortex-a9" &&
-			#	CFLAGS="$CFLAGS -mcpu=cortex-a9"
-			testcc "$CC" "\
-$CFLAGS -ffixed-r8 -msoft-float -marm -mabi=aapcs-linux \
--mno-thumb-interwork -march=armv7 -mno-thumb-interwork" && CFLAGS="\
-$CFLAGS -ffixed-r8 -msoft-float -marm -mabi=aapcs-linux \
--mno-thumb-interwork -march=armv7 -mno-thumb-interwork"
+	armv7 )
+		ARMFLAGS=""
+		testcc "$CC" "$CFLAGS $ARMFLAGS"&&CFLAGS="$CFLAGS $ARMFLAGS"
 			;;
 	esac
 }
 
 report_arch_toolchain() {
 	cat <<EOF
-# elf${TWIDTH}-${TARCH} toolchain (${GCCPREFIX}gcc)
+# elf${TWIDTH}-${TBFDARCH} toolchain (${GCCPREFIX}gcc)
 CC_${TARCH}:=${GCCPREFIX}gcc ${CFLAGS}
 AS_${TARCH}:=${GCCPREFIX}as ${ASFLAGS}
-LD_${TARCH}:=${GCCPREFIX}ld ${LDFLAGS}
+LD_${TARCH}:=${GCCPREFIX}ld${LINKER_SUFFIX} ${LDFLAGS}
 NM_${TARCH}:=${GCCPREFIX}nm
 OBJCOPY_${TARCH}:=${GCCPREFIX}objcopy
 OBJDUMP_${TARCH}:=${GCCPREFIX}objdump
@@ -140,15 +135,17 @@ touch "$TMPFILE"
 trap clean_up EXIT
 
 # Architecture definition
-SUPPORTED_ARCHITECTURE="x86 arm"
+SUPPORTED_ARCHITECTURE="x86 armv7"
 
 # ARM Architecture
-TARCH_arm="littlearm"
-TCLIST_arm="littlearm"
-TWIDTH_arm="32"
+TARCH_armv7="armv7"
+TBFDARCH_armv7="littlearm"
+TCLIST_armv7="armv7a"
+TWIDTH_armv7="32"
 
 # X86 Architecture
 TARCH_x86="i386"
+TBFDARCH_x86="i386"
 TCLIST_x86="i386 x86_64"
 TWIDTH_x86="32"
 XGCCPATH=${1:-"`pwd`/util/crossgcc/xgcc/bin/"}
@@ -157,6 +154,7 @@ XGCCPATH=${1:-"`pwd`/util/crossgcc/xgcc/bin/"}
 for architecture in $SUPPORTED_ARCHITECTURE; do
 	GCCPREFIX="invalid"
 	TARCH="$(eval echo \$TARCH_$architecture)"
+	TBFDARCH="$(eval echo \$TBFDARCH_$architecture)"
 	TCLIST="$(eval echo \$TCLIST_$architecture)"
 	TWIDTH="$(eval echo \$TWIDTH_$architecture)"
 	[ -z "$TARCH" -o -z "$TCLIST" -o -z "$TWIDTH" ] &&
@@ -171,14 +169,16 @@ for architecture in $SUPPORTED_ARCHITECTURE; do
 	for toolchain in $TCLIST; do
 		search="$search $XGCCPATH$toolchain-elf-"
 		search="$search $toolchain-elf-"
+		search="$search $XGCCPATH$toolchain-eabi-"
+		search="$search $toolchain-eabi-"
 	done
 	echo "# $architecture TARCH_SEARCH=$search"
 
 	# Search toolchain by checking assembler capability.
 	for gccprefixes in $search ""; do
 		program_exists "${gccprefixes}as" || continue
-		testas "$gccprefixes" "$TWIDTH" "$TARCH" "" && break
-		testas "$gccprefixes" "$TWIDTH" "$TARCH" "TRUE" && break
+		testas "$gccprefixes" "$TWIDTH" "$TBFDARCH" "" && break
+		testas "$gccprefixes" "$TWIDTH" "$TBFDARCH" "TRUE" && break
 	done
 
 	if [ "$GCCPREFIX" = "invalid" ]; then

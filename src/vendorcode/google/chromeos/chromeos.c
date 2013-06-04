@@ -18,7 +18,11 @@
  */
 
 #include "chromeos.h"
-#include <arch/coreboot_tables.h>
+#if CONFIG_VBOOT_VERIFY_FIRMWARE
+#include "vboot_handoff.h"
+#endif
+#include <boot/coreboot_tables.h>
+#include <cbmem.h>
 #include <console/console.h>
 
 int developer_mode_enabled(void)
@@ -35,3 +39,45 @@ int recovery_mode_enabled(void)
 	return get_recovery_mode_switch() || get_recovery_mode_from_vbnv();
 }
 
+#if CONFIG_VBOOT_VERIFY_FIRMWARE
+void *vboot_get_payload(int *len)
+{
+	struct vboot_handoff *vboot_handoff;
+	struct firmware_component *fwc;
+
+	vboot_handoff = cbmem_find(CBMEM_ID_VBOOT_HANDOFF);
+
+	if (vboot_handoff == NULL)
+		return NULL;
+
+	if (CONFIG_VBOOT_BOOT_LOADER_INDEX >= MAX_PARSED_FW_COMPONENTS) {
+		printk(BIOS_ERR, "Invalid boot loader index: %d\n",
+		       CONFIG_VBOOT_BOOT_LOADER_INDEX);
+		return NULL;
+	}
+
+	fwc = &vboot_handoff->components[CONFIG_VBOOT_BOOT_LOADER_INDEX];
+
+	if (len != NULL)
+		*len = fwc->size;
+
+	printk(BIOS_DEBUG, "Booting 0x%x byte payload at 0x%08x.\n",
+	       fwc->size, fwc->address);
+
+	return (void *)fwc->address;
+}
+
+int vboot_get_handoff_info(void **addr, uint32_t *size)
+{
+	struct vboot_handoff *vboot_handoff;
+
+	vboot_handoff = cbmem_find(CBMEM_ID_VBOOT_HANDOFF);
+
+	if (vboot_handoff == NULL)
+		return -1;
+
+	*addr = vboot_handoff;
+	*size = sizeof(*vboot_handoff);
+	return 0;
+}
+#endif

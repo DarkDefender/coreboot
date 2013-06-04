@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -22,8 +22,9 @@
 #include <device/pci.h>
 #include <arch/io.h>
 #include <cpu/x86/msr.h>
-#include <cpu/amd/mtrr.h>
 #include <device/pci_def.h>
+#include <southbridge/amd/sb800/sb800.h>
+#include <cpu/amd/mtrr.h>
 #include "SBPLATFORM.h" 	/* Platfrom Specific Definitions */
 
 void set_pcie_reset(void);
@@ -46,14 +47,23 @@ void set_pcie_dereset(void)
 }
 
 
-/*************************************************
-* enable the dedicated function in unionstation board.
-*************************************************/
-static void unionstation_enable(device_t dev)
+/**********************************************
+ * Enable the dedicated functions of the board.
+ **********************************************/
+static void mainboard_enable(device_t dev)
 {
 	printk(BIOS_INFO, "Mainboard " CONFIG_MAINBOARD_PART_NUMBER " Enable.\n");
+
+	/*
+	 * Initialize ASF registers to an arbitrary address because someone
+	 * long ago set things up this way inside the SPD read code.  The
+	 * SPD read code has been made generic and moved out of the board
+	 * directory, so the ASF init is being done here.
+	 */
+	pm_iowrite(0x29, 0x80);
+	pm_iowrite(0x28, 0x61);
 }
 
 struct chip_operations mainboard_ops = {
-	.enable_dev = unionstation_enable,
+	.enable_dev = mainboard_enable,
 };

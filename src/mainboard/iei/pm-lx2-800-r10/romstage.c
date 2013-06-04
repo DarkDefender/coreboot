@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <stdint.h>
@@ -24,7 +24,6 @@
 #include <spd.h>
 #include <arch/io.h>
 #include <arch/hlt.h>
-#include <arch/llshell.h>
 #include <device/pci_def.h>
 #include <device/pnp_def.h>
 #include <console/console.h>

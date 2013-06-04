@@ -9,12 +9,12 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef _CS5536_H
@@ -442,7 +442,7 @@
 #define FLASH_IO_128B		0x0000FF80
 #define FLASH_IO_256B		0x0000FF00
 
-#if !defined(__ASSEMBLER__) && !defined(__ROMCC__)
+#if !defined(__ASSEMBLER__)
 #if defined(__PRE_RAM__)
 void cs5536_setup_onchipuart(int uart);
 void cs5536_disable_internal_uart(void);

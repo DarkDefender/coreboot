@@ -9,18 +9,19 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <device/device.h>
 #include <device/smbus.h>
 #include <smbios.h>
 #include <console/console.h>
+#include <cpu/x86/msr.h>
 
 /* overwrite a weak function to fill SMBIOS table with a custom value */
 static u8 hw_rev = 0;
@@ -43,6 +44,7 @@ static void init(struct device *dev)
 	unsigned int i;
 	u32 chksum = 0;
 	char block[20];
+	msr_t reset;
 	device_t eeprom_dev = dev_find_slot_on_smbus(1, 0x52);
 
 	if (eeprom_dev == 0) {
@@ -63,13 +65,19 @@ static void init(struct device *dev)
 	hw_rev = block[5];
 
 	printk(BIOS_DEBUG, "hw revision: %u\n", hw_rev);
+
+	/* Reset MFGPT7 (standby power domain) - this is done via
+	 * an undocumented register */
+	reset = rdmsr(0x5140002b);
+	reset.lo |= 1 << 7;
+	wrmsr(0x5140002b, reset);
 }
 
-static void enable_dev(struct device *dev)
+static void mainboard_enable(struct device *dev)
 {
 	dev->ops->init = init;
 }
 
 struct chip_operations mainboard_ops = {
-	.enable_dev = enable_dev,
+	.enable_dev = mainboard_enable,
 };

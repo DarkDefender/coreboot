@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "AGESA.h"
@@ -98,7 +98,7 @@ PCIe_COMPLEX_DESCRIPTOR Llano = {
  *  OemCustomizeInitEarly
  *
  *  Description:
- *    This is the stub function will call the host environment through the binary block
+ *    This stub function will call the host environment through the binary block
  *    interface (call-out port) to provide a user hook opportunity
  *
  *  Parameters:
@@ -126,9 +126,7 @@ OemCustomizeInitEarly (
   //
   // Allocate buffer for PCIe_COMPLEX_DESCRIPTOR , PCIe_PORT_DESCRIPTOR and PCIe_DDI_DESCRIPTOR
   //
-  AllocHeapParams.RequestedBufferSize = (sizeof (PCIe_COMPLEX_DESCRIPTOR)  +
-                                         sizeof (PCIe_PORT_DESCRIPTOR) * 7 +
-                                         sizeof (PCIe_DDI_DESCRIPTOR)) * 6;
+  AllocHeapParams.RequestedBufferSize = sizeof(Llano) + sizeof(PortList) + sizeof(DdiList);
 
   AllocHeapParams.BufferHandle = AMD_MEM_MISC_HANDLES_START;
   AllocHeapParams.Persist = HEAP_LOCAL_CACHE;
@@ -141,30 +139,30 @@ OemCustomizeInitEarly (
 
   LlanoPcieComplexListPtr  =  (PCIe_COMPLEX_DESCRIPTOR *) AllocHeapParams.BufferPtr;
 
-  AllocHeapParams.BufferPtr += sizeof (PCIe_COMPLEX_DESCRIPTOR);
+  AllocHeapParams.BufferPtr += sizeof(Llano);
   LlanoPciePortPtr         =  (PCIe_PORT_DESCRIPTOR *)AllocHeapParams.BufferPtr;
 
-  AllocHeapParams.BufferPtr += sizeof (PCIe_PORT_DESCRIPTOR) * 7;
+  AllocHeapParams.BufferPtr += sizeof(PortList);
   LlanoPcieDdiPtr          =  (PCIe_DDI_DESCRIPTOR *) AllocHeapParams.BufferPtr;
 
   LibAmdMemFill (LlanoPcieComplexListPtr,
                    0,
-                   sizeof (PCIe_COMPLEX_DESCRIPTOR),
+                   sizeof(Llano),
                    &InitEarly->StdHeader);
 
   LibAmdMemFill (LlanoPciePortPtr,
                    0,
-                   sizeof (PCIe_PORT_DESCRIPTOR) * 7,
+                   sizeof(PortList),
                    &InitEarly->StdHeader);
 
   LibAmdMemFill (LlanoPcieDdiPtr,
                    0,
-                   sizeof (PCIe_DDI_DESCRIPTOR) * 6,
+                   sizeof(DdiList),
                    &InitEarly->StdHeader);
 
-  LibAmdMemCopy  (LlanoPcieComplexListPtr, &Llano, sizeof (PCIe_COMPLEX_DESCRIPTOR), &InitEarly->StdHeader);
-  LibAmdMemCopy  (LlanoPciePortPtr, &PortList[0], sizeof (PCIe_PORT_DESCRIPTOR) * 7, &InitEarly->StdHeader);
-  LibAmdMemCopy  (LlanoPcieDdiPtr, &DdiList[0], sizeof (PCIe_DDI_DESCRIPTOR) * 6, &InitEarly->StdHeader);
+  LibAmdMemCopy  (LlanoPcieComplexListPtr, &Llano, sizeof(Llano), &InitEarly->StdHeader);
+  LibAmdMemCopy  (LlanoPciePortPtr, &PortList[0], sizeof(PortList), &InitEarly->StdHeader);
+  LibAmdMemCopy  (LlanoPcieDdiPtr, &DdiList[0], sizeof(DdiList), &InitEarly->StdHeader);
 
 
   ((PCIe_COMPLEX_DESCRIPTOR*)LlanoPcieComplexListPtr)->PciePortList =  (PCIe_PORT_DESCRIPTOR*)LlanoPciePortPtr;

@@ -14,22 +14,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
-//#include <config.h>
 #include <stdint.h>
 #include <device/pci_ids.h>
-#include <arch/io.h>            /* inl, outl */
-#include <arch/romcc_io.h>      /* device_t */
+#include <arch/io.h>
 #include "Platform.h"
 #include "sb_cimx.h"
 #include "sb700_cfg.h"                /*sb700_cimx_config*/
 #include <console/console.h>
 #include <console/loglevel.h>
 #include "smbus.h"
-
 
 #if CONFIG_RAMINIT_SYSINFO
 /**

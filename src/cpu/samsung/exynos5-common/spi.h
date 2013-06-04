@@ -14,13 +14,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
 #ifndef __ASM_ARCH_EXYNOS_COMMON_SPI_H_
 #define __ASM_ARCH_EXYNOS_COMMON_SPI_H_
 
-#ifndef __ASSEMBLY__
+#ifndef __ASSEMBLER__
+
+// This driver serves as a CBFS media source.
+#include <cbfs.h>
 
 /* SPI peripheral register map; padded to 64KB */
 struct exynos_spi {
@@ -85,5 +88,15 @@ struct exynos_spi {
 #define SPI_RX_BYTE_SWAP	(1 << 6)
 #define SPI_RX_HWORD_SWAP	(1 << 7)
 
-#endif /* __ASSEMBLY__ */
+/* API */
+int exynos_spi_open(struct exynos_spi *regs);
+int exynos_spi_read(struct exynos_spi *regs, void *dest, u32 len, u32 off);
+int exynos_spi_close(struct exynos_spi *regs);
+
+/* Serve as CBFS Media */
+int initialize_exynos_spi_cbfs_media(struct cbfs_media *media,
+				     void *buffer_address,
+				     size_t buffer_size);
+
+#endif /* __ASSEMBLER__ */
 #endif

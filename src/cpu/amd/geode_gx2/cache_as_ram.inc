@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #define	GX2_STACK_BASE		CONFIG_DCACHE_RAM_BASE		/* this is where the DCache will be mapped and be used as stack, It would be cool if it was the same base as coreboot normal stack */
@@ -182,8 +182,6 @@ done_cache_as_ram_main:
 	xorl             $(CR0_CD + CR0_NW), %eax        /* clear  the CD and NW bits */
 	movl    %eax, %cr0
 
-	/* clear boot_complete flag */
-	xorl	%ebp, %ebp
 __main:
 	post_code(POST_PREPARE_RAMSTAGE)
 
@@ -197,8 +195,6 @@ __main:
 	 * the location it is compiled to run at.
 	 * Normally this is copying from FLASH ROM to RAM.
 	 */
-	movl	%ebp, %esi
-	pushl	%esi
 	call copy_and_run
 
 .Lhlt:

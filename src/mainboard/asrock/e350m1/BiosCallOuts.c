@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "agesawrapper.h"
@@ -22,13 +22,9 @@
 #include "BiosCallOuts.h"
 #include "heapManager.h"
 #include "SB800.h"
+#include <northbridge/amd/agesa/family14/dimmSpd.h>
 
-AGESA_STATUS GetBiosCallout (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
-{
-  UINTN i;
-  AGESA_STATUS CalloutStatus;
-
-CONST BIOS_CALLOUT_STRUCT BiosCallouts[REQUIRED_CALLOUTS] =
+CONST BIOS_CALLOUT_STRUCT BiosCallouts[] =
 {
   {AGESA_ALLOCATE_BUFFER,
    BiosAllocateBuffer
@@ -73,7 +69,13 @@ CONST BIOS_CALLOUT_STRUCT BiosCallouts[REQUIRED_CALLOUTS] =
   },
 };
 
-  for (i = 0; i < REQUIRED_CALLOUTS; i++)
+AGESA_STATUS GetBiosCallout (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
+{
+  UINTN i;
+  AGESA_STATUS CalloutStatus;
+  UINTN CallOutCount = sizeof (BiosCallouts) / sizeof (BiosCallouts [0]);
+
+  for (i = 0; i < CallOutCount; i++)
   {
     if (BiosCallouts[i].CalloutName == Func)
     {
@@ -81,7 +83,7 @@ CONST BIOS_CALLOUT_STRUCT BiosCallouts[REQUIRED_CALLOUTS] =
     }
   }
 
-  if(i >= REQUIRED_CALLOUTS)
+  if(i >= CallOutCount)
   {
     return AGESA_UNSUPPORTED;
   }
@@ -420,7 +422,11 @@ AGESA_STATUS BiosReset (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 AGESA_STATUS BiosReadSpd (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 {
   AGESA_STATUS Status;
-  Status = AmdMemoryReadSPD (Func, Data, ConfigPtr);
+#ifdef __PRE_RAM__
+  Status = agesa_ReadSPD (Func, Data, ConfigPtr);
+#else
+  Status = AGESA_UNSUPPORTED;
+#endif
 
   return Status;
 }
@@ -524,80 +530,5 @@ AGESA_STATUS BiosHookBeforeExitSelfRefresh (UINT32 Func, UINT32 Data, VOID *Conf
 /* PCIE slot reset control */
 AGESA_STATUS BiosGnbPcieSlotReset (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 {
-  AGESA_STATUS Status;
-  UINTN                 FcnData;
-  PCIe_SLOT_RESET_INFO  *ResetInfo;
-
-  UINT32  GpioMmioAddr;
-  UINT32  AcpiMmioAddr;
-  UINT8   Data8;
-  UINT16  Data16;
-
-  FcnData   = Data;
-  ResetInfo = ConfigPtr;
-  // Get SB800 MMIO Base (AcpiMmioAddr)
-  WriteIo8(0xCD6, 0x27);
-  Data8 = ReadIo8(0xCD7);
-  Data16=Data8<<8;
-  WriteIo8(0xCD6, 0x26);
-  Data8 = ReadIo8(0xCD7);
-  Data16|=Data8;
-  AcpiMmioAddr = (UINT32)Data16 << 16;
-  Status = AGESA_UNSUPPORTED;
-  GpioMmioAddr = AcpiMmioAddr + GPIO_BASE;
-  switch (ResetInfo->ResetId)
-  {
-  case 4:
-      switch (ResetInfo->ResetControl)
-      {
-      case AssertSlotReset:
-        Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG21);
-        Data8 &= ~(UINT8)BIT6 ;
-        Write64Mem8(GpioMmioAddr+SB_GPIO_REG21, Data8);   // MXM_GPIO0. GPIO21
-        Status = AGESA_SUCCESS;
-        break;
-      case DeassertSlotReset:
-        Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG21);
-        Data8 |= BIT6 ;
-        Write64Mem8 (GpioMmioAddr+SB_GPIO_REG21, Data8);       // MXM_GPIO0. GPIO21
-        Status = AGESA_SUCCESS;
-        break;
-      }
-      break;
-  case 6:
-      switch (ResetInfo->ResetControl)
-      {
-      case AssertSlotReset:
-        Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG25);
-        Data8 &= ~(UINT8)BIT6 ;
-        Write64Mem8(GpioMmioAddr+SB_GPIO_REG25, Data8);   // PCIE_RST#_LAN, GPIO25
-        Status = AGESA_SUCCESS;
-        break;
-      case DeassertSlotReset:
-        Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG25);
-        Data8 |= BIT6 ;
-        Write64Mem8 (GpioMmioAddr+SB_GPIO_REG25, Data8);       // PCIE_RST#_LAN, GPIO25
-        Status = AGESA_SUCCESS;
-        break;
-      }
-      break;
-  case 7:
-      switch (ResetInfo->ResetControl)
-      {
-      case AssertSlotReset:
-        Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG02);
-        Data8 &= ~(UINT8)BIT6 ;
-        Write64Mem8(GpioMmioAddr+SB_GPIO_REG02, Data8);   // MPCIE_RST0, GPIO02
-        Status = AGESA_SUCCESS;
-        break;
-      case DeassertSlotReset:
-        Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG25);
-        Data8 |= BIT6 ;
-        Write64Mem8 (GpioMmioAddr+SB_GPIO_REG02, Data8);       // MPCIE_RST0, GPIO02
-        Status = AGESA_SUCCESS;
-        break;
-      }
-      break;
-  }
-  return  Status;
+  return AGESA_UNSUPPORTED;
 }

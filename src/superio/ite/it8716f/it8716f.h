@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SUPERIO_ITE_IT8716F_IT8716F_H
@@ -41,7 +41,7 @@
 void init_ec(u16 base);
 #endif
 
-#if defined(__PRE_RAM__) && !defined(__ROMCC__)
+#if defined(__PRE_RAM__)
 void it8716f_disable_dev(device_t dev);
 void it8716f_enable_dev(device_t dev, u16 iobase);
 void it8716f_enable_serial(device_t dev, u16 iobase);

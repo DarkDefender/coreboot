@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SUPERIO_WINBOND_W83627EHG_W83627EHG_H
@@ -54,7 +54,7 @@
 #define W83627EHG_GPIO4	((2 << 8) | W83627EHG_GPIO_SUSLED_V)
 #define W83627EHG_GPIO5	((3 << 8) | W83627EHG_GPIO_SUSLED_V)
 
-#if defined(__PRE_RAM__) && !defined(__ROMCC__)
+#if defined(__PRE_RAM__)
 void w83627ehg_enable_dev(device_t dev, u16 iobase);
 void w83627ehg_disable_dev(device_t dev);
 void w83627ehg_enable_serial(device_t dev, u16 iobase);

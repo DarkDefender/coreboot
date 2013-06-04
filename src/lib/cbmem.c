@@ -19,8 +19,10 @@
 
 #include <types.h>
 #include <string.h>
+#include <bootstate.h>
 #include <cbmem.h>
 #include <console/console.h>
+#include <cpu/x86/car.h>
 #if CONFIG_HAVE_ACPI_RESUME && !defined(__PRE_RAM__)
 #include <arch/acpi.h>
 #endif
@@ -227,11 +229,27 @@ int cbmem_initialize(void)
 #ifndef __PRE_RAM__
 	cbmem_arch_init();
 #endif
+	/* Migrate cache-as-ram variables. */
+	car_migrate_variables();
+
 	return rv;
 }
 #endif
 
 #ifndef __PRE_RAM__
+static void init_cbmem_post_device(void *unused)
+{
+	cbmem_initialize();
+#if CONFIG_CONSOLE_CBMEM
+	cbmemc_reinit();
+#endif
+}
+
+BOOT_STATE_INIT_ENTRIES(cbmem_bscb) = {
+	BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE, BS_ON_ENTRY,
+	                      init_cbmem_post_device, NULL),
+};
+
 void cbmem_list(void)
 {
 	struct cbmem_entry *cbmem_toc;
@@ -245,25 +263,8 @@ void cbmem_list(void)
 
 		if (cbmem_toc[i].magic != CBMEM_MAGIC)
 			continue;
-		printk(BIOS_DEBUG, "%2d. ", i);
-		switch (cbmem_toc[i].id) {
-		case CBMEM_ID_FREESPACE: printk(BIOS_DEBUG, "FREE SPACE "); break;
-		case CBMEM_ID_GDT:	 printk(BIOS_DEBUG, "GDT        "); break;
-		case CBMEM_ID_ACPI:	 printk(BIOS_DEBUG, "ACPI       "); break;
-		case CBMEM_ID_CBTABLE:	 printk(BIOS_DEBUG, "COREBOOT   "); break;
-		case CBMEM_ID_PIRQ:	 printk(BIOS_DEBUG, "IRQ TABLE  "); break;
-		case CBMEM_ID_MPTABLE:	 printk(BIOS_DEBUG, "SMP TABLE  "); break;
-		case CBMEM_ID_RESUME:	 printk(BIOS_DEBUG, "ACPI RESUME"); break;
-		case CBMEM_ID_RESUME_SCRATCH:	 printk(BIOS_DEBUG, "ACPISCRATCH"); break;
-		case CBMEM_ID_ACPI_GNVS: printk(BIOS_DEBUG, "ACPI GNVS  "); break;
-		case CBMEM_ID_SMBIOS:    printk(BIOS_DEBUG, "SMBIOS     "); break;
-		case CBMEM_ID_TIMESTAMP: printk(BIOS_DEBUG, "TIME STAMP "); break;
-		case CBMEM_ID_MRCDATA:	 printk(BIOS_DEBUG, "MRC DATA   "); break;
-		case CBMEM_ID_CONSOLE:   printk(BIOS_DEBUG, "CONSOLE    "); break;
-		default: printk(BIOS_DEBUG, "%08x ", cbmem_toc[i].id);
-		}
-		printk(BIOS_DEBUG, "%08llx ", cbmem_toc[i].base);
-		printk(BIOS_DEBUG, "%08llx\n", cbmem_toc[i].size);
+		cbmem_print_entry(i, cbmem_toc[i].id, cbmem_toc[i].base,
+		                  cbmem_toc[i].size);
 	}
 }
 #endif

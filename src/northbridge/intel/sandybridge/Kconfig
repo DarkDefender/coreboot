@@ -14,7 +14,7 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
 config NORTHBRIDGE_INTEL_SANDYBRIDGE
@@ -106,6 +106,14 @@ if NORTHBRIDGE_INTEL_SANDYBRIDGE || NORTHBRIDGE_INTEL_IVYBRIDGE
 config DCACHE_RAM_MRC_VAR_SIZE
 	hex
 	default 0x4000
+
+config MARK_GRAPHICS_MEM_WRCOMB
+	bool "Mark graphics memory as write-combining."
+	default n
+	help
+	 The graphics performance may increase if the graphics
+	 memory is set as write-combining cache type. This option
+	 enables marking the graphics memory as write-combining.
 
 config HAVE_MRC
 	bool "Add a System Agent binary"

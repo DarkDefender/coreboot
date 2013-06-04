@@ -356,7 +356,14 @@ function build_target
 				fi
 			done
 		fi
-
+		if [ "$found_crosscompiler" == "false" -a "$TARCH" == ARMV7 ];then
+			for prefix in armv7a-eabi- armv7a-cros-linux-gnueabi-; do
+				if ${prefix}gcc --version > /dev/null 2> /dev/null ; then
+					found_crosscompiler=true
+					CROSS_COMPILE=$prefix
+				fi
+			done
+		fi
 
 		# TBD: look for suitable cross compiler suite
 		# cross-$TARCH-gcc and cross-$TARCH-ld
@@ -368,8 +375,9 @@ function build_target
 			xml ""
 			xml "</mainboard>"
 
-			junit " <testcase classname='board' name='$TARCH/$VENDOR/$MAINBOARD' >"
-			junit "<failure type='NoCrossCompiler'>No cross-compiler for $TARCH found</failure>"
+			junit "<testcase classname='board' name='$TARCH/$VENDOR/$MAINBOARD' >"
+			junit " <failure type='NoCrossCompiler'>No cross-compiler for $TARCH found</failure>"
+			junit "</testcase>"
 
 			return 0
 		else
@@ -588,8 +596,6 @@ while true ; do
 		-C|--config)    shift; configureonly=1;;
 		-l|--loglevel)  shift
 			customizing="${customizing}, loglevel $1"
-			configoptions="${configoptions}CONFIG_MAXIMUM_CONSOLE_LOGLEVEL_$1=y\n"
-			configoptions="${configoptions}CONFIG_MAXIMUM_CONSOLE_LOGLEVEL=$1\n"
 			configoptions="${configoptions}CONFIG_DEFAULT_CONSOLE_LOGLEVEL_$1=y\n"
 			configoptions="${configoptions}CONFIG_DEFAULT_CONSOLE_LOGLEVEL=$1\n"
 			shift;;

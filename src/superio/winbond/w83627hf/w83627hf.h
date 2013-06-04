@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SUPERIO_WINBOND_W83627HF_W83627HF_H
@@ -113,7 +113,7 @@
 #define W83627HF_XSCNF		0x15
 #define W83627HF_XWBCNF		0x16
 
-#if defined(__PRE_RAM__) && !defined(__ROMCC__)
+#if defined(__PRE_RAM__)
 void w83627hf_disable_dev(device_t dev);
 void w83627hf_enable_dev(device_t dev, u16 iobase);
 void w83627hf_enable_serial(device_t dev, u16 iobase);

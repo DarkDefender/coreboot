@@ -9,7 +9,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -19,10 +19,10 @@
 
 #include "agesawrapper.h"
 #include "amdlib.h"
-#include "dimmSpd.h"
 #include "BiosCallOuts.h"
 #include "heapManager.h"
 #include "SB800.h"
+#include <northbridge/amd/agesa/family14/dimmSpd.h>
 
 STATIC BIOS_CALLOUT_STRUCT BiosCallouts[] =
 {
@@ -428,7 +428,11 @@ AGESA_STATUS BiosReset (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 AGESA_STATUS BiosReadSpd (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 {
 	AGESA_STATUS Status;
-	Status = AmdMemoryReadSPD (Func, Data, (AGESA_READ_SPD_PARAMS *)ConfigPtr);
+#ifdef __PRE_RAM__
+	Status = agesa_ReadSPD (Func, Data, ConfigPtr);
+#else
+	Status = AGESA_UNSUPPORTED;
+#endif
 
 	return Status;
 }
@@ -445,84 +449,10 @@ AGESA_STATUS BiosHookBeforeDQSTraining (UINT32 Func, UINT32 Data, VOID *ConfigPt
 /*	Call the host environment interface to provide a user hook opportunity. */
 AGESA_STATUS BiosHookBeforeDramInit (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 {
-	AGESA_STATUS		Status;
-	UINTN			 FcnData;
-	MEM_DATA_STRUCT	 *MemData;
-	UINT32			AcpiMmioAddr;
-	UINT32			GpioMmioAddr;
-	UINT8			 Data8;
-	UINT16			Data16;
-	UINT8			 TempData8;
-
-	FcnData = Data;
-	MemData = ConfigPtr;
-
-	Status	= AGESA_SUCCESS;
-	/* Get SB MMIO Base (AcpiMmioAddr) */
-	WriteIo8 (0xCD6, 0x27);
-	Data8	 = ReadIo8(0xCD7);
-	Data16	= Data8<<8;
-	WriteIo8 (0xCD6, 0x26);
-	Data8	 = ReadIo8(0xCD7);
-	Data16	|= Data8;
-	AcpiMmioAddr = (UINT32)Data16 << 16;
-	GpioMmioAddr = AcpiMmioAddr + GPIO_BASE;
-
-	Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG178);
-	Data8 &= ~BIT5;
-	TempData8	= Read64Mem8 (GpioMmioAddr+SB_GPIO_REG178);
-	TempData8 &= 0x03;
-	TempData8 |= Data8;
-	Write64Mem8(GpioMmioAddr+SB_GPIO_REG178, TempData8);
-
-	Data8 |= BIT2+BIT3;
-	Data8 &= ~BIT4;
-	TempData8	= Read64Mem8 (GpioMmioAddr+SB_GPIO_REG178);
-	TempData8 &= 0x23;
-	TempData8 |= Data8;
-	Write64Mem8(GpioMmioAddr+SB_GPIO_REG178, TempData8);
-
-	Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG179);
-	Data8 &= ~BIT5;
-	TempData8	= Read64Mem8 (GpioMmioAddr+SB_GPIO_REG179);
-	TempData8 &= 0x03;
-	TempData8 |= Data8;
-	Write64Mem8(GpioMmioAddr+SB_GPIO_REG179, TempData8);
-
-	Data8 |= BIT2+BIT3;
-	Data8 &= ~BIT4;
-	TempData8	= Read64Mem8 (GpioMmioAddr+SB_GPIO_REG179);
-	TempData8 &= 0x23;
-	TempData8 |= Data8;
-	Write64Mem8(GpioMmioAddr+SB_GPIO_REG179, TempData8);
-
-	switch(MemData->ParameterListPtr->DDR3Voltage){
-	case VOLT1_35:
-		Data8 =	Read64Mem8 (GpioMmioAddr+SB_GPIO_REG178);
-		Data8 &= ~(UINT8)BIT6;
-		Write64Mem8(GpioMmioAddr+SB_GPIO_REG178, Data8);
-		Data8 =	Read64Mem8 (GpioMmioAddr+SB_GPIO_REG179);
-		Data8 |= (UINT8)BIT6;
-		Write64Mem8(GpioMmioAddr+SB_GPIO_REG179, Data8);
-		break;
-	case VOLT1_25:
-		Data8 =	Read64Mem8 (GpioMmioAddr+SB_GPIO_REG178);
-		Data8 &= ~(UINT8)BIT6;
-		Write64Mem8(GpioMmioAddr+SB_GPIO_REG178, Data8);
-		Data8 =	Read64Mem8 (GpioMmioAddr+SB_GPIO_REG179);
-		Data8 &= ~(UINT8)BIT6;
-		Write64Mem8(GpioMmioAddr+SB_GPIO_REG179, Data8);
-		break;
-	case VOLT1_5:
-	default:
-		Data8 =	Read64Mem8 (GpioMmioAddr+SB_GPIO_REG178);
-		Data8 |= (UINT8)BIT6;
-		Write64Mem8(GpioMmioAddr+SB_GPIO_REG178, Data8);
-		Data8 =	Read64Mem8 (GpioMmioAddr+SB_GPIO_REG179);
-		Data8 &= ~(UINT8)BIT6;
-		Write64Mem8(GpioMmioAddr+SB_GPIO_REG179, Data8);
-	}
-	return Status;
+	// Unlike e.g. AMD Inagua, Persimmon is unable to vary the RAM voltage.
+	// Make sure the right speed settings are selected.
+	((MEM_DATA_STRUCT*)ConfigPtr)->ParameterListPtr->DDR3Voltage = VOLT1_5;
+	return AGESA_SUCCESS;
 }
 
 /*	Call the host environment interface to provide a user hook opportunity. */
@@ -562,50 +492,18 @@ AGESA_STATUS BiosGnbPcieSlotReset (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 	GpioMmioAddr = AcpiMmioAddr + GPIO_BASE;
 	switch (ResetInfo->ResetId)
 	{
-	case 4:
+	case 46:	// GPIO50 = SBGPIO_PCIE_RST# affects LAN0, LAN1, PCIe slot
 		switch (ResetInfo->ResetControl) {
 		case AssertSlotReset:
-			Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG21);
+			Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG50);
 			Data8 &= ~(UINT8)BIT6 ;
-			Write64Mem8(GpioMmioAddr+SB_GPIO_REG21, Data8);	 // MXM_GPIO0. GPIO21
+			Write64Mem8(GpioMmioAddr+SB_GPIO_REG50, Data8);
 			Status = AGESA_SUCCESS;
 			break;
 		case DeassertSlotReset:
-			Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG21);
+			Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG50);
 			Data8 |= BIT6 ;
-			Write64Mem8 (GpioMmioAddr+SB_GPIO_REG21, Data8);		 // MXM_GPIO0. GPIO21
-			Status = AGESA_SUCCESS;
-			break;
-		}
-		break;
-	case 6:
-		switch (ResetInfo->ResetControl) {
-		case AssertSlotReset:
-			Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG25);
-			Data8 &= ~(UINT8)BIT6 ;
-			Write64Mem8(GpioMmioAddr+SB_GPIO_REG25, Data8);	 // PCIE_RST#_LAN, GPIO25
-			Status = AGESA_SUCCESS;
-			break;
-		case DeassertSlotReset:
-			Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG25);
-			Data8 |= BIT6 ;
-			Write64Mem8 (GpioMmioAddr+SB_GPIO_REG25, Data8);		 // PCIE_RST#_LAN, GPIO25
-			Status = AGESA_SUCCESS;
-			break;
-		}
-		break;
-	case 7:
-		switch (ResetInfo->ResetControl) {
-		case AssertSlotReset:
-			Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG02);
-			Data8 &= ~(UINT8)BIT6 ;
-			Write64Mem8(GpioMmioAddr+SB_GPIO_REG02, Data8);	 // MPCIE_RST0, GPIO02
-			Status = AGESA_SUCCESS;
-			break;
-		case DeassertSlotReset:
-			Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG25);
-			Data8 |= BIT6 ;
-			Write64Mem8 (GpioMmioAddr+SB_GPIO_REG02, Data8);		 // MPCIE_RST0, GPIO02
+			Write64Mem8 (GpioMmioAddr+SB_GPIO_REG50, Data8);
 			Status = AGESA_SUCCESS;
 			break;
 		}

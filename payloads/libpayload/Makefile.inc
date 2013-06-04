@@ -31,8 +31,9 @@
 
 export KERNELVERSION      := 0.2.0
 
-ARCHDIR-$(CONFIG_TARGET_I386)    := i386
-ARCHDIR-$(CONFIG_TARGET_POWERPC) := powerpc
+ARCHDIR-$(CONFIG_ARCH_ARMV7)   := armv7
+ARCHDIR-$(CONFIG_ARCH_X86)     := x86
+ARCHDIR-$(CONFIG_ARCH_POWERPC) := powerpc
 DESTDIR ?= install
 
 real-target: lib
@@ -46,11 +47,6 @@ classes-$(CONFIG_LZMA) += liblzma
 libraries := $(classes-y)
 classes-y += head.o
 
-libpci-c-deps = $(obj)/libpayload-config.h
-libc-c-deps = $(obj)/libpayload-config.h
-libcurses-c-deps = $(obj)/libpayload-config.h
-head.o-S-deps = $(obj)/libpayload-config.h
-
 subdirs-y := arch/$(ARCHDIR-y)
 subdirs-y += crypto libc drivers libpci
 subdirs-$(CONFIG_CURSES) += curses
@@ -58,7 +54,7 @@ subdirs-$(CONFIG_CBFS) += libcbfs
 subdirs-$(CONFIG_LZMA) += liblzma
 
 INCLUDES := -Iinclude -Iinclude/$(ARCHDIR-y) -I$(obj)
-CFLAGS =  $(EXTRA_CFLAGS) $(INCLUDES) -Os -pipe
+CFLAGS =  $(EXTRA_CFLAGS) $(INCLUDES) -Os -pipe -nostdinc
 CFLAGS += -nostdlib -Wall -Wundef -Wstrict-prototypes -Wmissing-prototypes
 CFLAGS += -Wwrite-strings -Wredundant-decls -Wno-trigraphs
 CFLAGS += -Wstrict-aliasing -Wshadow -fno-builtin
@@ -96,7 +92,7 @@ install: real-target
 	for lib in $(library-targets); do \
 		install -m 644 $$lib $(DESTDIR)/libpayload/lib/; \
 	done
-	install -m 644 lib/libpayload.ldscript $(DESTDIR)/libpayload/lib/
+	install -m 644 arch/$(ARCHDIR-y)/libpayload.ldscript $(DESTDIR)/libpayload/lib/
 	install -m 755 -d $(DESTDIR)/libpayload/lib/$(ARCHDIR-y)
 	install -m 644 $(obj)/head.o $(DESTDIR)/libpayload/lib/$(ARCHDIR-y)
 	printf "    INSTALL    $(DESTDIR)/libpayload/include\n"
@@ -114,7 +110,7 @@ install: real-target
 	install -m 755 bin/lpgcc $(DESTDIR)/libpayload/bin
 	install -m 755 bin/lpas $(DESTDIR)/libpayload/bin
 	install -m 644 bin/lp.functions $(DESTDIR)/libpayload/bin
-	install -m 644 .config $(DESTDIR)/libpayload/libpayload.config
+	install -m 644 $(DOTCONFIG) $(DESTDIR)/libpayload/libpayload.config
 
 clean-for-update-target:
 	rm -f $(addsuffix .a,$(addprefix $(obj)/,$(libraries))) $(obj)/libpayload.a

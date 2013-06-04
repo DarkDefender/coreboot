@@ -1,6 +1,7 @@
 /*
- * (C) Copyright 2010 Samsung Electronics
+ * (C) Copyright 2009-2010 Samsung Electronics
  * Minkyu Kang <mk7.kang@samsung.com>
+ * Heungjun Kim <riverful.kim@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,7 +23,61 @@
 #ifndef _EXYNOS_COMMON_CPU_H
 #define _EXYNOS_COMMON_CPU_H
 
-#include <cpu/samsung/s5p-common/cpu.h>
+#define S5PC1XX_ADDR_BASE	0xE0000000
+
+/* S5PC100 */
+#define S5PC100_PRO_ID		0xE0000000
+#define S5PC100_CLOCK_BASE	0xE0100000
+#define S5PC100_GPIO_BASE	0xE0300000
+#define S5PC100_VIC0_BASE	0xE4000000
+#define S5PC100_VIC1_BASE	0xE4100000
+#define S5PC100_VIC2_BASE	0xE4200000
+#define S5PC100_DMC_BASE	0xE6000000
+#define S5PC100_SROMC_BASE	0xE7000000
+#define S5PC100_ONENAND_BASE	0xE7100000
+#define S5PC100_PWMTIMER_BASE	0xEA000000
+#define S5PC100_WATCHDOG_BASE	0xEA200000
+#define S5PC100_UART_BASE	0xEC000000
+#define S5PC100_MMC_BASE	0xED800000
+
+/* S5PC110 */
+#define S5PC110_PRO_ID		0xE0000000
+#define S5PC110_CLOCK_BASE	0xE0100000
+#define S5PC110_GPIO_BASE	0xE0200000
+#define S5PC110_PWMTIMER_BASE	0xE2500000
+#define S5PC110_WATCHDOG_BASE	0xE2700000
+#define S5PC110_UART_BASE	0xE2900000
+#define S5PC110_SROMC_BASE	0xE8000000
+#define S5PC110_MMC_BASE	0xEB000000
+#define S5PC110_DMC0_BASE	0xF0000000
+#define S5PC110_DMC1_BASE	0xF1400000
+#define S5PC110_VIC0_BASE	0xF2000000
+#define S5PC110_VIC1_BASE	0xF2100000
+#define S5PC110_VIC2_BASE	0xF2200000
+#define S5PC110_VIC3_BASE	0xF2300000
+#define S5PC110_OTG_BASE	0xEC000000
+#define S5PC110_PHY_BASE	0xEC100000
+#define S5PC110_USB_PHY_CONTROL 0xE010E80C
+
+
+#include <arch/io.h>
+/* CPU detection macros */
+extern unsigned int s5p_cpu_id;
+
+inline void s5p_set_cpu_id(void);
+
+#define IS_SAMSUNG_TYPE(type, id)			\
+static inline int cpu_is_##type(void)			\
+{							\
+	return s5p_cpu_id == id ? 1 : 0;		\
+}
+
+IS_SAMSUNG_TYPE(s5pc100, 0xc100)
+IS_SAMSUNG_TYPE(s5pc110, 0xc110)
+
+int s5p_get_cpu_rev(void);
+//void s5p_set_cpu_id(void);
+int s5p_get_cpu_id(void);
 
 #define DEVICE_NOT_AVAILABLE		0
 
@@ -56,15 +111,6 @@ enum boot_mode {
 	BOOT_MODE_OM = 32,
 	BOOT_MODE_USB,		/* Boot using USB download */
 };
-
-#if 0
-/**
- * Get the U-boot size for SPL copy functions
- *
- * @return size of U-Boot code/data that needs to be loaded by the SPL stage
- */
-unsigned int exynos_get_uboot_size(void);
-#endif
 
 /**
  * Get the boot device containing BL1, BL2 (SPL) and U-boot

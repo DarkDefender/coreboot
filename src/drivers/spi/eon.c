@@ -70,6 +70,7 @@ static int eon_write(struct spi_flash *flash,
 	page_addr = offset / page_size;
 	byte_addr = offset % page_size;
 
+	flash->spi->rw = SPI_WRITE_FLAG;
 	ret = spi_claim_bus(flash->spi);
 	if (ret) {
 		printk(BIOS_WARNING, "SF: Unable to claim SPI bus\n");
@@ -112,8 +113,10 @@ static int eon_write(struct spi_flash *flash,
 		byte_addr = 0;
 	}
 
-	printk(BIOS_INFO, "SF: EON: Successfully programmed %zu bytes @ 0x%x\n",
+#if CONFIG_DEBUG_SPI_FLASH
+	printk(BIOS_SPEW, "SF: EON: Successfully programmed %zu bytes @ 0x%x\n",
 	      len, offset);
+#endif
 
 	spi_release_bus(flash->spi);
 	return ret;

@@ -117,6 +117,7 @@ static int winbond_write(struct spi_flash *flash,
 	page_size = min(1 << stm->params->l2_page_size, CONTROLLER_PAGE_LIMIT);
 	byte_addr = offset % page_size;
 
+	flash->spi->rw = SPI_WRITE_FLAG;
 	ret = spi_claim_bus(flash->spi);
 	if (ret) {
 		printk(BIOS_WARNING, "SF: Unable to claim SPI bus\n");
@@ -157,8 +158,10 @@ static int winbond_write(struct spi_flash *flash,
 		byte_addr = 0;
 	}
 
-	printk(BIOS_INFO, "SF: Winbond: Successfully programmed %zu bytes @"
+#if CONFIG_DEBUG_SPI_FLASH
+	printk(BIOS_SPEW, "SF: Winbond: Successfully programmed %zu bytes @"
 			" 0x%lx\n", len, (unsigned long)(offset - len));
+#endif
 	ret = 0;
 
 out:

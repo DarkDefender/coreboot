@@ -20,7 +20,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -87,6 +87,14 @@ static const struct macronix_spi_flash_params macronix_spi_flash_table[] = {
 		.name = "MX25L3205D",
 	},
 	{
+		.idcode = 0x5e16,
+		.page_size = 256,
+		.pages_per_sector = 16,
+		.sectors_per_block = 16,
+		.nr_blocks = 64,
+		.name = "MX25L3235D", /* MX25L3225D/MX25L3235D/MX25L3237D */
+	},
+	{
 		.idcode = 0x2017,
 		.page_size = 256,
 		.pages_per_sector = 16,
@@ -126,6 +134,7 @@ static int macronix_write(struct spi_flash *flash,
 	page_size = min(mcx->params->page_size, CONTROLLER_PAGE_LIMIT);
 	byte_addr = offset % page_size;
 
+	flash->spi->rw = SPI_WRITE_FLAG;
 	ret = spi_claim_bus(flash->spi);
 	if (ret) {
 		printk(BIOS_WARNING, "SF: Unable to claim SPI bus\n");
@@ -168,8 +177,10 @@ static int macronix_write(struct spi_flash *flash,
 		byte_addr = 0;
 	}
 
-	printk(BIOS_INFO, "SF: Macronix: Successfully programmed %zu bytes @"
+#if CONFIG_DEBUG_SPI_FLASH
+	printk(BIOS_SPEW, "SF: Macronix: Successfully programmed %zu bytes @"
 	      " 0x%lx\n", len, (unsigned long)(offset - len));
+#endif
 
 	spi_release_bus(flash->spi);
 	return ret;

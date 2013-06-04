@@ -20,7 +20,7 @@
 ##
 
 chip northbridge/amd/gx2
-	device pci_domain 0 on
+	device domain 0 on
 		device pci 1.0 on end	# Geode GX2 Host Bridge
 		device pci 1.1 on end	# Geode GX2 Graphics Processor
 		chip southbridge/amd/cs5536
@@ -43,7 +43,7 @@ chip northbridge/amd/gx2
 		end
 	end
 	# APIC cluster is late CPU init.
-	device lapic_cluster 0 on
+	device cpu_cluster 0 on
 		chip cpu/amd/geode_gx2
 			device lapic 0 on end
 		end

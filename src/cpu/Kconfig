@@ -1,3 +1,14 @@
+# Warning: This file is included whether or not the if is here.
+# The if controls how the evaluation occurs.
+# (See also src/Kconfig)
+if ARCH_ARMV7
+
+source src/cpu/armltd/Kconfig
+source src/cpu/samsung/Kconfig
+source src/cpu/ti/Kconfig
+
+endif	# ARCH_ARM
+
 if ARCH_X86
 
 source src/cpu/amd/Kconfig
@@ -7,6 +18,7 @@ source src/cpu/x86/Kconfig
 
 config CACHE_AS_RAM
 	bool
+	select DEFAULT_EARLY_CONSOLE
 	default !ROMCC
 
 config DCACHE_RAM_BASE
@@ -65,7 +77,7 @@ config CPU_MICROCODE_IN_CBFS
 	default n
 
 choice
-	prompt "Include CPU microcode in CBFS"
+	prompt "Include CPU microcode in CBFS" if ARCH_X86
 	default CPU_MICROCODE_CBFS_GENERATE if CPU_MICROCODE_IN_CBFS
 	default CPU_MICROCODE_CBFS_NONE if !CPU_MICROCODE_IN_CBFS
 
@@ -76,7 +88,7 @@ config CPU_MICROCODE_CBFS_GENERATE
 	  building coreboot and included in the final image as a separate CBFS
 	  file. Microcode will not be hard-coded into ramstage.
 
-	  The microcode file and may be removed from the ROM image at a later
+	  The microcode file may be removed from the ROM image at a later
 	  time with cbfstool, if desired.
 
 	  If unsure, select this option.
@@ -90,17 +102,10 @@ config CPU_MICROCODE_CBFS_EXTERNAL
 	  microcode that you have is newer than the microcode shipping with
 	  coreboot.
 
-	  The microcode file and may be removed from the ROM image at a later
+	  The microcode file may be removed from the ROM image at a later
 	  time with cbfstool, if desired.
 
 	  If unsure, select "Generate from tree"
-
-config CPU_MICROCODE_FILE
-	  string "Path and filename of CPU microcode"
-	  depends on CPU_MICROCODE_CBFS_EXTERNAL
-	  default "cpu_microcode.bin"
-	  help
-	    The path and filename of the file containing the CPU microcode.
 
 config CPU_MICROCODE_CBFS_NONE
 	bool "Do not include microcode updates"
@@ -145,3 +150,10 @@ config CPU_MICROCODE_CBFS_NONE
 	  selecting this option.
 
 endchoice
+
+config CPU_MICROCODE_FILE
+	  string "Path and filename of CPU microcode"
+	  depends on CPU_MICROCODE_CBFS_EXTERNAL
+	  default "cpu_microcode.bin"
+	  help
+	    The path and filename of the file containing the CPU microcode.

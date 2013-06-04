@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <lib.h>
@@ -25,7 +25,6 @@
 #include <arch/io.h>
 #include <arch/stages.h>
 #include <device/pnp_def.h>
-#include <arch/romcc_io.h>
 #include <arch/cpu.h>
 #include <cpu/x86/lapic.h>
 #include <console/console.h>
@@ -34,7 +33,7 @@
 #include "cpu/x86/bist.h"
 #include "superio/fintek/f81865f/f81865f_early_serial.c"
 #include "cpu/x86/lapic/boot_cpu.c"
-#include "sb_cimx.h"
+#include <sb_cimx.h>
 #include "SBPLATFORM.h"
 
 #define SERIAL_DEV PNP_DEV(0x4e, F81865F_SP1)
@@ -112,7 +111,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 		printk(BIOS_DEBUG, "passed.\n");
 
 	post_code(0x50);
-	copy_and_run(0);
+	copy_and_run();
 	printk(BIOS_ERR, "Error: copy_and_run() returned!\n");
 
 	post_code(0x54);  /* Should never see this post code. */

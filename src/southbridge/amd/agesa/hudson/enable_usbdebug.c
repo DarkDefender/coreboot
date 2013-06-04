@@ -14,11 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include <stdint.h>
 #include <arch/io.h>
-#include <arch/romcc_io.h>
 #include <usbdebug.h>
 #include <device/pci_def.h>
 #include "hudson.h"
@@ -45,8 +44,12 @@ void set_debug_port(unsigned int port)
 
 void enable_usbdebug(unsigned int port)
 {
-	pci_write_config32(PCI_DEV(0, HUDSON_DEVN_BASE + 0x13, 5),
+	/* Enable all of the USB controllers */
+	outb(0xEF, PM_INDEX);
+	outb(0x7F, PM_DATA);
+
+	pci_write_config32(PCI_DEV(0, HUDSON_DEVN_BASE + 0x12, 2),
 			   EHCI_BAR_INDEX, CONFIG_EHCI_BAR);
-	pci_write_config8(PCI_DEV(0, HUDSON_DEVN_BASE + 0x13, 5), 0x04, 0x2);	/* mem space enabe */
+	pci_write_config8(PCI_DEV(0, HUDSON_DEVN_BASE + 0x12, 2), 0x04, 0x6);	/* mem space enabe */
 	set_debug_port(port);
 }

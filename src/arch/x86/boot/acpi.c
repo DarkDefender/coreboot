@@ -145,7 +145,7 @@ unsigned long acpi_create_madt_lapics(unsigned long current)
 
 	for (cpu = all_devices; cpu; cpu = cpu->next) {
 		if ((cpu->path.type != DEVICE_PATH_APIC) ||
-			(cpu->bus->dev->path.type != DEVICE_PATH_APIC_CLUSTER)) {
+			(cpu->bus->dev->path.type != DEVICE_PATH_CPU_CLUSTER)) {
 			continue;
 		}
 		if (!cpu->enabled)
@@ -621,30 +621,25 @@ void acpi_write_hest(acpi_hest_t *hest)
 }
 
 #if CONFIG_HAVE_ACPI_RESUME
-void suspend_resume(void)
+void acpi_resume(void *wake_vec)
 {
-	void *wake_vec;
-
-	/* If we happen to be resuming find wakeup vector and jump to OS. */
-	wake_vec = acpi_find_wakeup_vector();
-	if (wake_vec) {
 #if CONFIG_HAVE_SMI_HANDLER
-		u32 *gnvs_address = cbmem_find(CBMEM_ID_ACPI_GNVS);
+	u32 *gnvs_address = cbmem_find(CBMEM_ID_ACPI_GNVS_PTR);
 
-		/* Restore GNVS pointer in SMM if found */
-		if (gnvs_address && *gnvs_address) {
-			printk(BIOS_DEBUG, "Restore GNVS pointer to 0x%08x\n",
-			       *gnvs_address);
-			smm_setup_structures((void *)*gnvs_address, NULL, NULL);
-		}
+	/* Restore GNVS pointer in SMM if found */
+	if (gnvs_address && *gnvs_address) {
+		printk(BIOS_DEBUG, "Restore GNVS pointer to 0x%08x\n",
+		       *gnvs_address);
+		smm_setup_structures((void *)*gnvs_address, NULL, NULL);
+	}
 #endif
 
-		/* Call mainboard resume handler first, if defined. */
-		if (mainboard_suspend_resume)
-			mainboard_suspend_resume();
-		post_code(POST_OS_RESUME);
-		acpi_jump_to_wakeup(wake_vec);
-	}
+	/* Call mainboard resume handler first, if defined. */
+	if (mainboard_suspend_resume)
+		mainboard_suspend_resume();
+
+	post_code(POST_OS_RESUME);
+	acpi_jump_to_wakeup(wake_vec);
 }
 
 /* This is to be filled by SB code - startup value what was found. */
@@ -687,7 +682,7 @@ void *acpi_find_wakeup_vector(void)
 	char *p, *end;
 	acpi_rsdt_t *rsdt;
 	acpi_facs_t *facs;
-	acpi_fadt_t *fadt;
+	acpi_fadt_t *fadt = NULL;
 	void *wake_vec;
 	int i;
 
@@ -748,12 +743,16 @@ extern int lowmem_backup_size;
 #define WAKEUP_BASE 0x600
 
 void (*acpi_do_wakeup)(u32 vector, u32 backup_source, u32 backup_target,
-       u32 backup_size) __attribute__((regparm(0))) = (void *)WAKEUP_BASE;
+       u32 backup_size) asmlinkage = (void *)WAKEUP_BASE;
 
-extern unsigned char __wakeup, __wakeup_size;
+extern unsigned char __wakeup;
+extern unsigned int __wakeup_size;
 
 void acpi_jump_to_wakeup(void *vector)
 {
+#if CONFIG_RELOCATABLE_RAMSTAGE
+	u32 acpi_backup_memory = 0;
+#else
 	u32 acpi_backup_memory = (u32)cbmem_find(CBMEM_ID_RESUME);
 
 	if (!acpi_backup_memory) {
@@ -761,6 +760,7 @@ void acpi_jump_to_wakeup(void *vector)
 		       "No S3 resume.\n");
 		return;
 	}
+#endif
 
 #if CONFIG_SMP
 	// FIXME: This should go into the ACPI backup memory, too. No pork saussages.
@@ -772,7 +772,7 @@ void acpi_jump_to_wakeup(void *vector)
 #endif
 
 	/* Copy wakeup trampoline in place. */
-	memcpy((void *)WAKEUP_BASE, &__wakeup, (size_t)&__wakeup_size);
+	memcpy((void *)WAKEUP_BASE, &__wakeup, __wakeup_size);
 
 #if CONFIG_COLLECT_TIMESTAMPS
 	timestamp_add_now(TS_ACPI_WAKE_JUMP);
@@ -785,7 +785,7 @@ void acpi_jump_to_wakeup(void *vector)
 
 void acpi_save_gnvs(u32 gnvs_address)
 {
-	u32 *gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
+	u32 *gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS_PTR, sizeof(*gnvs));
 	if (gnvs)
 		*gnvs = gnvs_address;
 }

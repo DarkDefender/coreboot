@@ -23,7 +23,7 @@
 #include <lib.h>
 #include <timestamp.h>
 #include <arch/io.h>
-#include <arch/romcc_io.h>
+#include <arch/byteorder.h>
 #include <device/pci_def.h>
 #include <device/pnp_def.h>
 #include <cpu/x86/lapic.h>
@@ -300,7 +300,7 @@ void main(unsigned long bist)
 		break;
 	}
 
-	spd_file = cbfs_find("spd.bin");
+	spd_file = cbfs_get_file(CBFS_DEFAULT_MEDIA, "spd.bin");
 	if (!spd_file)
 		die("SPD data not found.");
 	if (spd_file->len < (spd_index + 1) * 256)
@@ -332,12 +332,7 @@ void main(unsigned long bist)
 
 	MCHBAR16(SSKPD) = 0xCAFE;
 
-#if CONFIG_EARLY_CBMEM_INIT
 	cbmem_was_initted = !cbmem_initialize();
-#else
-	cbmem_was_initted = cbmem_reinit((uint64_t) (get_top_of_ram()
-						     - HIGH_MEMORY_SIZE));
-#endif
 
 #if CONFIG_HAVE_ACPI_RESUME
 	/* If there is no high memory area, we didn't boot before, so

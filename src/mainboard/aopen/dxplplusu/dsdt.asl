@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <arch/ioapic.h>
@@ -22,10 +22,10 @@
 DefinitionBlock(
 	"dsdt.aml",
 	"DSDT",
-	0x04,           // DSDT revision: ACPI v4.0
-	"COREv4",       // OEM id
-	"COREBOOT",     // OEM table id
-	0x20111103      // OEM revision
+	0x04,		// DSDT revision: ACPI v4.0
+	"COREv4",	// OEM id
+	"COREBOOT",	// OEM table id
+	0x20111103	// OEM revision
 ) {
 
 Scope(\_SB)

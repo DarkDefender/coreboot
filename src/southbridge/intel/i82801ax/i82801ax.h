@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SOUTHBRIDGE_INTEL_I82801AX_I82801AX_H
@@ -24,9 +24,7 @@
 #if !defined(__PRE_RAM__)
 #include "chip.h"
 void i82801ax_enable(device_t dev);
-#endif
-
-#if defined(__PRE_RAM__) && !defined(__ROMCC__)
+#else
 void enable_smbus(void);
 int smbus_read_byte(u8 device, u8 address);
 #endif

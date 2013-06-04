@@ -1,20 +1,47 @@
 menu "Console"
-# TODO: Rename to SERIAL_CONSOLE once Kconfig transition is complete.
-config CONSOLE_SERIAL8250
+
+config DEFAULT_EARLY_CONSOLE
+	bool
+	default n
+
+config EARLY_CONSOLE
+	bool "Enable early (pre-RAM) console output."
+	default DEFAULT_EARLY_CONSOLE
+	help
+	  Use console during early (pre-RAM) boot stages
+
+config CONSOLE_SERIAL
 	bool "Serial port console output"
+	default y
+	help
+	  Send coreboot debug output to a serial port (should be one or more of
+	  CONSOLE_SERIAL8250, CONSOLE_SERIAL8250MEM, CONSOLE_SERIAL_UART)
+
+config CONSOLE_SERIAL8250
+	bool "Serial port console output (I/O mapped, 8250-compatible)"
+	depends on CONSOLE_SERIAL
 	depends on HAVE_UART_IO_MAPPED
 	default y
 	help
 	  Send coreboot debug output to an I/O mapped serial port console.
 
 config CONSOLE_SERIAL8250MEM
-	bool "Serial port console output (memory mapped)"
+	bool "Serial port console output (memory mapped, 8250-compatible)"
+	depends on CONSOLE_SERIAL
 	depends on HAVE_UART_MEMORY_MAPPED
 	help
 	  Send coreboot debug output to a memory mapped serial port console.
 
+config CONSOLE_SERIAL_UART
+	bool "Serial port console output (device-specific UART)"
+	depends on CONSOLE_SERIAL
+	depends on HAVE_UART_SPECIAL
+	default y
+	help
+	  Send coreboot debug output to a device-specific serial port console.
+
 choice
-	prompt "Serial port"
+	prompt "Serial port for 8250"
 	default CONSOLE_SERIAL_COM1
 	depends on CONSOLE_SERIAL8250
 
@@ -50,7 +77,7 @@ config TTYS0_BASE
 choice
 	prompt "Baud rate"
 	default CONSOLE_SERIAL_115200
-	depends on CONSOLE_SERIAL8250 || CONSOLE_SERIAL8250MEM
+	depends on CONSOLE_SERIAL
 
 config CONSOLE_SERIAL_115200
 	bool "115200"
@@ -75,6 +102,7 @@ config CONSOLE_SERIAL_9600
 
 endchoice
 
+#FIXME(dhendrix): Change name to SERIAL_BAUD? (Stefan sayz: yes!!)
 config TTYS0_BAUD
 	int
 	default 115200 if CONSOLE_SERIAL_115200
@@ -90,6 +118,12 @@ config TTYS0_LCS
 	int
 	default 3
 	depends on CONSOLE_SERIAL8250 || CONSOLE_SERIAL8250MEM
+
+config SPKMODEM
+	bool "spkmodem (console on speaker) console output"
+	default n
+	help
+	  Send coreboot debug output through speaker
 
 # Use "select HAVE_USBDEBUG" on southbridges which have Debug Port code.
 config HAVE_USBDEBUG
@@ -191,7 +225,7 @@ config CONSOLE_NE2K_IO_PORT
 	  boundary, qemu needs broader align)
 
 config CONSOLE_CBMEM
-	depends on EARLY_CBMEM_INIT
+	depends on (EARLY_CBMEM_INIT || DYNAMIC_CBMEM)
 	bool "Send console output to a CBMEM buffer"
 	default n
 	help
@@ -217,63 +251,21 @@ config CONSOLE_CAR_BUFFER_SIZE
 	  saved in a CBMEM buffer. 3K bytes should be enough even for the
 	  BIOS_SPEW level.
 
+config CONSOLE_DEBUGCON
+	bool "QEMU debug console output"
+	depends on BOARD_EMULATION_QEMU_X86
+	default y
+	help
+	  Send coreboot debug output to QEMU's isa-debugcon device:
 
-choice
-	prompt "Maximum console log level"
-	default MAXIMUM_CONSOLE_LOGLEVEL_8
+	  qemu-system-x86_64 \
+	    -chardev file,id=debugcon,path=/dir/file.log \
+	    -device isa-debugcon,iobase=0x402,chardev=debugcon
 
-config MAXIMUM_CONSOLE_LOGLEVEL_8
-	bool "8: SPEW"
-	help
-	  Way too many details.
-config MAXIMUM_CONSOLE_LOGLEVEL_7
-	bool "7: DEBUG"
-	help
-	  Debug-level messages.
-config MAXIMUM_CONSOLE_LOGLEVEL_6
-	bool "6: INFO"
-	help
-	  Informational messages.
-config MAXIMUM_CONSOLE_LOGLEVEL_5
-	bool "5: NOTICE"
-	help
-	  Normal but significant conditions.
-config MAXIMUM_CONSOLE_LOGLEVEL_4
-	bool "4: WARNING"
-	help
-	  Warning conditions.
-config MAXIMUM_CONSOLE_LOGLEVEL_3
-	bool "3: ERR"
-	help
-	  Error conditions.
-config MAXIMUM_CONSOLE_LOGLEVEL_2
-	bool "2: CRIT"
-	help
-	  Critical conditions.
-config MAXIMUM_CONSOLE_LOGLEVEL_1
-	bool "1: ALERT"
-	help
-	  Action must be taken immediately.
-config MAXIMUM_CONSOLE_LOGLEVEL_0
-	bool "0: EMERG"
-	help
-	  System is unusable.
-
-endchoice
-
-config MAXIMUM_CONSOLE_LOGLEVEL
-	int
-	default 0 if MAXIMUM_CONSOLE_LOGLEVEL_0
-	default 1 if MAXIMUM_CONSOLE_LOGLEVEL_1
-	default 2 if MAXIMUM_CONSOLE_LOGLEVEL_2
-	default 3 if MAXIMUM_CONSOLE_LOGLEVEL_3
-	default 4 if MAXIMUM_CONSOLE_LOGLEVEL_4
-	default 5 if MAXIMUM_CONSOLE_LOGLEVEL_5
-	default 6 if MAXIMUM_CONSOLE_LOGLEVEL_6
-	default 7 if MAXIMUM_CONSOLE_LOGLEVEL_7
-	default 8 if MAXIMUM_CONSOLE_LOGLEVEL_8
-	help
-	  Map the log level config names to an integer.
+config CONSOLE_DEBUGCON_PORT
+	hex "QEMU debug console port"
+	depends on CONSOLE_DEBUGCON
+	default 0x402
 
 choice
 	prompt "Default console log level"
@@ -281,54 +273,34 @@ choice
 
 config DEFAULT_CONSOLE_LOGLEVEL_8
 	bool "8: SPEW"
-	depends on (MAXIMUM_CONSOLE_LOGLEVEL_8)
 	help
 	  Way too many details.
 config DEFAULT_CONSOLE_LOGLEVEL_7
 	bool "7: DEBUG"
-	depends on (MAXIMUM_CONSOLE_LOGLEVEL_8 || MAXIMUM_CONSOLE_LOGLEVEL_7)
 	help
 	  Debug-level messages.
 config DEFAULT_CONSOLE_LOGLEVEL_6
 	bool "6: INFO"
-	depends on (MAXIMUM_CONSOLE_LOGLEVEL_8 || MAXIMUM_CONSOLE_LOGLEVEL_7 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_6)
 	help
 	  Informational messages.
 config DEFAULT_CONSOLE_LOGLEVEL_5
 	bool "5: NOTICE"
-	depends on (MAXIMUM_CONSOLE_LOGLEVEL_8 || MAXIMUM_CONSOLE_LOGLEVEL_7 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_6 || MAXIMUM_CONSOLE_LOGLEVEL_5)
 	help
 	  Normal but significant conditions.
 config DEFAULT_CONSOLE_LOGLEVEL_4
 	bool "4: WARNING"
-	depends on (MAXIMUM_CONSOLE_LOGLEVEL_8 || MAXIMUM_CONSOLE_LOGLEVEL_7 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_6 || MAXIMUM_CONSOLE_LOGLEVEL_5 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_4)
 	help
 	  Warning conditions.
 config DEFAULT_CONSOLE_LOGLEVEL_3
 	bool "3: ERR"
-	depends on (MAXIMUM_CONSOLE_LOGLEVEL_8 || MAXIMUM_CONSOLE_LOGLEVEL_7 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_6 || MAXIMUM_CONSOLE_LOGLEVEL_5 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_4 || MAXIMUM_CONSOLE_LOGLEVEL_3)
 	help
 	  Error conditions.
 config DEFAULT_CONSOLE_LOGLEVEL_2
 	bool "2: CRIT"
-	depends on (MAXIMUM_CONSOLE_LOGLEVEL_8 || MAXIMUM_CONSOLE_LOGLEVEL_7 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_6 || MAXIMUM_CONSOLE_LOGLEVEL_5 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_4 || MAXIMUM_CONSOLE_LOGLEVEL_3 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_2)
 	help
 	  Critical conditions.
 config DEFAULT_CONSOLE_LOGLEVEL_1
 	bool "1: ALERT"
-	depends on (MAXIMUM_CONSOLE_LOGLEVEL_8 || MAXIMUM_CONSOLE_LOGLEVEL_7 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_6 || MAXIMUM_CONSOLE_LOGLEVEL_5 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_4 || MAXIMUM_CONSOLE_LOGLEVEL_3 ||\
-		    MAXIMUM_CONSOLE_LOGLEVEL_2 || MAXIMUM_CONSOLE_LOGLEVEL_1)
 	help
 	  Action must be taken immediately.
 config DEFAULT_CONSOLE_LOGLEVEL_0
@@ -372,7 +344,7 @@ config CONSOLE_POST
 
 config CMOS_POST
 	bool "Store post codes in CMOS for debugging"
-	depends on !NO_POST
+	depends on !NO_POST && PC80_SYSTEM
 	default n
 	help
 	  If enabled, coreboot will store post codes in CMOS and switch between
@@ -390,6 +362,7 @@ config CMOS_POST_OFFSET
 
 config IO_POST
 	bool "Send POST codes to an IO port"
+	depends on PC80_SYSTEM
 	default y
 	help
 	  If enabled, POST codes will be written to an IO port.

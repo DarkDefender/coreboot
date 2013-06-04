@@ -9,12 +9,12 @@
 #Define gfx_reconfiguration, 0: short reconfiguration, 1(default): long reconfiguration
 #Define gfx_link_width, 0: x16, 1: x1, 2: x2, 3: x4, 4: x8, 5: x12 (not supported), 6: x16
 chip northbridge/amd/amdk8/root_complex
-	device lapic_cluster 0 on
+	device cpu_cluster 0 on
 		chip cpu/amd/socket_AM2
 		device lapic 0 on end
 		end
 	end
-	device pci_domain 0 on
+	device domain 0 on
 		subsystemid 0x1022 0x3060 inherit
 		chip northbridge/amd/amdk8
 			device pci 18.0 on #  southbridge
@@ -117,5 +117,5 @@ chip northbridge/amd/amdk8/root_complex
 			device pci 18.2 on end
 			device pci 18.3 on end
 		end		#northbridge/amd/amdk8
-	end #pci_domain
+	end #domain
 end		#northbridge/amd/amdk8/root_complex

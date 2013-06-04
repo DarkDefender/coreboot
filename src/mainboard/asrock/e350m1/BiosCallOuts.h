@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef _BIOS_CALLOUT_H_
@@ -23,7 +23,6 @@
 #include "Porting.h"
 #include "AGESA.h"
 
-#define REQUIRED_CALLOUTS     12
 #define BIOS_HEAP_START_ADDRESS  0x00010000
 #define BIOS_HEAP_SIZE       0x20000   /* 64MB */
 
@@ -67,12 +66,5 @@ AGESA_STATUS BiosHookBeforeDramInit (UINT32 Func, UINT32 Data, VOID *ConfigPtr);
 AGESA_STATUS BiosHookBeforeExitSelfRefresh (UINT32 Func, UINT32 Data, VOID *ConfigPtr);
 /* PCIE slot reset control */
 AGESA_STATUS BiosGnbPcieSlotReset (UINT32 Func, UINT32 Data, VOID *ConfigPtr);
-#define SB_GPIO_REG02   2
-#define SB_GPIO_REG09   9
-#define SB_GPIO_REG10   10
-#define SB_GPIO_REG15   15
-#define SB_GPIO_REG17   17
-#define SB_GPIO_REG21   21
-#define SB_GPIO_REG25   25
-#define SB_GPIO_REG28   28
+
 #endif //_BIOS_CALLOUT_H_

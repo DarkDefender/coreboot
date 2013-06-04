@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef _SB700_EARLY_SETUP_C_
@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <arch/cpu.h>
 #include <arch/io.h>
-#include <arch/romcc_io.h>
 #include <console/console.h>
 #include <cpu/x86/msr.h>
 
@@ -32,7 +31,6 @@
 #include <cbmem.h>
 #include "sb700.h"
 #include "smbus.h"
-
 
 static void pmio_write(u8 reg, u8 value)
 {

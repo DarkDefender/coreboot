@@ -4,6 +4,12 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+/* Stringify a token */
+#ifndef STRINGIFY
+#define _STRINGIFY(x)	#x
+#define STRINGIFY(x)	_STRINGIFY(x)
+#endif
+
 void *memcpy(void *dest, const void *src, size_t n);
 void *memmove(void *dest, const void *src, size_t n);
 void *memset(void *s, int c, size_t n);
@@ -69,10 +75,15 @@ static inline char *strncpy(char *to, const char *from, int count)
 	return ret;
 }
 
-static inline void strcpy(char *dst, const char *src)
+static inline char *strcpy(char *dst, const char *src)
 {
+	char *ptr = dst;
+
 	while (*src)
 		*dst++ = *src++;
+	*dst = '\0';
+
+	return ptr;
 }
 
 static inline int strcmp(const char *s1, const char *s2)

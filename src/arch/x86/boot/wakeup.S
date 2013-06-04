@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #define WAKEUP_BASE		0x600
@@ -90,5 +90,6 @@ __wakeup_segment = RELOCATED(.)
 	.word 0x0000
 
 	.globl __wakeup_size
-__wakeup_size = ( . - __wakeup)
+__wakeup_size:
+	.long . - __wakeup
 

@@ -24,8 +24,8 @@
 #include <console/loglevel.h>
 #include <console/post_codes.h>
 
-#if CONFIG_CONSOLE_SERIAL8250 || CONFIG_CONSOLE_SERIAL8250MEM
-#include <uart8250.h>
+#if CONFIG_CONSOLE_SERIAL
+#include <uart.h>
 #endif
 #if CONFIG_USBDEBUG
 #include <usbdebug.h>
@@ -36,9 +36,11 @@
 #if CONFIG_CONSOLE_CBMEM
 #include <console/cbmem_console.h>
 #endif
+#if CONFIG_SPKMODEM
+#include <console/spkmodem.h>
+#endif
 
 #ifndef __PRE_RAM__
-void console_tx_flush(void);
 unsigned char console_rx_byte(void);
 int console_tst_byte(void);
 struct console_driver {
@@ -68,46 +70,28 @@ extern int console_loglevel;
 #ifndef __ROMCC__
 void console_init(void);
 void console_tx_byte(unsigned char byte);
+void console_tx_flush(void);
 void post_code(u8 value);
 /* this function is weak and can be overridden by a mainboard function. */
 void mainboard_post(u8 value);
 void __attribute__ ((noreturn)) die(const char *msg);
 int do_printk(int msg_level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 
-#undef WE_CLEANED_UP_ALL_SIDE_EFFECTS
-/* We saw some strange effects in the past like coreboot crashing while
- * disabling cache as ram for a maximum console log level of 6 and above while
- * it worked fine without. In order to catch such issues reliably we are
- * always doing a function call to do_printk with the full number of arguments.
- * Our favorite reason to do it this way was:
- *   disable_car();
- *   printk(BIOS_DEBUG, "CAR disabled\n"); // oops, garbage stack pointer
- *   move_stack();
- * This slightly increases the code size and some unprinted strings will end
- * up in the final coreboot binary (most of them compressed). If you want to
- * avoid this, do a
- * #define WE_CLEANED_UP_ALL_SIDE_EFFECTS
- */
-#ifdef WE_CLEANED_UP_ALL_SIDE_EFFECTS
+#if defined(__PRE_RAM__) && !CONFIG_EARLY_CONSOLE
+
+static inline void printk(int LEVEL, const char *fmt, ...);
+static inline void printk(int LEVEL, const char *fmt, ...) {
+	/* Do nothing. */
+}
+
+#else /* defined(__PRE_RAM__) && !CONFIG_EARLY_CONSOLE */
 
 #define printk(LEVEL, fmt, args...)				\
 	do {							\
-		if (CONFIG_MAXIMUM_CONSOLE_LOGLEVEL >= LEVEL) {	\
-			do_printk(LEVEL, fmt, ##args);		\
-		}						\
+		do_printk(LEVEL, fmt, ##args);		\
 	} while(0)
 
-#else
-
-#define printk(LEVEL, fmt, args...)				\
-	do {							\
-		if (CONFIG_MAXIMUM_CONSOLE_LOGLEVEL >= LEVEL) {	\
-			do_printk(LEVEL, fmt, ##args);		\
-		} else {					\
-			do_printk(BIOS_NEVER, fmt, ##args);	\
-		}						\
-	} while(0)
-#endif
+#endif /* defined(__PRE_RAM__) && !CONFIG_EARLY_CONSOLE */
 
 #define print_emerg(STR)         printk(BIOS_EMERG,  "%s", (STR))
 #define print_alert(STR)         printk(BIOS_ALERT,  "%s", (STR))

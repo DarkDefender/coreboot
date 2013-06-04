@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <lib.h>
+#include <cbmem.h>
 #include <cpu/cpu.h>
 #include "northbridge.h"
 #include "cn700.h"
@@ -96,10 +97,6 @@ static const struct pci_driver memctrl_driver __pci_driver = {
 	.device = PCI_DEVICE_ID_VIA_CN700_MEMCTRL,
 };
 
-#if CONFIG_WRITE_HIGH_TABLES
-#include <cbmem.h>
-#endif
-
 static void pci_domain_set_resources(device_t dev)
 {
 	/* The order is important to find the correct RAM size. */
@@ -137,12 +134,10 @@ static void pci_domain_set_resources(device_t dev)
 			tolmk = tomk;
 		}
 
-#if CONFIG_WRITE_HIGH_TABLES
 		high_tables_base = ((tolmk - CONFIG_VIDEO_MB * 1024) * 1024) - HIGH_MEMORY_SIZE;
 		high_tables_size = HIGH_MEMORY_SIZE;
 		printk(BIOS_DEBUG, "tom: %lx, high_tables_base: %llx, high_tables_size: %llx\n",
 						tomk*1024, high_tables_base, high_tables_size);
-#endif
 
 		/* Report the memory regions. */
 		idx = 10;
@@ -185,10 +180,10 @@ static void enable_dev(struct device *dev)
 	printk(BIOS_SPEW, "In cn700 enable_dev for device %s.\n", dev_path(dev));
 
 	/* Set the operations if it is a special bus type. */
-	if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
 		pci_set_method(dev);
-	} else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
+	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
 		dev->ops = &cpu_bus_ops;
 	}
 }

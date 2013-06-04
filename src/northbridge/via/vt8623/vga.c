@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -31,7 +31,7 @@
 #include <arch/interrupt.h>
 #include <x86emu/regs.h>
 #if CONFIG_PCI_OPTION_ROM_RUN_REALMODE
-#include <devices/oprom/realmode/x86.h>
+#include <device/oprom/realmode/x86.h>
 #endif
 
 static int via_vt8623_int15_handler(void)

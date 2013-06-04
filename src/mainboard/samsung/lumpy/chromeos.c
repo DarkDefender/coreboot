@@ -20,12 +20,8 @@
 #include <string.h>
 #include <vendorcode/google/chromeos/chromeos.h>
 #include <arch/io.h>
-#ifdef __PRE_RAM__
-#include <arch/romcc_io.h>
-#else
 #include <device/device.h>
 #include <device/pci.h>
-#endif
 #include <northbridge/intel/sandybridge/sandybridge.h>
 #include <southbridge/intel/bd82x6x/pch.h>
 
@@ -38,7 +34,7 @@
 #define FLAG_DEV_MODE	2
 
 #ifndef __PRE_RAM__
-#include <arch/coreboot_tables.h>
+#include <boot/coreboot_tables.h>
 #include "ec.h"
 #include <ec/smsc/mec1308/ec.h>
 

@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -22,7 +22,6 @@
 #include <string.h>
 #include "southbridge/intel/bd82x6x/pch.h"
 #include <arch/io.h>
-#include <arch/romcc_io.h>
 #include "sandybridge.h"
 
 static void report_cpu_info(void)

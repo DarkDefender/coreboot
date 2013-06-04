@@ -14,7 +14,7 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
 # Run an intermediate step when producing coreboot.rom
@@ -29,6 +29,7 @@ ramstage-y += pci.c
 ramstage-y += pcie.c
 ramstage-y += sata.c
 ramstage-y += usb_ehci.c
+ramstage-y += usb_xhci.c
 ramstage-y += me.c
 ramstage-y += me_8.x.c
 ramstage-y += smbus.c
@@ -39,10 +40,12 @@ ramstage-y += watchdog.c
 
 ramstage-$(CONFIG_ELOG) += elog.c
 ramstage-y += spi.c
+ramstage-$(CONFIG_USBDEBUG) += usb_debug.c
 smm-$(CONFIG_SPI_FLASH_SMM) += spi.c
+smm-$(CONFIG_USBDEBUG) += usb_debug.c
 
 ramstage-$(CONFIG_HAVE_SMI_HANDLER) += smi.c
-smm-$(CONFIG_HAVE_SMI_HANDLER) += smihandler.c me.c me_8.x.c finalize.c
+smm-$(CONFIG_HAVE_SMI_HANDLER) += smihandler.c me.c me_8.x.c finalize.c pch.c
 
 romstage-y += early_usb.c early_smbus.c early_me.c me_status.c gpio.c
 romstage-$(CONFIG_USBDEBUG) += usb_debug.c

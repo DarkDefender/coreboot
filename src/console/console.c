@@ -24,7 +24,17 @@
 
 #ifndef __PRE_RAM__
 #include <string.h>
+
+/*
+ * FIXME: get_option() needs to be abstracted better so that other non-volatile
+ * storage can be used. This will benefit machines without CMOS as well as those
+ * without a battery-backed CMOS (e.g. some laptops).
+ */
+#if CONFIG_USE_OPTION_TABLE
 #include <pc80/mc146818rtc.h>
+#else
+static inline int get_option(void *dest, const char *name) { return -1; }
+#endif
 
 /* initialize the console */
 void console_init(void)
@@ -91,11 +101,13 @@ int console_tst_byte(void)
 
 void console_init(void)
 {
+#if CONFIG_EARLY_CONSOLE
+
 #if CONFIG_USBDEBUG
 	enable_usbdebug(CONFIG_USBDEBUG_DEFAULT_PORT);
 	early_usbdebug_init();
 #endif
-#if CONFIG_CONSOLE_SERIAL8250
+#if CONFIG_CONSOLE_SERIAL
 	uart_init();
 #endif
 #if CONFIG_DRIVERS_OXFORD_OXPCIE && CONFIG_CONSOLE_SERIAL8250MEM
@@ -107,6 +119,10 @@ void console_init(void)
 #if CONFIG_CONSOLE_CBMEM
 	cbmemc_init();
 #endif
+#if CONFIG_SPKMODEM
+	spkmodem_init();
+#endif
+
 	static const char console_test[] =
 		"\n\ncoreboot-"
 		COREBOOT_VERSION
@@ -115,5 +131,7 @@ void console_init(void)
 		COREBOOT_BUILD
 		" starting...\n";
 	print_info(console_test);
+
+#endif /* CONFIG_EARLY_CONSOLE */
 }
 #endif

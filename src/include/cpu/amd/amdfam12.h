@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef CPU_AMD_FAM12_H
@@ -31,16 +31,7 @@
 #define BU_CFG2_MSR			0xC001102A
 
 #define CPU_ID_FEATURES_MSR		0xC0011004
-#define CPU_ID_EXT_FEATURES_MSR	0xC0011005
-
-msr_t rdmsr_amd(u32 index);
-void wrmsr_amd(u32 index, msr_t msr);
-
-//#if defined(__GNUC__)
-//// it can be used to get unitid and coreid it running only
-//struct node_core_id get_node_core_id(u32 nb_cfg_54);
-//struct node_core_id get_node_core_id_x(void);
-//#endif
+#define CPU_ID_EXT_FEATURES_MSR		0xC0011005
 
 #if defined(__PRE_RAM__)
 void wait_all_core0_started(void);
@@ -49,6 +40,5 @@ void wait_all_aps_started(u32 bsp_apicid);
 void allow_all_aps_stop(u32 bsp_apicid);
 #endif
 void get_bus_conf(void);
-u32 get_initial_apicid(void);
 
 #endif /* CPU_AMD_FAM12_H */

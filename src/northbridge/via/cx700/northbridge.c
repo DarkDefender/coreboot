@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -28,10 +28,7 @@
 #include <string.h>
 #include <cpu/cpu.h>
 #include <cpu/x86/mtrr.h>
-
-#if CONFIG_WRITE_HIGH_TABLES
 #include <cbmem.h>
-#endif
 
 static void pci_domain_set_resources(device_t dev)
 {
@@ -71,12 +68,10 @@ static void pci_domain_set_resources(device_t dev)
 		tolmk -= 1024;	// TOP 1M SM Memory
 	}
 
-#if CONFIG_WRITE_HIGH_TABLES
 	high_tables_base = (tolmk * 1024) - HIGH_MEMORY_SIZE;
 	high_tables_size = HIGH_MEMORY_SIZE;
 	printk(BIOS_DEBUG, "tom: %lx, high_tables_base: %llx, high_tables_size: %llx\n",
 						tomk*1024, high_tables_base, high_tables_size);
-#endif
 
 	/* Report the memory regions */
 	idx = 10;
@@ -115,10 +110,10 @@ static struct device_operations cpu_bus_ops = {
 static void enable_dev(struct device *dev)
 {
 	/* Our wonderful device model */
-	if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
 		pci_set_method(dev);
-	} else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
+	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
 		dev->ops = &cpu_bus_ops;
 	}
 }

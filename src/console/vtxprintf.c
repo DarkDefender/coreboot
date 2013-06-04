@@ -5,7 +5,6 @@
  */
 
 #include <string.h>
-#include <div64.h>
 #include <console/console.h>
 #include <console/vtxprintf.h>
 
@@ -69,8 +68,10 @@ static int number(void (*tx_byte)(unsigned char byte),
 	i = 0;
 	if (num == 0)
 		tmp[i++]='0';
-	else while (num != 0)
-		tmp[i++] = digits[do_div(num,base)];
+	else while (num != 0){
+		tmp[i++] = digits[num % base];
+		num /= base;
+	}
 	if (i > precision)
 		precision = i;
 	size -= precision;

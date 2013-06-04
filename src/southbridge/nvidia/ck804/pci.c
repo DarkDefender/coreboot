@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -52,7 +52,7 @@ static void pci_init(struct device *dev)
 
 	pci_domain_dev = dev->bus->dev;
 	while (pci_domain_dev) {
-		if (pci_domain_dev->path.type == DEVICE_PATH_PCI_DOMAIN)
+		if (pci_domain_dev->path.type == DEVICE_PATH_DOMAIN)
 			break;
 		pci_domain_dev = pci_domain_dev->bus->dev;
 	}

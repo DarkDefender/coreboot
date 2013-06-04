@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  * ***************************************************************************
  *
  */
@@ -56,6 +56,10 @@ typedef union _PCI_ADDR {
 */
 #endif
 #define FIXUP_PTR(ptr)  ptr
+
+#if CONFIG_SB800_IMC_FWM
+	#define IMC_ENABLE_OVER_WRITE        0x01
+#endif
 
 #include <console/console.h>
 #include "AmdSbLib.h"
@@ -159,7 +163,7 @@ typedef union _PCI_ADDR {
 #include "vendorcode/amd/cimx/sb800/AMDSBLIB.h"
 
 #if CONFIG_HAVE_ACPI_RESUME
-#include "spi.h"
+#include <spi-generic.h>
 #endif
 
 #define BIOSRAM_INDEX   0xcd4

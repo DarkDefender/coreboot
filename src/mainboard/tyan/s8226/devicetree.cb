@@ -14,16 +14,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 chip northbridge/amd/agesa/family15/root_complex
-	device lapic_cluster 0 on
+	device cpu_cluster 0 on
 		chip cpu/amd/agesa/family15
-			device lapic 0x20 on end #f15
-			#device lapic 0x10 on end #f10
+			device lapic 0x10 on end
 		end
 	end
-	device pci_domain 0 on
+	device domain 0 on
 		subsystemid 0x15d9 0xab11 inherit #Tyan
 		chip northbridge/amd/agesa/family15 # CPU side of HT root complex
 			device pci 18.0 on     # Put IO-HUB at link_num 0, Instead of HT Link topology
@@ -122,7 +121,13 @@ chip northbridge/amd/agesa/family15/root_complex
 			device pci 18.3 on end
 			device pci 18.4 on end
 			device pci 18.5 on end #f15
+
+			register "spdAddrLookup" = "
+			{
+				{ {0xA0, 0xA4, 0xA8}, {0xA2, 0xA6, 0xAA}, }, // socket 0
+				{ {0xA0, 0xA4, 0xA8}, {0xA2, 0xA6, 0xAA}, }, // socket 1
+			}"
 		end #chip northbridge/amd/agesa/family15 # CPU side of HT root complex
-	end #pci_domain
+	end #domain
 end #northbridge/amd/agesa/family15/root_complex
 

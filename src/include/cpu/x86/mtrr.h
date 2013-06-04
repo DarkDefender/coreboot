@@ -26,6 +26,7 @@
 #define MTRRphysMaskValid	(1 << 11)
 
 #define NUM_FIXED_RANGES 88
+#define RANGES_PER_FIXED_MTRR 8
 #define MTRRfix64K_00000_MSR 0x250
 #define MTRRfix16K_80000_MSR 0x258
 #define MTRRfix16K_A0000_MSR 0x259
@@ -39,13 +40,56 @@
 #define MTRRfix4K_F8000_MSR 0x26f
 
 #if !defined (__ASSEMBLER__) && !defined(__PRE_RAM__)
-#include <device/device.h>
-void enable_fixed_mtrr(void);
-void x86_setup_var_mtrrs(unsigned int address_bits, unsigned int above4gb);
+
+/*
+ * The MTRR code has some side effects that the callers should be aware for.
+ * 1. The call sequence matters. x86_setup_mtrrs() calls
+ *    x86_setup_fixed_mtrrs_no_enable() then enable_fixed_mtrrs() (equivalent
+ *    of x86_setup_fixed_mtrrs()) then x86_setup_var_mtrrs(). If the callers
+ *    want to call the components of x86_setup_mtrrs() because of other
+ *    rquirements the ordering should still preserved.
+ * 2. enable_fixed_mtrr() will enable both variable and fixed MTRRs because
+ *    of the nature of the global MTRR enable flag. Therefore, all direct
+ *    or indirect callers of enable_fixed_mtrr() should ensure that the
+ *    variable MTRR MSRs do not contain bad ranges.
+ * 3. If CONFIG_CACHE_ROM is selected an MTRR is allocated for enabling
+ *    the caching of the ROM. However, it is set to uncacheable (UC). It
+ *    is the responsiblity of the caller to enable it by calling
+ *    x86_mtrr_enable_rom_caching().
+ */
 void x86_setup_mtrrs(void);
-int x86_mtrr_check(void);
-void set_var_mtrr_resource(void *gp, struct device *dev, struct resource *res);
+/*
+ * x86_setup_var_mtrrs() parameters:
+ * address_bits - number of physical address bits supported by cpu
+ * above4gb - 2 means dynamically detect number of variable MTRRs available.
+ *            non-zero means handle memory ranges above 4GiB.
+ *            0 means ignore memory ranges above 4GiB
+ */
+void x86_setup_var_mtrrs(unsigned int address_bits, unsigned int above4gb);
+void enable_fixed_mtrr(void);
 void x86_setup_fixed_mtrrs(void);
+/* Set up fixed MTRRs but do not enable them. */
+void x86_setup_fixed_mtrrs_no_enable(void);
+int x86_mtrr_check(void);
+/* ROM caching can be used after variable MTRRs are set up. Beware that
+ * enabling CONFIG_CACHE_ROM will eat through quite a few MTRRs based on
+ * one's IO hole size and WRCOMB resources. Be sure to check the console
+ * log when enabling CONFIG_CACHE_ROM or adding WRCOMB resources. Beware that
+ * on CPUs with core-scoped MTRR registers such as hyperthreaded CPUs the
+ * rom caching will be disabled if all threads run the MTRR code. Therefore,
+ * one needs to call x86_mtrr_enable_rom_caching() after all threads of the
+ * same core have run the MTRR code. */
+#if CONFIG_CACHE_ROM
+void x86_mtrr_enable_rom_caching(void);
+void x86_mtrr_disable_rom_caching(void);
+/* Return the variable range MTRR index of the ROM cache. */
+long x86_mtrr_rom_cache_var_index(void);
+#else
+static inline void x86_mtrr_enable_rom_caching(void) {}
+static inline void x86_mtrr_disable_rom_caching(void) {}
+static inline long x86_mtrr_rom_cache_var_index(void) { return -1; }
+#endif /* CONFIG_CACHE_ROM */
+
 #endif
 
 #if !defined(CONFIG_RAMTOP)

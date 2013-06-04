@@ -22,8 +22,13 @@
 #ifndef __EXYNOS5_CLK_H__
 #define __EXYNOS5_CLK_H__
 
-#include <cpu/samsung/exynos-common/clk.h>
+#include <cpu/samsung/exynos5-common/clk.h>
 #include <cpu/samsung/exynos5250/pinmux.h>
+
+
+#define MCT_ADDRESS 0x101c0000
+
+#define MCT_HZ 24000000
 
 /*
  * Set mshci controller instances clock drivder
@@ -564,8 +569,6 @@ const char *clock_get_mem_manuf_name(enum mem_manuf mem_manuf);
  * At present we are using 14148 of 14336 bytes. If we change this function
  * to be exported in SPL, we go over the edge.
  */
-/* TODO(dhendrix): do we still need this ifndef? */
-//#ifndef CONFIG_SPL_BUILD
 /**
  * Get the required memory type and speed (Main U-Boot version).
  *
@@ -581,6 +584,8 @@ const char *clock_get_mem_manuf_name(enum mem_manuf mem_manuf);
 int clock_get_mem_selection(enum ddr_mode *mem_type,
 		unsigned *frequency_mhz, unsigned *arm_freq,
 		enum mem_manuf *mem_manuf);
-//#endif /* CONFIG_SPL_BUILD */
+
+void mct_start(void);
+uint64_t mct_raw_value(void);
 
 #endif

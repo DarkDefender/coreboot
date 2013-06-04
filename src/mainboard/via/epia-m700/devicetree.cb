@@ -1,5 +1,5 @@
 chip northbridge/via/vx800	# Northbridge
-  device pci_domain 0 on
+  device domain 0 on
     device pci 0.0 on end	# AGP Bridge
     device pci 0.1 on end	# Error Reporting
     device pci 0.2 on end	# Host Bus Control
@@ -16,7 +16,7 @@ chip northbridge/via/vx800	# Northbridge
     # device pci 11.0 on	# Southbridge LPC
     # end
   end
-  device lapic_cluster 0 on	# APIC cluster
+  device cpu_cluster 0 on	# APIC cluster
     chip cpu/via/c7	# VIA C7
       device lapic 0 on end	# APIC
     end

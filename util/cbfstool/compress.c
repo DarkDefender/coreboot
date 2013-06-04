@@ -26,14 +26,14 @@
 #include <stdio.h>
 #include "common.h"
 
-extern void do_lzma_compress(char *in, int in_len, char *out, int *out_len);
+void do_lzma_compress(char *in, int in_len, char *out, int *out_len);
 
-void lzma_compress(char *in, int in_len, char *out, int *out_len)
+static void lzma_compress(char *in, int in_len, char *out, int *out_len)
 {
 	do_lzma_compress(in, in_len, out, out_len);
 }
 
-void none_compress(char *in, int in_len, char *out, int *out_len)
+static void none_compress(char *in, int in_len, char *out, int *out_len)
 {
 	memcpy(out, in, in_len);
 	*out_len = in_len;
@@ -50,7 +50,7 @@ comp_func_ptr compression_function(comp_algo algo)
 		compress = lzma_compress;
 		break;
 	default:
-		fprintf(stderr, "E: Unknown compression algorithm %d!\n", algo);
+		ERROR("Unknown compression algorithm %d!\n", algo);
 		return NULL;
 	}
 	return compress;

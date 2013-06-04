@@ -1,12 +1,12 @@
 chip northbridge/intel/sch
 
-	device lapic_cluster 0 on
+	device cpu_cluster 0 on
 		chip cpu/intel/socket_441
 			device lapic 0 on end
 		end
 	end
 
-	device pci_domain 0 on
+	device domain 0 on
 		device pci 00.0 on end # host bridge
 		device pci 02.0 on end # Integrated Graphics and Video Device
 

@@ -14,14 +14,13 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
 config SOUTHBRIDGE_AMD_AGESA_HUDSON
 	bool
 	select IOAPIC
 	select HAVE_USBDEBUG
-	select TINY_BOOTBLOCK
 
 config BOOTBLOCK_SOUTHBRIDGE_INIT
 	string
@@ -49,21 +48,19 @@ config HUDSON_XHCI_FWM
 	default y
         help
 	  Add Hudson 2/3/4 XHCI Firmware to support the onboard usb3.0
-	  Please contact AMD to obtain the related firmware
 
 config HUDSON_IMC_FWM
 	bool "Add imc firmware"
 	default y
         help
 	  Add Hudson 2/3/4 IMC Firmware to support the onboard fan control
-	  Please contact AMD to obtain the related firmware
 
 config HUDSON_GEC_FWM
-	bool "Add gec firmware"
+	bool
 	default n
         help
-	  Add Hudson 2/3/4 GEC Firmware
-	  Please contact AMD to obtain the related firmware
+	  Add Hudson 2/3/4 GEC Firmware to support the onboard gigabit Ethernet MAC.
+	  Must be connected to a Broadcom B50610 or B50610M PHY on the motherboard.
 
 config HUDSON_XHCI_FWM_FILE
         string "XHCI firmware path and filename"
@@ -106,7 +103,7 @@ config HUDSON_FWM_POSITION
 	  0xFFC20000 if flash chip size is 4M
 	  0xFF820000 if flash chip size is 8M
 	  0xFF020000 if flash chip size is 16M
-endif
+endif # HUDSON_FWM
 
 choice
 	prompt "SATA Mode"
@@ -176,7 +173,7 @@ config AHCI_ROM_FILE
 	string "AHCI ROM path and filename"
 	depends on HUDSON_AHCI_ROM
 	default "src/southbridge/amd/agesa/hudson/ahci.bin"
-endif
+endif # HUDSON_SATA_AHCI || HUDSON_SATA_AHCI7804
 
 if HUDSON_SATA_RAID
 config RAID_ROM_ID
@@ -203,14 +200,28 @@ config RAID_MISC_ROM_POSITION
 	  The RAID ROM requires that the MISC ROM is located between the range
 	  0xFFF0_0000 to 0xFFF0_FFFF. Also, it must 1K bytes aligned.
 	  The CONFIG_ROM_SIZE must larger than 0x100000.
-endif
+endif # HUDSON_SATA_RAID
 
-config S3_VOLATILE_POS
+config S3_DATA_POS
 	hex "S3 volatile storage position"
 	default 0xFFFF0000
 	depends on HAVE_ACPI_RESUME
 	help
 	  For a system with S3 feature, the BIOS needs to save some data to
-	  non-volitile storage at cold boot stage.
+	  non-volatile storage at cold boot stage.
 
-endif
+config S3_DATA_SIZE
+	int "S3 volatile storage size"
+	default 32768
+	depends on HAVE_ACPI_RESUME
+	help
+	  For a system with S3 feature, the BIOS needs to save some data to
+	  non-volatile storage at cold boot stage.
+
+config HUDSON_LEGACY_FREE
+	bool "System is legacy free"
+	help
+	  Select y if there is no keyboard controller in the system.
+	  This sets variables in AGESA and ACPI.
+
+endif # SOUTHBRIDGE_AMD_AGESA_HUDSON

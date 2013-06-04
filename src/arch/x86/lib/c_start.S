@@ -1,6 +1,22 @@
 #include <cpu/x86/post_code.h>
 
-	.section ".textfirst"
+/* Place the stack in the bss section. It's not necessary to define it in the
+ * the linker script. */
+	.section .bss, "aw", @nobits
+.global _stack
+.global _estack
+
+.align CONFIG_STACK_SIZE
+_stack:
+.space CONFIG_MAX_CPUS*CONFIG_STACK_SIZE
+_estack:
+#if CONFIG_COOP_MULTITASKING
+.global thread_stacks
+thread_stacks:
+.space CONFIG_STACK_SIZE*CONFIG_NUM_THREADS
+#endif
+
+	.section ".textfirst", "ax", @progbits
 	.code32
 	.globl _start
 _start:
@@ -16,12 +32,13 @@ _start:
 
 	post_code(POST_ENTRY_C_START)		/* post 13 */
 
+	cld
+
 	/** poison the stack. Code should not count on the
 	 * stack being full of zeros. This stack poisoning
 	 * recently uncovered a bug in the broadcast SIPI
 	 * code.
 	 */
-	cld
 	leal	_stack, %edi
 	movl	$_estack, %ecx
 	subl	%edi, %ecx
@@ -30,29 +47,16 @@ _start:
 	rep
 	stosl
 
-	/** clear bss, which unlike the stack is zero by definition */
-	leal	_bss, %edi
-	movl	$_ebss, %ecx
-	subl	%edi, %ecx
-	jz	.Lnobss
-	shrl	$2, %ecx  /* it is 32 bit aligned, right? */
-	xorl	%eax, %eax
-	rep
-	stosl
-.Lnobss:
-
 	/* set new stack */
 	movl	$_estack, %esp
 
+#if CONFIG_COOP_MULTITASKING
+	/* Push the thread pointer. */
+	pushl	$0
+#endif
 	/* Push the cpu index and struct cpu */
 	pushl	$0
 	pushl	$0
-
-	/* push the boot_complete flag */
-	pushl	%ebp
-
-	/* Save the stack location */
-	movl	%esp, %ebp
 
 	/* Initialize the Interrupt Descriptor table */
 	leal	_idt, %edi
@@ -79,13 +83,9 @@ _start:
 	 */
 	post_code(POST_PRE_HARDWAREMAIN)	/* post fe */
 
-	/* Restore the stack location */
-	movl	%ebp, %esp
-
 #if CONFIG_GDB_WAIT
 	call gdb_stub_breakpoint
 #endif
-	/* The boot_complete flag has already been pushed */
 	call	hardwaremain
 	/* NOTREACHED */
 .Lhlt:
@@ -249,11 +249,10 @@ gdb_stub_breakpoint:
 
 #endif
 
-	.globl gdt, gdt_end, gdt_limit, idtarg
+	.globl gdt, gdt_end, idtarg
 
-gdt_limit = gdt_end - gdt - 1	/* compute the table limit */
 gdtaddr:
-	.word	gdt_limit
+	.word	gdt_end - gdt - 1
 	.long	gdt		/* we know the offset */
 
 	 .data

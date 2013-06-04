@@ -1,6 +1,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#ifndef __SMM__
 #include <stdint.h>
 #include <stddef.h>
 #include <device/resource.h>
@@ -205,14 +206,17 @@ void fixed_mem_resource(device_t dev, unsigned long index,
 #define ram_resource(dev, idx, basek, sizek) \
 	fixed_mem_resource(dev, idx, basek, sizek, IORESOURCE_CACHEABLE)
 
+#define reserved_ram_resource(dev, idx, basek, sizek) \
+	fixed_mem_resource(dev, idx, basek, sizek, IORESOURCE_CACHEABLE | IORESOURCE_RESERVE)
+
 #define bad_ram_resource(dev, idx, basek, sizek) \
-	fixed_mem_resource(dev, idx, basek, sizek, IORESOURCE_RESERVE | IORESOURCE_IGNORE_MTRR)
+	reserved_ram_resource((dev), (idx), (basek), (sizek))
 
 #define uma_resource(dev, idx, basek, sizek) \
-	fixed_mem_resource(dev, idx, basek, sizek, IORESOURCE_RESERVE | IORESOURCE_UMA_FB)
+	fixed_mem_resource(dev, idx, basek, sizek, IORESOURCE_RESERVE)
 
 #define mmio_resource(dev, idx, basek, sizek) \
-	fixed_mem_resource(dev, idx, basek, sizek, IORESOURCE_RESERVE | IORESOURCE_IGNORE_MTRR)
+	fixed_mem_resource(dev, idx, basek, sizek, IORESOURCE_RESERVE)
 
 void tolm_test(void *gp, struct device *dev, struct resource *new);
 u32 find_pci_tolm(struct bus *bus);
@@ -222,4 +226,7 @@ ROMSTAGE_CONST struct device * dev_find_slot (unsigned int bus,
 ROMSTAGE_CONST struct device * dev_find_slot_on_smbus (unsigned int bus,
 							unsigned int addr);
 #endif
+#else /* __SMM__ */
+#include <arch/io.h>
+#endif /* __SMM__ */
 #endif /* DEVICE_H */

@@ -144,10 +144,23 @@ static void enable_vmx(void)
 
 	printk(BIOS_DEBUG, "%s VMX\n", enable ? "Enabling" : "Disabling");
 
+	/* Even though the Intel manual says you must set the lock bit in addition
+	 * to the VMX bit in order for VMX to work, it is incorrect.  Thus we leave
+	 * it unlocked for the OS to manage things itself.  This is good for a few
+	 * reasons:
+	 * - No need to reflash the bios just to toggle the lock bit.
+	 * - The VMX bits really really should match each other across cores, so
+	 *   hard locking it on one while another has the opposite setting can
+	 *   easily lead to crashes as code using VMX migrates between them.
+	 * - Vendors that want to "upsell" from a bios that disables+locks to
+	 *   one that doesn't is sleazy.
+	 * By leaving this to the OS (e.g. Linux), people can do exactly what they
+	 * want on the fly, and do it correctly (e.g. across multiple cores).
+	 */
 	if (enable) {
-			msr.lo |= (1 << 2);
-			if (regs.ecx & CPUID_SMX)
-				msr.lo |= (1 << 1);
+		msr.lo |= (1 << 2);
+		if (regs.ecx & CPUID_SMX)
+			msr.lo |= (1 << 1);
 	}
 
 	wrmsr(IA32_FEATURE_CONTROL, msr);
@@ -303,11 +316,11 @@ static void configure_c_states(void)
 	msr.lo |= 7;		// No package C-state limit
 	wrmsr(MSR_PMG_CST_CONFIG_CONTROL, msr);
 
-	msr = rdmsr(MSR_PMG_IO_CAPTURE_BASE);
+	msr = rdmsr(MSR_PMG_IO_CAPTURE_ADDR);
 	msr.lo &= ~0x7ffff;
 	msr.lo |= (PMB0_BASE + 4);	// LVL_2 base address
 	msr.lo |= (2 << 16);		// CST Range: C7 is max C-state
-	wrmsr(MSR_PMG_IO_CAPTURE_BASE, msr);
+	wrmsr(MSR_PMG_IO_CAPTURE_ADDR, msr);
 
 	msr = rdmsr(MSR_MISC_PWR_MGMT);
 	msr.lo &= ~(1 << 0);	// Enable P-state HW_ALL coordination

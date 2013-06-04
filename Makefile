@@ -97,10 +97,10 @@ ifeq ($(strip $(HAVE_DOTCONFIG)),)
 NOCOMPILE:=1
 endif
 ifneq ($(MAKECMDGOALS),)
-ifneq ($(filter %config distclean,$(MAKECMDGOALS)),)
+ifneq ($(filter %config %clean,$(MAKECMDGOALS)),)
 NOCOMPILE:=1
 endif
-ifeq ($(MAKECMDGOALS), distclean)
+ifeq ($(MAKECMDGOALS), %clean)
 NOMKDIR:=1
 endif
 endif
@@ -113,17 +113,19 @@ else
 
 include $(HAVE_DOTCONFIG)
 
-ARCHDIR-$(CONFIG_ARCH_ARM)     := armv7
+ARCHDIR-$(CONFIG_ARCH_ARMV7)   := armv7
 ARCHDIR-$(CONFIG_ARCH_X86)     := x86
 
 ARCH-y := $(ARCHDIR-y)
 
 # If architecture folder name is different from GCC binutils architecture name,
 # override here.
-ARCH-$(CONFIG_ARCH_ARM)     := littlearm
+ARCH-$(CONFIG_ARCH_ARMV7)   := armv7
 ARCH-$(CONFIG_ARCH_X86)     := i386
 
+ifneq ($(INNER_SCANBUILD),y)
 CC := $(CC_$(ARCH-y))
+endif
 AS := $(AS_$(ARCH-y))
 LD := $(LD_$(ARCH-y))
 NM := $(NM_$(ARCH-y))
@@ -230,12 +232,18 @@ evaluate_subdirs= \
 # collect all object files eligible for building
 subdirs:=$(TOPLEVEL)
 $(eval $(call evaluate_subdirs))
+ifeq ($(FAILBUILD),1)
+$(error cannot continue build)
+endif
 
 # Eliminate duplicate mentions of source files in a class
 $(foreach class,$(classes),$(eval $(class)-srcs:=$(sort $($(class)-srcs))))
 
 src-to-obj=$(addsuffix .$(1).o, $(basename $(patsubst src/%, $(obj)/%, $($(1)-srcs))))
 $(foreach class,$(classes),$(eval $(class)-objs:=$(call src-to-obj,$(class))))
+
+# Save all objs before processing them (for dependency inclusion)
+originalobjs:=$(foreach var, $(addsuffix -objs,$(classes)), $($(var)))
 
 # Call post-processors if they're defined
 $(foreach class,$(classes),\
@@ -268,7 +276,7 @@ $(foreach class,$(classes), \
 foreach-src=$(foreach file,$($(1)-srcs),$(eval $(call $(1)-objs_$(subst .,,$(suffix $(file)))_template,$(subst src/,,$(basename $(file))))))
 $(eval $(foreach class,$(classes),$(call foreach-src,$(class))))
 
-DEPENDENCIES = $(allobjs:.o=.d)
+DEPENDENCIES = $(originalobjs:.o=.d)
 -include $(DEPENDENCIES)
 
 printall:
@@ -297,9 +305,7 @@ doxygen-clean:
 	rm -rf $(DOXYGEN_OUTPUT_DIR)
 
 clean-for-update: doxygen-clean clean-for-update-target
-	rm -f $(allobjs) .xcompile
-	rm -f $(DEPENDENCIES)
-	rmdir -p $(alldirs) 2>/dev/null >/dev/null || true
+	rm -rf $(obj) .xcompile
 
 clean: clean-for-update clean-target
 	rm -f .ccwrap
@@ -307,8 +313,7 @@ clean: clean-for-update clean-target
 clean-cscope:
 	rm -f cscope.out
 
-distclean:
-	rm -rf $(obj)
+distclean: clean
 	rm -f .config .config.old ..config.tmp .kconfig.d .tmpconfig* .ccwrap .xcompile
 
-.PHONY: $(PHONY) clean clean-cscope cscope distclean doxygen doxy .xcompile
+.PHONY: $(PHONY) clean clean-for-update clean-cscope cscope distclean doxygen doxy .xcompile

@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef PC80_I8254_H
@@ -58,7 +58,5 @@
 #define PPCB_SPKR       0x02    /* Bit 1 */
 #define PPCB_T2GATE     0x01    /* Bit 0 */
 
-#ifndef __ROMCC__
 void setup_i8254(void);
-#endif
 #endif

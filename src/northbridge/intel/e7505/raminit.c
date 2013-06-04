@@ -15,7 +15,6 @@
 #include <stdint.h>
 #include <device/pci_def.h>
 #include <arch/io.h>
-#include <arch/romcc_io.h>
 #include <arch/cpu.h>
 #include <stdlib.h>
 #include <console/console.h>
@@ -1887,6 +1886,12 @@ void e7505_mch_init(const struct mem_controller *memctrl)
 	sdram_set_registers(memctrl);
 	sdram_set_spd_registers(memctrl);
 	sdram_enable(memctrl);
+}
+
+unsigned long get_top_of_ram(void)
+{
+	u32 tolm = (pci_read_config16(MCHDEV, TOLM) & ~0x7ff) << 16;
+	return (unsigned long) tolm;
 }
 
 /**

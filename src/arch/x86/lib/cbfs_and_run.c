@@ -22,37 +22,25 @@
 #include <arch/stages.h>
 #include <timestamp.h>
 
-static void cbfs_and_run_core(const char *filename, unsigned ebp)
+static void cbfs_and_run_core(const char *filename)
 {
 	u8 *dst;
 
 	timestamp_add_now(TS_START_COPYRAM);
 	print_debug("Loading image.\n");
-	dst = cbfs_load_stage(filename);
+	dst = cbfs_load_stage(CBFS_DEFAULT_MEDIA, filename);
 	if ((void *)dst == (void *) -1)
 		die("FATAL: Essential component is missing.\n");
 
 	timestamp_add_now(TS_END_COPYRAM);
 	print_debug("Jumping to image.\n");
 	__asm__ volatile (
-		"movl %%eax, %%ebp\n"
 		"jmp  *%%edi\n"
-		:: "a"(ebp), "D"(dst)
+		:: "D"(dst)
 	);
 }
 
-void __attribute__((regparm(0))) copy_and_run(unsigned cpu_reset)
+void asmlinkage copy_and_run(void)
 {
-	// FIXME fix input parameters instead normalizing them here.
-	if (cpu_reset == 1) cpu_reset = -1;
-	else cpu_reset = 0;
-
-	cbfs_and_run_core(CONFIG_CBFS_PREFIX "/coreboot_ram", cpu_reset);
+	cbfs_and_run_core(CONFIG_CBFS_PREFIX "/coreboot_ram");
 }
-
-#if CONFIG_AP_CODE_IN_CAR
-void __attribute__((regparm(0))) copy_and_run_ap_code_in_car(unsigned ret_addr)
-{
-	cbfs_and_run_core(CONFIG_CBFS_PREFIX "/coreboot_ap", ret_addr);
-}
-#endif

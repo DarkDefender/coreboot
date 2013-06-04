@@ -6,6 +6,7 @@ if CPU_AMD_GEODE_LX
 config CPU_SPECIFIC_OPTIONS
 	def_bool y
 	select CACHE_AS_RAM
+	select TSC_MONOTONIC_TIMER
 
 config DCACHE_RAM_BASE
 	hex
@@ -19,7 +20,6 @@ config GEODE_VSA
 	bool
 	default y
 	select PCI_OPTION_ROM_RUN_REALMODE
-	select REQUIRES_BLOB
 
 config GEODE_VSA_FILE
 	bool "Add a VSA image"

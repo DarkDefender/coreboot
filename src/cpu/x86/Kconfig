@@ -11,12 +11,33 @@ config UDELAY_LAPIC
 	bool
 	default n
 
+config LAPIC_MONOTONIC_TIMER
+	def_bool n
+	depends on UDELAY_LAPIC
+	select HAVE_MONOTONIC_TIMER
+	help
+	  Expose monotonic time using the local apic.
+
 config UDELAY_LAPIC_FIXED_FSB
 	int
 
 config UDELAY_TSC
 	bool
 	default n
+
+config TSC_CONSTANT_RATE
+	def_bool n
+	depends on UDELAY_TSC
+	help
+	  This option asserts that the TSC ticks at a known constant rate.
+	  Therefore, no TSC calibration is required.
+
+config TSC_MONOTONIC_TIMER
+	def_bool n
+	depends on UDELAY_TSC
+	select HAVE_MONOTONIC_TIMER
+	help
+	  Expose monotonic time using the TSC.
 
 config UDELAY_TIMER2
 	bool
@@ -56,8 +77,11 @@ config LOGICAL_CPUS
 	default y
 
 config CACHE_ROM
-	bool
+	bool "Allow for caching system ROM."
 	default n
+	help
+	 When selected a variable range MTRR is allocated for coreboot and
+	 the bootloader enables caching of the system ROM for faster access.
 
 config SMM_TSEG
 	bool
@@ -66,3 +90,37 @@ config SMM_TSEG
 config SMM_TSEG_SIZE
 	hex
 	default 0
+
+config SMM_MODULES
+	bool
+	default n
+	depends on HAVE_SMI_HANDLER
+	select RELOCATABLE_MODULES
+	help
+	 If SMM_MODULES is selected then SMM handlers are built as modules.
+	 A SMM stub along with a SMM loader/relocator. All the handlers are
+	 written in C with stub being the only assembly.
+
+config SMM_MODULE_HEAP_SIZE
+	hex
+	default 0x4000
+	depends on SMM_MODULES
+	help
+	  This option determines the size of the heap within the SMM handler
+	  modules.
+
+config X86_AMD_FIXED_MTRRS
+	bool
+	default n
+	help
+	  This option informs the MTRR code to use the RdMem and WrMem fields
+	  in the fixed MTRR MSRs.
+
+config CAR_MIGRATION
+	def_bool n
+	depends on DYNAMIC_CBMEM || EARLY_CBMEM_INIT
+	help
+	  Migrate the cache-as-ram variables to CBMEM once CBMEM is set up
+	  in romstage. This option is only needed if one will be doing more
+	  work in romstage after the cache-as-ram is torn down aside from
+	  loading ramstage.

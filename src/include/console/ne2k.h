@@ -1,5 +1,3 @@
-#ifndef _NE2K_H__
-#define _NE2K_H__
 /*
  * This file is part of the coreboot project.
  *
@@ -16,12 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __ROMCC__
+#ifndef _NE2K_H__
+#define _NE2K_H__
 void ne2k_append_data(unsigned char *d, int len, unsigned int base);
 int ne2k_init(unsigned int eth_nic_base);
 void ne2k_transmit(unsigned int eth_nic_base);
-#endif
 #endif /* _NE2K_H */

@@ -1,5 +1,5 @@
 chip northbridge/intel/e7520 # mch
-	device pci_domain 0 on
+	device domain 0 on
 		subsystemid 0x15d9 0x5580 inherit
 		chip southbridge/intel/i82801ex # i82801er
 			# USB ports
@@ -72,7 +72,7 @@ chip northbridge/intel/e7520 # mch
 		end
 		device pci 06.0 on end
 	end
-	device lapic_cluster 0 on
+	device cpu_cluster 0 on
 		chip cpu/intel/socket_mPGA604 # cpu 0
 			device lapic 0 on end
 		end

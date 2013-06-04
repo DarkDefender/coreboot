@@ -1,5 +1,5 @@
 chip northbridge/intel/i3100
-        device pci_domain 0 on
+        device domain 0 on
                 subsystemid 0x8086 0x2680 inherit
                 device pci 00.0 on end # IMCH
                 device pci 00.1 on end # IMCH error status
@@ -37,7 +37,7 @@ chip northbridge/intel/i3100
                         device pci 1f.3 on end # SMBus
                 end
         end
-        device lapic_cluster 0 on
+        device cpu_cluster 0 on
                 chip cpu/intel/socket_mPGA479M
                         device lapic 0 on end
                 end

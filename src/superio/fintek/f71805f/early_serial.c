@@ -15,12 +15,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /* Pre-RAM driver for the Fintek F71805F/FG Super I/O chip. */
 
-#include <arch/romcc_io.h>
+#include <arch/io.h>
 #include "f71805f.h"
 
 static void pnp_enter_conf_state(device_t dev)

@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <arch/io.h>
@@ -23,6 +23,9 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
+#include <device/pci_ops.h>
+#include <cpu/x86/msr.h>
+#include <cpu/x86/mtrr.h>
 
 #include "chip.h"
 #include "sandybridge.h"
@@ -318,6 +321,7 @@ u32 map_oprom_vendev(u32 vendev)
 	case 0x80860116:		/* GT2 Mobile */
 	case 0x80860122:		/* GT2 Desktop >=1.3GHz */
 	case 0x80860126:		/* GT2 Mobile >=1.3GHz */
+	case 0x80860156:                /* IVB */
 	case 0x80860166:                /* IVB */
 		new_vendev=0x80860106;	/* GT1 Mobile */
 		break;
@@ -627,11 +631,26 @@ static void gma_func0_init(struct device *dev)
 	/* Init graphics power management */
 	gma_pm_init_pre_vbios(dev);
 
+#if !CONFIG_MAINBOARD_DO_NATIVE_VGA_INIT
 	/* PCI Init, will run VBIOS */
 	pci_dev_init(dev);
+#endif
 
 	/* Post VBIOS init */
 	gma_pm_init_post_vbios(dev);
+
+#if CONFIG_MAINBOARD_DO_NATIVE_VGA_INIT
+	/* This should probably run before post VBIOS init. */
+	printk(BIOS_SPEW, "Initializing VGA without OPROM.\n");
+	u32 iobase, mmiobase, physbase, graphics_base;
+	iobase = dev->resource_list[2].base;
+	mmiobase = dev->resource_list[0].base;
+	physbase = pci_read_config32(dev, 0x5c) & ~0xf;
+	graphics_base = dev->resource_list[1].base;
+
+	int i915lightup(u32 physbase, u32 iobase, u32 mmiobase, u32 gfx);
+	i915lightup(physbase, iobase, mmiobase, graphics_base);
+#endif
 }
 
 static void gma_set_subsystem(device_t dev, unsigned vendor, unsigned device)
@@ -645,12 +664,29 @@ static void gma_set_subsystem(device_t dev, unsigned vendor, unsigned device)
 	}
 }
 
+static void gma_read_resources(struct device *dev)
+{
+	pci_dev_read_resources(dev);
+
+#if CONFIG_MARK_GRAPHICS_MEM_WRCOMB
+	struct resource *res;
+
+	/* Set the graphics memory to write combining. */
+	res = find_resource(dev, PCI_BASE_ADDRESS_2);
+	if (res == NULL) {
+		printk(BIOS_DEBUG, "gma: memory resource not found.\n");
+		return;
+	}
+	res->flags |= IORESOURCE_WRCOMB;
+#endif
+}
+
 static struct pci_operations gma_pci_ops = {
 	.set_subsystem    = gma_set_subsystem,
 };
 
 static struct device_operations gma_func0_ops = {
-	.read_resources		= pci_dev_read_resources,
+	.read_resources		= gma_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= gma_func0_init,
@@ -659,12 +695,13 @@ static struct device_operations gma_func0_ops = {
 	.ops_pci		= &gma_pci_ops,
 };
 
-static const unsigned short gma_ids[] = {
-	0x0102, 0x0106, 0x010a, 0x0112, 0x0116, 0x0122, 0x0126, 0x166,
-	0,
-};
-static const struct pci_driver gma_gt1_desktop __pci_driver = {
-	.ops	= &gma_func0_ops,
-	.vendor	= PCI_VENDOR_ID_INTEL,
-	.devices= gma_ids,
+static const unsigned short pci_device_ids[] = { 0x0102, 0x0106, 0x010a, 0x0112,
+						 0x0116, 0x0122, 0x0126, 0x0156,
+						 0x0166,
+						 0 };
+
+static const struct pci_driver gma __pci_driver = {
+	.ops	 = &gma_func0_ops,
+	.vendor	 = PCI_VENDOR_ID_INTEL,
+	.devices = pci_device_ids,
 };

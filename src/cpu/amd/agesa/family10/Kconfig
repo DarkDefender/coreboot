@@ -14,13 +14,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
 config CPU_AMD_AGESA_FAMILY10
 	bool
 	select CPU_AMD_MODEL_10XXX
 	select PCI_IO_CFG_EXT
+	select X86_AMD_FIXED_MTRRS
 
 if CPU_AMD_AGESA_FAMILY10
 
@@ -51,7 +52,6 @@ config HAVE_INIT_TIMER
 config REDIRECT_IDS_HDT_CONSOLE_TO_SERIAL
         bool "Redirect AGESA IDS_HDT_CONSOLE to serial console"
         default n
-        depends on CPU_AMD_AGESA_FAMILY10
         help
           This Option allows you to redirect the AMD AGESA IDS_HDT_CONSOLE debug information to the serial console.
 

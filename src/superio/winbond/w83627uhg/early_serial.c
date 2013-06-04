@@ -15,11 +15,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <arch/romcc_io.h>
-#include <stdint.h>
+#include <arch/io.h>
 #include "w83627uhg.h"
 
 static void pnp_enter_ext_func_mode(device_t dev)

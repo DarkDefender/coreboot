@@ -14,12 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
-#ifndef _E350M1_CFG_H_
-#define _E350M1_CFG_H_
+#ifndef _PLATFORM_CFG_H_
+#define _PLATFORM_CFG_H_
 
 /**
  * @def BIOS_SIZE_1M
@@ -103,7 +103,7 @@
  * @brief INCHIP Sata Controller Mode
  *   NOTE: DO NOT ALLOW SATA & IDE use same mode
  */
-#define SATA_MODE			NATIVE_IDE_MODE
+#define SATA_MODE			CONFIG_SB800_SATA_MODE
 
 /**
  * @brief INCHIP Sata IDE Controller Mode

@@ -16,14 +16,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
 #include <cpu/cpu.h>
 #include <boot/tables.h>
 #include <boot/coreboot_tables.h>
-#include <arch/coreboot_tables.h>
 #include <arch/pirq_routing.h>
 #include <arch/smp/mpspec.h>
 #include <arch/acpi.h>
@@ -53,6 +52,7 @@ struct lb_memory *write_tables(void)
 	 */
 	unsigned long high_table_pointer;
 
+#if !CONFIG_DYNAMIC_CBMEM
 	if (!high_tables_base) {
 		printk(BIOS_ERR, "ERROR: High Tables Base is not set.\n");
 		// Are there any boards without?
@@ -60,6 +60,7 @@ struct lb_memory *write_tables(void)
 	}
 
 	printk(BIOS_DEBUG, "High Tables Base is %llx.\n", high_tables_base);
+#endif
 
 	rom_table_start = 0xf0000;
 	rom_table_end =   0xf0000;
@@ -202,6 +203,22 @@ struct lb_memory *write_tables(void)
 	}
 #endif
 
+	post_code(0x9e);
+
+#if CONFIG_HAVE_ACPI_RESUME
+/* Only add CBMEM_ID_RESUME when the ramstage isn't relocatable. */
+#if !CONFIG_RELOCATABLE_RAMSTAGE
+	/* Let's prepare the ACPI S3 Resume area now already, so we can rely on
+	 * it begin there during reboot time. We don't need the pointer, nor
+	 * the result right now. If it fails, ACPI resume will be disabled.
+	 */
+	cbmem_add(CBMEM_ID_RESUME, HIGH_MEMORY_SAVE);
+#endif
+#if CONFIG_NORTHBRIDGE_AMD_AGESA_FAMILY14 || CONFIG_NORTHBRIDGE_AMD_AGESA_FAMILY15_TN
+	cbmem_add(CBMEM_ID_RESUME_SCRATCH, CONFIG_HIGH_SCRATCH_MEMORY_SIZE);
+#endif
+#endif
+
 #define MAX_COREBOOT_TABLE_SIZE (32 * 1024)
 	post_code(0x9d);
 
@@ -229,19 +246,6 @@ struct lb_memory *write_tables(void)
 				     rom_table_start, rom_table_end);
 	}
 
-	post_code(0x9e);
-
-#if CONFIG_HAVE_ACPI_RESUME
-	/* Let's prepare the ACPI S3 Resume area now already, so we can rely on
-	 * it begin there during reboot time. We don't need the pointer, nor
-	 * the result right now. If it fails, ACPI resume will be disabled.
-	 */
-	cbmem_add(CBMEM_ID_RESUME, HIGH_MEMORY_SAVE);
-#if CONFIG_NORTHBRIDGE_AMD_AGESA_FAMILY14 || CONFIG_NORTHBRIDGE_AMD_AGESA_FAMILY15_TN
-	cbmem_add(CBMEM_ID_RESUME_SCRATCH, CONFIG_HIGH_SCRATCH_MEMORY_SIZE);
-#endif
-#endif
-
 #if CONFIG_MULTIBOOT
 	post_code(0x9d);
 
@@ -249,7 +253,7 @@ struct lb_memory *write_tables(void)
 	write_multiboot_info(rom_table_end);
 #endif
 
-	// Remove before sending upstream
+	/* Print CBMEM sections */
 	cbmem_list();
 
 	return get_lb_mem();

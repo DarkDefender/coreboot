@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef CPU_AMD_MODEL_10XXX_MSR_H
@@ -37,9 +37,6 @@
 #define CPU_ID_FEATURES_MSR		0xC0011004
 #define CPU_ID_HYPER_EXT_FEATURES	0xC001100d
 #define LOGICAL_CPUS_NUM_MSR		0xC001100d
-#define CPU_ID_EXT_FEATURES_MSR	0xC0011005
-
-msr_t rdmsr_amd(u32 index);
-void wrmsr_amd(u32 index, msr_t msr);
+#define CPU_ID_EXT_FEATURES_MSR		0xC0011005
 
 #endif /* CPU_AMD_MODEL_10XXX_MSR_H */

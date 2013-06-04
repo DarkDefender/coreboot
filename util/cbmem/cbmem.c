@@ -17,12 +17,23 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <libgen.h>
+#include <assert.h>
 
-#include "stdlib.h"
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define MAP_BYTES (1024*1024)
+
 #include "boot/coreboot_tables.h"
 
 typedef uint16_t u16;
@@ -32,8 +43,14 @@ typedef uint64_t u64;
 #include "cbmem.h"
 #include "timestamp.h"
 
-/* File descriptor used to access /dev/mem */
-static FILE* fd;
+#define CBMEM_VERSION "1.0"
+
+/* verbose output? */
+static int verbose = 0;
+#define debug(x...) if(verbose) printf(x)
+
+/* File handle used to access /dev/mem */
+static int fd;
 
 /*
  * calculate ip checksum (16 bit quantities) on a passed in buffer. In case
@@ -55,104 +72,136 @@ static u16 ipchcksum(const void *addr, unsigned size)
 }
 
 /*
- * Starting at 'offset' read 'size' bytes from the previously opened /dev/mem
- * into the 'buffer'.
- *
- * Return zero on success or exit on any error.
+ * Functions to map / unmap physical memory into virtual address space. These
+ * functions always maps 1MB at a time and can only map one area at once.
  */
-static int readmem(void* buffer, u32 offset,  int size)
+static void *mapped_virtual;
+static void *map_memory(u64 physical)
 {
-	if (fseek(fd, offset, SEEK_SET)) {
-		fprintf(stderr, "fseek failed(%d) for offset %d\n",
-			errno, offset);
+	void *v;
+	off_t p;
+	int page = getpagesize();
+
+	/* Mapped memory must be aligned to page size */
+	p = physical & ~(page - 1);
+
+	debug("Mapping 1MB of physical memory at 0x%jx.\n", (intmax_t)p);
+
+	v = mmap(NULL, MAP_BYTES, PROT_READ, MAP_SHARED, fd, p);
+
+	if (v == MAP_FAILED) {
+		fprintf(stderr, "Failed to mmap /dev/mem: %s\n",
+			strerror(errno));
 		exit(1);
 	}
-	if (fread(buffer, 1, size, fd) != size) {
-		fprintf(stderr, "failed (%d) to read %d bytes at 0x%x\n",
-			errno, size, offset);
-		exit(1);
+
+	/* Remember what we actually mapped ... */
+	mapped_virtual = v;
+
+	/* ... but return address to the physical memory that was requested */
+	v += physical & (page-1);
+
+	return v;
+}
+
+static void unmap_memory(void)
+{
+	if (mapped_virtual == NULL) {
+		fprintf(stderr, "Error unmapping memory\n");
+		return;
 	}
-	return 0;
+	debug("Unmapping 1MB of virtual memory at %p.\n", mapped_virtual);
+	munmap(mapped_virtual, MAP_BYTES);
+	mapped_virtual = NULL;
 }
 
 /*
- * Try finding the timestamp table starting from the passed in memory offset.
- * Could be called recursively in case a forwarding entry is found.
+ * Try finding the timestamp table and coreboot cbmem console starting from the
+ * passed in memory offset.  Could be called recursively in case a forwarding
+ * entry is found.
  *
  * Returns pointer to a memory buffer containg the timestamp table or zero if
  * none found.
  */
-static const struct timestamp_table *find_tstamps(u64 address)
+
+static struct lb_cbmem_ref timestamps;
+static struct lb_cbmem_ref console;
+static struct lb_memory_range cbmem;
+
+static int parse_cbtable(u64 address)
 {
-	int i;
+	int i, found = 0;
+	void *buf;
+
+	debug("Looking for coreboot table at %" PRIx64 "\n", address);
+	buf = map_memory(address);
 
 	/* look at every 16 bytes within 4K of the base */
+
 	for (i = 0; i < 0x1000; i += 0x10) {
-		void *buf;
-		struct lb_header lbh;
+		struct lb_header *lbh;
 		struct lb_record* lbr_p;
+		void *lbtable;
 		int j;
 
-		readmem(&lbh, address + i, sizeof(lbh));
-		if (memcmp(lbh.signature, "LBIO", sizeof(lbh.signature)) ||
-		    !lbh.header_bytes ||
-		    ipchcksum(&lbh, sizeof(lbh)))
+		lbh = (struct lb_header *)(buf + i);
+		if (memcmp(lbh->signature, "LBIO", sizeof(lbh->signature)) ||
+		    !lbh->header_bytes ||
+		    ipchcksum(lbh, sizeof(*lbh))) {
 			continue;
-
-		/* good lb_header is found, try reading the table */
-		buf = malloc(lbh.table_bytes);
-		if (!buf) {
-			fprintf(stderr, "failed to allocate %d bytes\n",
-				lbh.table_bytes);
-			exit(1);
 		}
+		lbtable = buf + i + lbh->header_bytes;
 
-		readmem(buf, address + i + lbh.header_bytes, lbh.table_bytes);
-		if (ipchcksum(buf, lbh.table_bytes) !=
-		    lbh.table_checksum) {
-			/* False positive or table corrupted... */
-			free(buf);
+		if (ipchcksum(lbtable, lbh->table_bytes) !=
+		    lbh->table_checksum) {
+			debug("Signature found, but wrong checksum.\n");
 			continue;
 		}
 
-		for (j = 0; j < lbh.table_bytes; j += lbr_p->size) {
+		found = 1;
+		debug("Found!\n");
+
+		for (j = 0; j < lbh->table_bytes; j += lbr_p->size) {
 			/* look for the timestamp table */
-			lbr_p = (struct lb_record*) ((char *)buf + j);
+			lbr_p = (struct lb_record*) ((char *)lbtable + j);
+			debug("  coreboot table entry 0x%02x\n", lbr_p->tag);
 			switch (lbr_p->tag) {
-			case LB_TAG_TIMESTAMPS: {
-				struct lb_cbmem_ref *cbmr_p =
-					(struct lb_cbmem_ref *) lbr_p;
-				int new_size;
-				struct timestamp_table *tst_p;
-				u32 stamp_addr = (u32)
-					((uintptr_t)(cbmr_p->cbmem_addr));
-
-				readmem(buf, stamp_addr,
-					sizeof(struct timestamp_table));
-				tst_p = (struct timestamp_table *) buf;
-				new_size = sizeof(struct timestamp_table) +
-					tst_p->num_entries *
-					sizeof(struct timestamp_entry);
-				buf = realloc(buf, new_size);
-				if (!buf) {
-					fprintf(stderr,
-						"failed to reallocate %d bytes\n",
-						new_size);
-					exit(1);
+			case LB_TAG_MEMORY: {
+				int i = 0;
+				debug("    Found memory map.\n");
+				struct lb_memory *memory =
+						(struct lb_memory *)lbr_p;
+				while ((char *)&memory->map[i] < ((char *)lbtable
+							    + lbr_p->size)) {
+					if (memory->map[i].type == LB_MEM_TABLE) {
+						debug("      LB_MEM_TABLE found.\n");
+						/* The last one found is CBMEM */
+						cbmem = memory->map[i];
+					}
+					i++;
 				}
-				readmem(buf, stamp_addr, new_size);
-				return buf;
+				continue;
+			}
+			case LB_TAG_TIMESTAMPS: {
+				debug("    Found timestamp table.\n");
+				timestamps = *(struct lb_cbmem_ref *) lbr_p;
+				continue;
+			}
+			case LB_TAG_CBMEM_CONSOLE: {
+				debug("    Found cbmem console.\n");
+				console = *(struct lb_cbmem_ref *) lbr_p;
+				continue;
 			}
 			case LB_TAG_FORWARD: {
 				/*
 				 * This is a forwarding entry - repeat the
 				 * search at the new address.
 				 */
-				struct lb_forward *lbf_p =
-					(struct lb_forward *) lbr_p;
-
-				free(buf);
-				return find_tstamps(lbf_p->forward);
+				struct lb_forward lbf_p =
+					*(struct lb_forward *) lbr_p;
+				debug("    Found forwarding entry.\n");
+				unmap_memory();
+				return parse_cbtable(lbf_p.forward);
 			}
 			default:
 				break;
@@ -160,14 +209,16 @@ static const struct timestamp_table *find_tstamps(u64 address)
 
 		}
 	}
-	return 0;
+	unmap_memory();
+
+	return found;
 }
 
 /*
  * read CPU frequency from a sysfs file, return an frequency in Kilohertz as
  * an int or exit on any error.
  */
-static u64 get_cpu_freq_KHz()
+static u64 get_cpu_freq_KHz(void)
 {
 	FILE *cpuf;
 	char freqs[100];
@@ -180,7 +231,8 @@ static u64 get_cpu_freq_KHz()
 
 	cpuf = fopen(freq_file, "r");
 	if (!cpuf) {
-		fprintf(stderr, "Could not open %s\n", freq_file);
+		fprintf(stderr, "Could not open %s: %s\n",
+			freq_file, strerror(errno));
 		exit(1);
 	}
 
@@ -224,10 +276,19 @@ static void print_norm(u64 v, int comma)
 }
 
 /* dump the timestamp table */
-static void dump_timestamps(const struct timestamp_table *tst_p)
+static void dump_timestamps(void)
 {
 	int i;
 	u64 cpu_freq_MHz = get_cpu_freq_KHz() / 1000;
+	struct timestamp_table *tst_p;
+
+	if (timestamps.tag != LB_TAG_TIMESTAMPS) {
+		fprintf(stderr, "No timestamps found in coreboot table.\n");
+		return;
+	}
+
+	tst_p = (struct timestamp_table *)
+			map_memory((unsigned long)timestamps.cbmem_addr);
 
 	printf("%d entries total:\n\n", tst_p->num_entries);
 	for (i = 0; i < tst_p->num_entries; i++) {
@@ -244,31 +305,330 @@ static void dump_timestamps(const struct timestamp_table *tst_p)
 		}
 		printf("\n");
 	}
+
+	unmap_memory();
 }
 
-
-int main(int argc, char** argv)
+/* dump the cbmem console */
+static void dump_console(void)
 {
-	int j;
-	static const int possible_base_addresses[] = {0, 0xf0000};
+	void *console_p;
+	char *console_c;
+	uint32_t size;
+	uint32_t cursor;
 
-	fd = fopen("/dev/mem", "r");
-	if (!fd) {
-		printf("failed to gain memory access\n");
-		return 1;
+	if (console.tag != LB_TAG_CBMEM_CONSOLE) {
+		fprintf(stderr, "No console found in coreboot table.\n");
+		return;
 	}
 
-	for (j = 0; j < ARRAY_SIZE(possible_base_addresses); j++) {
-		const struct timestamp_table * tst_p =
-			find_tstamps(possible_base_addresses[j]);
+	console_p = map_memory((unsigned long)console.cbmem_addr);
+	/* The in-memory format of the console area is:
+	 *  u32  size
+	 *  u32  cursor
+	 *  char console[size]
+	 * Hence we have to add 8 to get to the actual console string.
+	 */
+	size = *(uint32_t *)console_p;
+	cursor = *(uint32_t *) (console_p + 4);
+	/* Cursor continues to go on even after no more data fits in
+	 * the buffer but the data is dropped in this case.
+	 */
+	if (size > cursor)
+		size = cursor;
+	console_c = malloc(size + 1);
+	if (!console_c) {
+		fprintf(stderr, "Not enough memory for console.\n");
+		exit(1);
+	}
 
-		if (tst_p) {
-			dump_timestamps(tst_p);
-			free((void*)tst_p);
+	memcpy(console_c, console_p + 8, size);
+	console_c[size] = 0;
+
+	printf("%s\n", console_c);
+	if (size < cursor)
+		printf("%d %s lost\n", cursor - size,
+			(cursor - size) == 1 ? "byte":"bytes");
+
+	free(console_c);
+
+	unmap_memory();
+}
+
+#define CBMEM_MAGIC 0x434f5245
+#define MAX_CBMEM_ENTRIES 16
+
+struct cbmem_entry {
+	uint32_t magic;
+	uint32_t id;
+	uint64_t base;
+	uint64_t size;
+};
+
+static void dump_cbmem_toc(void)
+{
+	int i;
+	uint64_t start;
+	struct cbmem_entry *entries;
+
+	if (cbmem.type != LB_MEM_TABLE) {
+		fprintf(stderr, "No coreboot table area found!\n");
+		return;
+	}
+
+	start = unpack_lb64(cbmem.start);
+
+	entries = (struct cbmem_entry *)map_memory(start);
+
+	printf("CBMEM table of contents:\n");
+	printf("    ID           START      LENGTH\n");
+	for (i=0; i<MAX_CBMEM_ENTRIES; i++) {
+		if (entries[i].magic != CBMEM_MAGIC)
+			break;
+
+		printf("%2d. ", i);
+		switch (entries[i].id) {
+		case CBMEM_ID_FREESPACE: printf("FREE SPACE  "); break;
+		case CBMEM_ID_GDT:       printf("GDT         "); break;
+		case CBMEM_ID_ACPI:      printf("ACPI        "); break;
+		case CBMEM_ID_ACPI_GNVS: printf("ACPI GNVS   "); break;
+		case CBMEM_ID_CBTABLE:   printf("COREBOOT    "); break;
+		case CBMEM_ID_PIRQ:      printf("IRQ TABLE   "); break;
+		case CBMEM_ID_MPTABLE:   printf("SMP TABLE   "); break;
+		case CBMEM_ID_RESUME:    printf("ACPI RESUME "); break;
+		case CBMEM_ID_RESUME_SCRATCH: printf("ACPI SCRATCH"); break;
+		case CBMEM_ID_SMBIOS:    printf("SMBIOS      "); break;
+		case CBMEM_ID_TIMESTAMP: printf("TIME STAMP  "); break;
+		case CBMEM_ID_MRCDATA:   printf("MRC DATA    "); break;
+		case CBMEM_ID_CONSOLE:   printf("CONSOLE     "); break;
+		case CBMEM_ID_ELOG:      printf("ELOG        "); break;
+		case CBMEM_ID_COVERAGE:  printf("COVERAGE    "); break;
+		default:                 printf("%08x    ",
+						entries[i].id); break;
+		}
+		printf(" 0x%08jx 0x%08jx\n", (uintmax_t)entries[i].base,
+			 (uintmax_t)entries[i].size);
+	}
+	unmap_memory();
+}
+
+#define COVERAGE_MAGIC 0x584d4153
+struct file {
+	uint32_t magic;
+	uint32_t next;
+	uint32_t filename;
+	uint32_t data;
+	int offset;
+	int len;
+};
+
+static int mkpath(char *path, mode_t mode)
+{
+	assert (path && *path);
+	char *p;
+	for (p = strchr(path+1, '/'); p; p = strchr(p + 1, '/')) {
+		*p = '\0';
+		if (mkdir(path, mode) == -1) {
+			if (errno != EEXIST) {
+				*p = '/';
+				return -1;
+			}
+		}
+		*p = '/';
+	}
+	return 0;
+}
+
+static void dump_coverage(void)
+{
+	int i, found = 0;
+	uint64_t start;
+	struct cbmem_entry *entries;
+	void *coverage;
+	unsigned long phys_offset;
+#define phys_to_virt(x) ((void *)(unsigned long)(x) + phys_offset)
+
+	if (cbmem.type != LB_MEM_TABLE) {
+		fprintf(stderr, "No coreboot table area found!\n");
+		return;
+	}
+
+	start = unpack_lb64(cbmem.start);
+
+	entries = (struct cbmem_entry *)map_memory(start);
+
+	for (i=0; i<MAX_CBMEM_ENTRIES; i++) {
+		if (entries[i].magic != CBMEM_MAGIC)
+			break;
+		if (entries[i].id == CBMEM_ID_COVERAGE) {
+			found = 1;
 			break;
 		}
 	}
 
-	fclose(fd);
+	if (!found) {
+		unmap_memory();
+		fprintf(stderr, "No coverage information found in"
+			" CBMEM area.\n");
+		return;
+	}
+
+	start = entries[i].base;
+	unmap_memory();
+	/* Map coverage area */
+	coverage = map_memory(start);
+	phys_offset = (unsigned long)coverage - (unsigned long)start;
+
+	printf("Dumping coverage data...\n");
+
+	struct file *file = (struct file *)coverage;
+	while (file && file->magic == COVERAGE_MAGIC) {
+		FILE *f;
+		char *filename;
+
+		debug(" -> %s\n", (char *)phys_to_virt(file->filename));
+		filename = strdup((char *)phys_to_virt(file->filename));
+		if (mkpath(filename, 0755) == -1) {
+			perror("Directory for coverage data could "
+				"not be created");
+			exit(1);
+		}
+		f = fopen(filename, "wb");
+		if (!f) {
+			printf("Could not open %s: %s\n",
+				filename, strerror(errno));
+			exit(1);
+		}
+		if (fwrite((void *)phys_to_virt(file->data),
+						file->len, 1, f) != 1) {
+			printf("Could not write to %s: %s\n",
+				filename, strerror(errno));
+			exit(1);
+		}
+		fclose(f);
+		free(filename);
+
+		if (file->next)
+			file = (struct file *)phys_to_virt(file->next);
+		else
+			file = NULL;
+	}
+	unmap_memory();
+}
+
+static void print_version(void)
+{
+	printf("cbmem v%s -- ", CBMEM_VERSION);
+	printf("Copyright (C) 2012 The ChromiumOS Authors.  All rights reserved.\n\n");
+	printf(
+    "This program is free software: you can redistribute it and/or modify\n"
+    "it under the terms of the GNU General Public License as published by\n"
+    "the Free Software Foundation, version 2 of the License.\n\n"
+    "This program is distributed in the hope that it will be useful,\n"
+    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+    "GNU General Public License for more details.\n\n"
+    "You should have received a copy of the GNU General Public License\n"
+    "along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\n");
+}
+
+static void print_usage(const char *name)
+{
+	printf("usage: %s [-cCltVvh?]\n", name);
+	printf("\n"
+	     "   -c | --console:                   print cbmem console\n"
+	     "   -C | --coverage:                  dump coverage information\n"
+	     "   -l | --list:                      print cbmem table of contents\n"
+	     "   -t | --timestamps:                print timestamp information\n"
+	     "   -V | --verbose:                   verbose (debugging) output\n"
+	     "   -v | --version:                   print the version\n"
+	     "   -h | --help:                      print this help\n"
+	     "\n");
+	exit(1);
+}
+
+int main(int argc, char** argv)
+{
+	int j;
+	static const int possible_base_addresses[] = { 0, 0xf0000 };
+
+	int print_defaults = 1;
+	int print_console = 0;
+	int print_coverage = 0;
+	int print_list = 0;
+	int print_timestamps = 0;
+
+	int opt, option_index = 0;
+	static struct option long_options[] = {
+		{"console", 0, 0, 'c'},
+		{"coverage", 0, 0, 'C'},
+		{"list", 0, 0, 'l'},
+		{"timestamps", 0, 0, 't'},
+		{"verbose", 0, 0, 'V'},
+		{"version", 0, 0, 'v'},
+		{"help", 0, 0, 'h'},
+		{0, 0, 0, 0}
+	};
+	while ((opt = getopt_long(argc, argv, "cCltVvh?",
+				  long_options, &option_index)) != EOF) {
+		switch (opt) {
+		case 'c':
+			print_console = 1;
+			print_defaults = 0;
+			break;
+		case 'C':
+			print_coverage = 1;
+			print_defaults = 0;
+			break;
+		case 'l':
+			print_list = 1;
+			print_defaults = 0;
+			break;
+		case 't':
+			print_timestamps = 1;
+			print_defaults = 0;
+			break;
+		case 'V':
+			verbose = 1;
+			break;
+		case 'v':
+			print_version();
+			exit(0);
+			break;
+		case 'h':
+		case '?':
+		default:
+			print_usage(argv[0]);
+			exit(0);
+			break;
+		}
+	}
+
+	fd = open("/dev/mem", O_RDONLY, 0);
+	if (fd < 0) {
+		fprintf(stderr, "Failed to gain memory access: %s\n",
+			strerror(errno));
+		return 1;
+	}
+
+	/* Find and parse coreboot table */
+	for (j = 0; j < ARRAY_SIZE(possible_base_addresses); j++) {
+		if (parse_cbtable(possible_base_addresses[j]))
+			break;
+	}
+
+	if (print_console)
+		dump_console();
+
+	if (print_coverage)
+		dump_coverage();
+
+	if (print_list)
+		dump_cbmem_toc();
+
+	if (print_defaults || print_timestamps)
+		dump_timestamps();
+
+	close(fd);
 	return 0;
 }

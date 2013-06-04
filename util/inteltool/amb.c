@@ -17,7 +17,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "inteltool.h"
@@ -28,7 +28,7 @@
 
 static uint32_t amb_read_config32(volatile void *base, int fn, int reg)
 {
-	return *(uint32_t *)(AMB_ADDR((uint64_t)base, fn, reg));
+	return *(uint32_t *)(AMB_ADDR((intptr_t)base, fn, reg));
 }
 
 static void amb_printreg32(volatile void *base, int fn, int reg,
@@ -42,7 +42,7 @@ static void amb_printreg32(volatile void *base, int fn, int reg,
 
 static uint16_t amb_read_config16(volatile void *base, int fn, int reg)
 {
-	return *(uint16_t *)(AMB_ADDR((uint64_t)base, fn, reg));
+	return *(uint16_t *)(AMB_ADDR((intptr_t)base, fn, reg));
 }
 
 static void amb_printreg16(volatile void *base, int fn, int reg,
@@ -57,7 +57,7 @@ static void amb_printreg16(volatile void *base, int fn, int reg,
 
 static uint8_t amb_read_config8(volatile void *base, int fn, int reg)
 {
-	return *(uint8_t *)(AMB_ADDR((uint64_t)base, fn, reg));
+	return *(uint8_t *)(AMB_ADDR((intptr_t)base, fn, reg));
 }
 
 static void amb_printreg8(volatile void *base, int fn, int reg,
@@ -438,7 +438,7 @@ int print_ambs(struct pci_dev *dev, struct pci_access *pacc)
 			return 1;
 		}
 
-		ambconfig_phys = ((u64)pci_read_long(dev16, 0x4c) << 32) |
+		ambconfig_phys = ((uint64_t)pci_read_long(dev16, 0x4c) << 32) |
 			pci_read_long(dev16, 0x48);
 
 		max_channel = pci_read_byte(dev16, 0x56)/max_branch;

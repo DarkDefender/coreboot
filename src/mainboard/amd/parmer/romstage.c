@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <stdint.h>
@@ -24,7 +24,6 @@
 #include <arch/io.h>
 #include <arch/stages.h>
 #include <device/pnp_def.h>
-#include <arch/romcc_io.h>
 #include <arch/cpu.h>
 #include <cpu/x86/lapic.h>
 #include <console/console.h>
@@ -68,13 +67,11 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	printk(BIOS_DEBUG, "cpu_init_detectedx = %08lx \n", cpu_init_detectedx);
 
 	post_code(0x37);
+	printk(BIOS_DEBUG, "agesawrapper_amdinitreset ");
 	val = agesawrapper_amdinitreset();
 	if(val) {
 		printk(BIOS_DEBUG, "agesawrapper_amdinitreset failed: %x \n", val);
 	}
-
-	post_code(0x38);
-	printk(BIOS_DEBUG, "Got past sb800_early_setup\n");
 
 	post_code(0x39);
 
@@ -154,7 +151,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	setup_i8254 ();
 
 	post_code(0x50);
-	copy_and_run(0);
+	copy_and_run();
 
 	post_code(0x54);  /* Should never see this post code. */
 }

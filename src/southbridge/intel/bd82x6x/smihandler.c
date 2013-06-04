@@ -22,7 +22,6 @@
 #include <types.h>
 #include <arch/hlt.h>
 #include <arch/io.h>
-#include <arch/romcc_io.h>
 #include <console/console.h>
 #include <cpu/x86/cache.h>
 #include <device/pci_def.h>
@@ -326,6 +325,52 @@ static void southbridge_gate_memory_reset(void)
 	outl(reg32, gpiobase + GP_LVL2);
 }
 
+static void xhci_sleep(u8 slp_typ)
+{
+	u32 reg32, xhci_bar;
+	u16 reg16;
+
+	switch (slp_typ) {
+	case SLP_TYP_S3:
+	case SLP_TYP_S4:
+		reg16 = pcie_read_config16(PCH_XHCI_DEV, 0x74);
+		reg16 &= ~0x03UL;
+		pcie_write_config32(PCH_XHCI_DEV, 0x74, reg16);
+
+		reg32 = pcie_read_config32(PCH_XHCI_DEV, PCI_COMMAND);
+		reg32 |= (PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
+		pcie_write_config32(PCH_XHCI_DEV, PCI_COMMAND, reg32);
+
+		xhci_bar = pcie_read_config32(PCH_XHCI_DEV,
+				              PCI_BASE_ADDRESS_0) & ~0xFUL;
+
+		if ((xhci_bar + 0x4C0) & 1)
+			pch_iobp_update(0xEC000082, ~0UL, (3 << 2));
+		if ((xhci_bar + 0x4D0) & 1)
+			pch_iobp_update(0xEC000182, ~0UL, (3 << 2));
+		if ((xhci_bar + 0x4E0) & 1)
+			pch_iobp_update(0xEC000282, ~0UL, (3 << 2));
+		if ((xhci_bar + 0x4F0) & 1)
+			pch_iobp_update(0xEC000382, ~0UL, (3 << 2));
+
+		reg32 = pcie_read_config32(PCH_XHCI_DEV, PCI_COMMAND);
+		reg32 &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
+		pcie_write_config32(PCH_XHCI_DEV, PCI_COMMAND, reg32);
+
+		reg16 = pcie_read_config16(PCH_XHCI_DEV, 0x74);
+		reg16 |= 0x03;
+		pcie_write_config16(PCH_XHCI_DEV, 0x74, reg16);
+		break;
+
+	case SLP_TYP_S5:
+		reg16 = pcie_read_config16(PCH_XHCI_DEV, 0x74);
+		reg16 |= ((1 << 8) | 0x03);
+		pcie_write_config16(PCH_XHCI_DEV, 0x74, reg16);
+		break;
+	}
+}
+
+
 static void southbridge_smi_sleep(unsigned int node, smm_state_save_area_t *state_save)
 {
 	u8 reg8;
@@ -352,6 +397,9 @@ static void southbridge_smi_sleep(unsigned int node, smm_state_save_area_t *stat
 	reg32 = inl(pmbase + PM1_CNT);
 	printk(BIOS_SPEW, "SMI#: SLP = 0x%08x\n", reg32);
 	slp_typ = (reg32 >> 10) & 7;
+
+	if (smm_get_gnvs()->xhci)
+		xhci_sleep(slp_typ);
 
 	/* Do any mainboard sleep handling */
 	tseg_relocate((void **)&mainboard_sleep);
@@ -432,7 +480,7 @@ static void southbridge_smi_sleep(unsigned int node, smm_state_save_area_t *stat
 static em64t101_smm_state_save_area_t *smi_apmc_find_state_save(u8 cmd)
 {
 	em64t101_smm_state_save_area_t *state;
-	u32 base = smi_get_tseg_base() + 0x8000 + 0x7d00;
+	u32 base = smi_get_tseg_base() + SMM_EM64T101_SAVE_STATE_OFFSET;
 	int node;
 
 	/* Check all nodes looking for the one that issued the IO */

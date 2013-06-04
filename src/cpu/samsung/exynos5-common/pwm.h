@@ -42,7 +42,7 @@
 #define TCON_AUTO_RELOAD(x)	(1 << (TCON_OFFSET(x) + 3))
 #define TCON4_AUTO_RELOAD	(1 << 22)
 
-#ifndef __ASSEMBLY__
+#ifndef __ASSEMBLER__
 struct s5p_timer {
 	unsigned int	tcfg0;
 	unsigned int	tcfg1;
@@ -63,6 +63,12 @@ struct s5p_timer {
 	unsigned int	tcnto4;
 	unsigned int	tintcstat;
 };
-#endif	/* __ASSEMBLY__ */
+
+int pwm_config(int pwm_id, int duty_ns, int period_ns);
+int pwm_check_enabled(int pwm_id);
+void pwm_disable(int pwm_id);
+int pwm_enable(int pwm_id);
+int pwm_init(int pwm_id, int div, int invert);
+#endif	/* __ASSEMBLER__ */
 
 #endif

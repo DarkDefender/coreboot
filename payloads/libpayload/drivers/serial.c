@@ -32,66 +32,65 @@
 #include <libpayload.h>
 
 #define IOBASE lib_sysinfo.serial->baseaddr
-#define MEMBASE (phys_to_virt(lib_sysinfo.serial->baseaddr))
-#define DIVISOR(x) (115200 / x)
+#define MEMBASE (phys_to_virt(IOBASE))
 
-#ifdef CONFIG_SERIAL_SET_SPEED
-static void serial_io_hardware_init(int port, int speed, int word_bits, int parity, int stop_bits)
+static int serial_hardware_is_present = 1;
+static int serial_is_mem_mapped = 0;
+
+static uint8_t serial_read_reg(int offset)
 {
-	unsigned char reg;
-
-	/* Disable interrupts. */
-	outb(0, port + 0x01);
-
-	/* Assert RTS and DTR. */
-	outb(3, port + 0x04);
-
-	/* Set the divisor latch. */
-	reg = inb(port + 0x03);
-	outb(reg | 0x80, port + 0x03);
-
-	/* Write the divisor. */
-	outb(DIVISOR(speed) & 0xFF, port);
-	outb(DIVISOR(speed) >> 8 & 0xFF, port + 1);
-
-	/* Restore the previous value of the divisor.
-	 * And set 8 bits per character */
-	outb((reg & ~0x80) | 3, port + 0x03);
+#ifdef CONFIG_IO_ADDRESS_SPACE
+	if (!serial_is_mem_mapped)
+		return inb(IOBASE + offset);
+	else
+#endif
+		return readb(MEMBASE + offset);
 }
 
-static void serial_mem_hardware_init(int port, int speed, int word_bits, int parity, int stop_bits)
+static void serial_write_reg(uint8_t val, int offset)
+{
+#ifdef CONFIG_IO_ADDRESS_SPACE
+	if (!serial_is_mem_mapped)
+		outb(val, IOBASE + offset);
+	else
+#endif
+		writeb(val, MEMBASE + offset);
+}
+
+#ifdef CONFIG_SERIAL_SET_SPEED
+static void serial_hardware_init(int speed, int word_bits,
+				 int parity, int stop_bits)
 {
 	unsigned char reg;
 
-	/* We will assume 8n1 for now. Does anyone use anything else these days? */
-
 	/* Disable interrupts. */
-	writeb(0, MEMBASE + 0x01);
+	serial_write_reg(0, 0x01);
 
 	/* Assert RTS and DTR. */
-	writeb(3, MEMBASE + 0x04);
+	serial_write_reg(3, 0x04);
 
 	/* Set the divisor latch. */
-	reg = readb(MEMBASE + 0x03);
-	writeb(reg | 0x80, MEMBASE + 0x03);
+	reg = serial_read_reg(0x03);
+	serial_write_reg(reg | 0x80, 0x03);
 
 	/* Write the divisor. */
-	writeb(DIVISOR(speed) & 0xFF, MEMBASE);
-	writeb(DIVISOR(speed) >> 8 & 0xFF, MEMBASE + 1);
+	uint16_t divisor = 115200 / speed;
+	serial_write_reg(divisor & 0xFF, 0x00);
+	serial_write_reg(divisor >> 8, 0x01);
 
 	/* Restore the previous value of the divisor.
 	 * And set 8 bits per character */
-	writeb((reg & ~0x80) | 3, MEMBASE + 0x03);
+	serial_write_reg((reg & ~0x80) | 3, 0x03);
 }
 #endif
 
 static struct console_input_driver consin = {
-	.havekey = serial_havechar,
-	.getchar = serial_getchar
+	.havekey = &serial_havechar,
+	.getchar = &serial_getchar
 };
 
 static struct console_output_driver consout = {
-	.putchar = serial_putchar
+	.putchar = &serial_putchar
 };
 
 void serial_init(void)
@@ -99,84 +98,48 @@ void serial_init(void)
 	if (!lib_sysinfo.serial)
 		return;
 
+	serial_is_mem_mapped =
+		(lib_sysinfo.serial->type == CB_SERIAL_TYPE_MEMORY_MAPPED);
+
+	if (!serial_is_mem_mapped) {
+#ifdef CONFIG_IO_ADDRESS_SPACE
+		if ((inb(IOBASE + 0x05) == 0xFF) &&
+				(inb(IOBASE + 0x06) == 0xFF)) {
+			serial_hardware_is_present = 0;
+		}
+#else
+		printf("IO space mapped serial not supported.");
+		return;
+#endif
+	}
+
 #ifdef CONFIG_SERIAL_SET_SPEED
-	if (lib_sysinfo.serial->type == CB_SERIAL_TYPE_MEMORY_MAPPED)
-		serial_mem_hardware_init(IOBASE, CONFIG_SERIAL_BAUD_RATE, 8, 0, 1);
-	else
-		serial_io_hardware_init(IOBASE, CONFIG_SERIAL_BAUD_RATE, 8, 0, 1);
+	serial_hardware_init(CONFIG_SERIAL_BAUD_RATE, 8, 0, 1);
 #endif
 	console_add_input_driver(&consin);
 	console_add_output_driver(&consout);
 }
 
-static void serial_io_putchar(unsigned int c)
-{
-	c &= 0xff;
-	while ((inb(IOBASE + 0x05) & 0x20) == 0) ;
-	outb(c, IOBASE);
-}
-
-static int serial_io_havechar(void)
-{
-	return inb(IOBASE + 0x05) & 0x01;
-}
-
-static int serial_io_getchar(void)
-{
-	while (!serial_io_havechar()) ;
-	return (int)inb(IOBASE);
-}
-
-static void serial_mem_putchar(unsigned int c)
-{
-	c &= 0xff;
-	while ((readb(MEMBASE + 0x05) & 0x20) == 0) ;
-	writeb(c, MEMBASE);
-}
-
-static int serial_mem_havechar(void)
-{
-	return readb(MEMBASE + 0x05) & 0x01;
-}
-
-static int serial_mem_getchar(void)
-{
-	while (!serial_mem_havechar()) ;
-	return (int)readb(MEMBASE);
-}
-
-
 void serial_putchar(unsigned int c)
 {
-	if (!lib_sysinfo.serial)
-		return;
-
-	if (lib_sysinfo.serial->type == CB_SERIAL_TYPE_MEMORY_MAPPED)
-		serial_mem_putchar(c);
-	else
-		serial_io_putchar(c);
+	if (serial_hardware_is_present)
+		while ((serial_read_reg(0x05) & 0x20) == 0) ;
+	serial_write_reg(c, 0x00);
 }
 
 int serial_havechar(void)
 {
-	if (!lib_sysinfo.serial)
+	if (!serial_hardware_is_present)
 		return 0;
-
-	if (lib_sysinfo.ser_base)
-		return serial_mem_havechar();
-	else
-		return serial_io_havechar();
+	return serial_read_reg(0x05) & 0x01;
 }
 
 int serial_getchar(void)
 {
-	if (!lib_sysinfo.serial)
+	if (!serial_hardware_is_present)
 		return -1;
-
-	if (lib_sysinfo.ser_base)
-		return serial_mem_getchar();
-	else
-		return serial_io_getchar();
+	while (!serial_havechar()) ;
+	return serial_read_reg(0x00);
 }
 
 /*  These are thinly veiled vt100 functions used by curses */
@@ -202,7 +165,7 @@ int serial_getchar(void)
 
 static void serial_putcmd(const char *str)
 {
-	while(*str)
+	while (*str)
 		serial_putchar(*(str++));
 }
 

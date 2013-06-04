@@ -19,3 +19,5 @@
 
 config SUPERIO_NUVOTON_WPCM450
 	bool
+config SUPERIO_NUVOTON_NCT5104D
+	bool

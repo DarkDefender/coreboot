@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SOUTHBRIDGE_VIA_VT8237R_VT8237R_H
@@ -28,11 +28,7 @@
 #define VT8237R_SMBUS_IO_BASE		0x400
 /* 0x0 disabled, 0x2 reserved, 0xf = IRQ15 */
 #define VT8237R_ACPI_IRQ		0x9
-#if defined(__GNUC__)
-#define VT8237S_SPI_MEM_BASE		0xfed02000ULL
-#else
 #define VT8237S_SPI_MEM_BASE		0xfed02000UL
-#endif
 
 /* PMBASE FIXME mostly taken from ich7 */
 #define PM1_STS		0x00
@@ -129,11 +125,7 @@ struct vt8237_network_rom {
 	u8 cfg_c;
 	u8 cfg_d;
 	u8 checksum;
-}
-#if defined(__GNUC__)
-__attribute__ ((packed))
-#endif
-;
+} __attribute__ ((packed));
 
 #define MAINBOARD_POWER_OFF	0
 #define MAINBOARD_POWER_ON	1
@@ -145,7 +137,6 @@ __attribute__ ((packed))
 
 
 #ifdef __PRE_RAM__
-#ifndef __ROMCC__
 u8 smbus_read_byte(u8 dimm, u8 offset);
 void smbus_write_byte(u8 dimm, u8 offset, u8 data);
 void enable_smbus(void);
@@ -155,7 +146,6 @@ void vt8237_sb_enable_fid_vid(void);
 void enable_rom_decode(void);
 void vt8237_early_spi_init(void);
 int vt8237_early_network_init(struct vt8237_network_rom *rom);
-#endif
 #else
 void writeback(device_t dev, u16 where, u8 what);
 void dump_south(device_t dev);

@@ -1,10 +1,10 @@
 chip northbridge/amd/amdk8/root_complex		# Root complex
-  device lapic_cluster 0 on			# (L)APIC cluster
+  device cpu_cluster 0 on			# (L)APIC cluster
     chip cpu/amd/socket_F			# CPU socket
       device lapic 0 on end			# Local APIC of the CPU
     end
   end
-  device pci_domain 0 on			# PCI domain
+  device domain 0 on			# PCI domain
     subsystemid 0x15d9 0x1511 inherit
     chip northbridge/amd/amdk8			# Northbridge / RAM controller
       device pci 18.0 on end

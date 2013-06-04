@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SOUTHBRIDGE_NVIDIA_MCP55_MCP55_H
@@ -33,9 +33,7 @@
 void mcp55_enable(device_t dev);
 extern struct pci_operations mcp55_pci_ops;
 #else
-#if !defined(__ROMCC__)
 void enable_fid_change_on_sb(unsigned sbbusn, unsigned sbdn);
-#endif
 #endif
 
 #endif

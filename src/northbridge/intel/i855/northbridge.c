@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -28,6 +28,7 @@
 #include <device/pci_ids.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cbmem.h>
 #include <cpu/x86/cache.h>
 #include <cpu/cpu.h>
 
@@ -51,9 +52,6 @@ static const struct pci_driver northbridge_driver __pci_driver = {
         .device = 0x3580,
 };
 
-#if CONFIG_WRITE_HIGH_TABLES
-#include <cbmem.h>
-#endif
 static void pci_domain_set_resources(device_t dev)
 {
 	device_t mc_dev;
@@ -107,11 +105,9 @@ static void pci_domain_set_resources(device_t dev)
 		/* ram_resource(dev, idx++, 1024, tolmk - 1024); */
 		ram_resource(dev, idx++, 768, tolmk - 768);
 
-#if CONFIG_WRITE_HIGH_TABLES
 		/* Leave some space for ACPI, PIRQ and MP tables */
 		high_tables_base = (tomk * 1024) - HIGH_MEMORY_SIZE;
 		high_tables_size = HIGH_MEMORY_SIZE;
-#endif
 	}
 	assign_resources(dev->link_list);
 }
@@ -144,11 +140,11 @@ static struct device_operations cpu_bus_ops = {
 static void enable_dev(struct device *dev)
 {
         /* Set the operations if it is a special bus type */
-        if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+        if (dev->path.type == DEVICE_PATH_DOMAIN) {
                 dev->ops = &pci_domain_ops;
 		pci_set_method(dev);
         }
-        else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
+        else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
                 dev->ops = &cpu_bus_ops;
         }
 }

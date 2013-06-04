@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef SIS966_H
@@ -35,8 +35,6 @@
 #define DEBUG_USB 0
 #define DEBUG_USB2 0
 
-#if !defined(__ROMCC__)
 void sis966_enable(device_t dev);
-#endif
 
 #endif /* SIS966_H */

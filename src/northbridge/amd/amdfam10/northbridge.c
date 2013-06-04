@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -842,9 +842,7 @@ static void disable_hoist_memory(unsigned long hole_startk, int node_id)
 
 #endif
 
-#if CONFIG_WRITE_HIGH_TABLES
 #include <cbmem.h>
-#endif
 
 static void setup_uma_memory(void)
 {
@@ -1039,7 +1037,7 @@ static void amdfam10_domain_set_resources(device_t dev)
 					ram_resource(dev, (idx | i), basek, pre_sizek);
 					idx += 0x10;
 					sizek -= pre_sizek;
-#if CONFIG_WRITE_HIGH_TABLES
+
 					if (high_tables_base==0) {
 					/* Leave some space for ACPI, PIRQ and MP tables */
 #if CONFIG_GFXUMA
@@ -1051,7 +1049,6 @@ static void amdfam10_domain_set_resources(device_t dev)
 						printk(BIOS_DEBUG, " split: %dK table at =%08llx\n",
 							HIGH_MEMORY_SIZE / 1024, high_tables_base);
 					}
-#endif
 				}
 				#if !CONFIG_AMDMCT
 				#if CONFIG_HW_MEM_HOLE_SIZEK != 0
@@ -1077,7 +1074,6 @@ static void amdfam10_domain_set_resources(device_t dev)
 
 		ram_resource(dev, (idx | i), basek, sizek);
 		idx += 0x10;
-#if CONFIG_WRITE_HIGH_TABLES
 		printk(BIOS_DEBUG, "%d: mmio_basek=%08lx, basek=%08llx, limitk=%08llx\n",
 			     i, mmio_basek, basek, limitk);
 		if (high_tables_base==0) {
@@ -1089,7 +1085,6 @@ static void amdfam10_domain_set_resources(device_t dev)
 #endif
 			high_tables_size = HIGH_MEMORY_SIZE;
 		}
-#endif
 	}
 
 #if CONFIG_GFXUMA
@@ -1280,7 +1275,7 @@ static u32 cpu_bus_scan(device_t dev, u32 max)
 	if(dev_mc && dev_mc->bus) {
 		printk(BIOS_DEBUG, "%s found", dev_path(dev_mc));
 		pci_domain = dev_mc->bus->dev;
-		if(pci_domain && (pci_domain->path.type == DEVICE_PATH_PCI_DOMAIN)) {
+		if(pci_domain && (pci_domain->path.type == DEVICE_PATH_DOMAIN)) {
 			printk(BIOS_DEBUG, "\n%s move to ",dev_path(dev_mc));
 			dev_mc->bus->secondary = CONFIG_CBB; // move to 0xff
 			printk(BIOS_DEBUG, "%s",dev_path(dev_mc));
@@ -1296,7 +1291,7 @@ static u32 cpu_bus_scan(device_t dev, u32 max)
 		if (dev_mc && dev_mc->bus) {
 			printk(BIOS_DEBUG, "%s found\n", dev_path(dev_mc));
 			pci_domain = dev_mc->bus->dev;
-			if(pci_domain && (pci_domain->path.type == DEVICE_PATH_PCI_DOMAIN)) {
+			if(pci_domain && (pci_domain->path.type == DEVICE_PATH_DOMAIN)) {
 				if((pci_domain->link_list) && (pci_domain->link_list->children == dev_mc)) {
 					printk(BIOS_DEBUG, "%s move to ",dev_path(dev_mc));
 					dev_mc->bus->secondary = CONFIG_CBB; // move to 0xff
@@ -1469,10 +1464,10 @@ static void root_complex_enable_dev(struct device *dev)
 	}
 
 	/* Set the operations if it is a special bus type */
-	if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
 	}
-	else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
+	else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
 		dev->ops = &cpu_bus_ops;
 	}
 }

@@ -14,12 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
-#ifndef _PERSIMMON_CFG_H_
-#define _PERSIMMON_CFG_H_
+#ifndef _PLATFORM_CFG_H_
+#define _PLATFORM_CFG_H_
 
 /**
  * @def BIOS_SIZE_1M
@@ -58,7 +58,7 @@
 
 /**
  * @def SB_HPET_TIMER
- * @breif
+ * @brief
  *  0 - Disable hpet
  *  1 - Enable  hpet
  */
@@ -81,7 +81,7 @@
 
 /**
  * @def PCI_CLOCK_CTRL
- * @breif bit[0-4] used for PCI Slots Clock Control,
+ * @brief bit[0-4] used for PCI Slots Clock Control,
  *   0 - disable
  *   1 - enable
  *  PCI SLOT 0 define at BIT0
@@ -90,30 +90,30 @@
  *  PCI SLOT 3 define at BIT3
  *  PCI SLOT 4 define at BIT4
  */
-#define PCI_CLOCK_CTRL			0x1F
+#define PCI_CLOCK_CTRL			0x07
 
 /**
  * @def SATA_CONTROLLER
- * @breif INCHIP Sata Controller
+ * @brief INCHIP Sata Controller
  */
 #define SATA_CONTROLLER		CIMX_OPTION_ENABLED
 
 /**
  * @def SATA_MODE
- * @breif INCHIP Sata Controller Mode
+ * @brief INCHIP Sata Controller Mode
  *   NOTE: DO NOT ALLOW SATA & IDE use same mode
  */
 #define SATA_MODE			CONFIG_SB800_SATA_MODE
 
 /**
- * @breif INCHIP Sata IDE Controller Mode
+ * @brief INCHIP Sata IDE Controller Mode
  */
 #define IDE_LEGACY_MODE			0
 #define IDE_NATIVE_MODE			1
 
 /**
  * @def SATA_IDE_MODE
- * @breif INCHIP Sata IDE Controller Mode
+ * @brief INCHIP Sata IDE Controller Mode
  *   NOTE: DO NOT ALLOW SATA & IDE use same mode
  */
 #define SATA_IDE_MODE			IDE_LEGACY_MODE
@@ -157,7 +157,7 @@
 #define AZALIA_ENABLE			2
 
 /**
- * @breif INCHIP HDA controller
+ * @brief INCHIP HDA controller
  */
 #define AZALIA_CONTROLLER		AZALIA_AUTO
 
@@ -227,7 +227,7 @@
  */
 #define GEC_CONFIG			0
 
-const static CODECENTRY persimmon_codec_alc269[] =
+static const CODECENTRY persimmon_codec_alc269[] =
 {
 	/* NID, PinConfig */
 	{0x12, 0x411111F0},
@@ -244,7 +244,7 @@ const static CODECENTRY persimmon_codec_alc269[] =
 	{0xff, 0xffffffff} /* end of table */
 };
 
-const static CODECTBLLIST persimmon_codec_tablelist[] =
+static const CODECTBLLIST codec_tablelist[] =
 {
 	{0x010ec0269, (CODECENTRY*)&persimmon_codec_alc269[0]},
 	{0x0FFFFFFFFUL, (CODECENTRY*)0x0FFFFFFFFUL}
@@ -252,9 +252,9 @@ const static CODECTBLLIST persimmon_codec_tablelist[] =
 
 /**
  * @def AZALIA_OEM_VERB_TABLE
- *  Mainboard specific cocec verb table list
+ *  Mainboard specific codec verb table list
  */
-#define AZALIA_OEM_VERB_TABLE		(&persimmon_codec_tablelist[0])
+#define AZALIA_OEM_VERB_TABLE		(&codec_tablelist[0])
 
 /* set up an ACPI prefered power management profile */
 /*  from acpi.h

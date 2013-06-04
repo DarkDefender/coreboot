@@ -14,13 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 */
 
 /*
  * Enable the serial devices on the VIA
  */
-#include <arch/romcc_io.h>
+#include <arch/io.h>
 
 /* The base address is 0x15c, 0x2e, depending on config bytes */
 

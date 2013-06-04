@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "AGESA.h"
@@ -26,97 +26,120 @@
 
 #define FILECODE PROC_GNB_PCIE_FAMILY_0X15_F15PCIECOMPLEXCONFIG_FILECODE
 
+/*
+ * Lane ID Mapping (from Fam15h BKDG: Table 45: Lane Id Mapping)
+ *
+ * Lane Id
+ * 0 P_UMI_[T,R]X[P,N]0 - southbridge link, connect via dev 8
+ * 1 P_UMI_[T,R]X[P,N]1 - southbridge link, connect via dev 8
+ * 2 P_UMI_[T,R]X[P,N]2 - southbridge link, connect via dev 8
+ * 3 P_UMI_[T,R]X[P,N]3 - southbridge link, connect via dev 8
+ * 4 P_GPP_[T,R]X[P,N]0 - may connect to PCI dev 4 - 7
+ * 5 P_GPP_[T,R]X[P,N]1 - may connect to PCI dev 4 - 7
+ * 6 P_GPP_[T,R]X[P,N]2 - may connect to PCI dev 4 - 7
+ * 7 P_GPP_[T,R]X[P,N]3 - may connect to PCI dev 4 - 7
+ * 8 P_GFX_[T,R]X[P,N]0 - may be used to form GFX slot or DDI
+ * 9 P_GFX_[T,R]X[P,N]1 - may be used to form GFX slot or DDI
+ * 10 P_GFX_[T,R]X[P,N]2 - may be used to form GFX slot or DDI
+ * 11 P_GFX_[T,R]X[P,N]3 - may be used to form GFX slot or DDI
+ * 12 P_GFX_[T,R]X[P,N]4 - may be used to form GFX slot or DDI
+ * 13 P_GFX_[T,R]X[P,N]5 - may be used to form GFX slot or DDI
+ * 14 P_GFX_[T,R]X[P,N]6 - may be used to form GFX slot or DDI
+ * 15 P_GFX_[T,R]X[P,N]7 - may be used to form GFX slot or DDI
+ * 16 P_GFX_[T,R]X[P,N]8 - may be used to form GFX slot or DDI
+ * 17 P_GFX_[T,R]X[P,N]9 - may be used to form GFX slot or DDI
+ * 18 P_GFX_[T,R]X[P,N]10 - may be used to form GFX slot or DDI
+ * 19 P_GFX_[T,R]X[P,N]11 - may be used to form GFX slot or DDI
+ * 20 P_GFX_[T,R]X[P,N]12 - may be used to form GFX slot or DDI
+ * 21 P_GFX_[T,R]X[P,N]13 - may be used to form GFX slot or DDI
+ * 22 P_GFX_[T,R]X[P,N]14 - may be used to form GFX slot or DDI
+ * 23 P_GFX_[T,R]X[P,N]15 - may be used to form GFX slot or DDI
+ * 24 DP0_TX[P,N]0 - rest is just for DDI (graphics outputs)
+ * 25 DP0_TX[P,N]1
+ * 26 DP0_TX[P,N]2
+ * 27 DP0_TX[P,N]3
+ * 28 DP1_TX[P,N]0
+ * 29 DP1_TX[P,N]1
+ * 30 DP1_TX[P,N]2
+ * 31 DP1_TX[P,N]3
+ * 32 DP2_TX[P,N]0
+ * 33 DP2_TX[P,N]1
+ * 34 DP2_TX[P,N]2
+ * 35 DP2_TX[P,N]3
+ * 36 DP2_TX[P,N]4
+ * 37 DP2_TX[P,N]5
+ * 38 DP2_TX[P,N]6
+ */
+
 PCIe_PORT_DESCRIPTOR PortList [] = {
-	/* PCIe port, Lanes 8:23, PCI Device Number 2 */
+	/* PCIe port, Lanes 15:8, PCI Device Number 2, PCIE SLOT x8 */
 	{
 		0, /* Descriptor flags */
-		PCIE_ENGINE_DATA_INITIALIZER (PciePortEngine, 8, 23),
+		PCIE_ENGINE_DATA_INITIALIZER (PciePortEngine, 15, 8),
 		PCIE_PORT_DATA_INITIALIZER (PortEnabled, ChannelTypeExt6db, 2, HotplugDisabled, PcieGenMaxSupported, PcieGenMaxSupported, AspmDisabled, 1)
 	},
-	/* PCIe port, Lanes 16:23, PCI Device Number 3 */
+	/* PCIe port, Lanes 16:23, PCI Device Number 3, Disabled */
 	{
 		0, /* Descriptor flags */
 		PCIE_ENGINE_DATA_INITIALIZER (PcieUnusedEngine, 16, 23),
 		PCIE_PORT_DATA_INITIALIZER (PortDisabled, ChannelTypeExt6db, 3, HotplugDisabled, PcieGenMaxSupported, PcieGenMaxSupported, AspmDisabled, 1)
 	},
 
-	/* PCIe port, Lanes 4, PCI Device Number 4, PCIE MINI0 */
+	/* PCIe port, Lanes 4, PCI Device Number 4, LAN */
 	{
 		0, /* Descriptor flags */
 		PCIE_ENGINE_DATA_INITIALIZER (PciePortEngine, 4, 4),
 		PCIE_PORT_DATA_INITIALIZER (PortEnabled, ChannelTypeExt6db, 4, HotplugDisabled, PcieGenMaxSupported, PcieGenMaxSupported, AspmDisabled, 1)
 	},
 
-	/* PCIe port, Lanes 5, PCI Device Number 5, PCIE MINI1 */
+	/* PCIe port, Lanes 5, PCI Device Number 5, PCIE MINI0 */
 	{
 		0, /* Descriptor flags */
 		PCIE_ENGINE_DATA_INITIALIZER (PciePortEngine, 5, 5),
 		PCIE_PORT_DATA_INITIALIZER (PortEnabled, ChannelTypeExt6db, 5, HotplugDisabled, PcieGenMaxSupported, PcieGenMaxSupported, AspmDisabled, 1)
 	},
 
-	/* PCIe port, Lanes 6, PCI Device Number 6, PCIE SLOT1, TODO: Disabled. */
+	/* PCIe port, Lanes 6, PCI Device Number 6, PCIE MINI1 */
 	{
 		0, /* Descriptor flags */
 		PCIE_ENGINE_DATA_INITIALIZER (PciePortEngine, 6, 6),
 		PCIE_PORT_DATA_INITIALIZER (PortEnabled, ChannelTypeExt6db, 6, HotplugDisabled, PcieGenMaxSupported, PcieGenMaxSupported, AspmDisabled, 1)
 	},
 
-	/* PCIe port, Lanes 7, PCI Device Number 7, LAN , TODO: not the last entry.*/
+	/* PCIe port, Lanes 7, PCI Device Number 7, Disabled */
 	{
-		0, /* Descriptor flags  !!!IMPORTANT!!! Terminate last element of array */
+		0, /* Descriptor flags */
 		PCIE_ENGINE_DATA_INITIALIZER (PciePortEngine, 7, 7),
-		PCIE_PORT_DATA_INITIALIZER (PortEnabled, ChannelTypeExt6db, 7, HotplugDisabled, PcieGenMaxSupported, PcieGenMaxSupported, AspmDisabled, 1)
+		PCIE_PORT_DATA_INITIALIZER (PortDisabled, ChannelTypeExt6db, 7, HotplugDisabled, PcieGenMaxSupported, PcieGenMaxSupported, AspmDisabled, 1)
 	},
 
-#if 1
-	/* Initialize Port descriptor (PCIe port, Lanes ?, PCI Device Number 8, ...) */
+	/* PCIe port, Lanes 0:3, PCI Device Number 8, Bridge to FCH */
 	{
 		DESCRIPTOR_TERMINATE_LIST, /* Descriptor flags  !!!IMPORTANT!!! Terminate last element of array */
 		PCIE_ENGINE_DATA_INITIALIZER (PciePortEngine, 0, 3),
 		PCIE_PORT_DATA_INITIALIZER (PortEnabled, ChannelTypeExt6db, 8, HotplugDisabled, PcieGenMaxSupported, PcieGenMaxSupported, AspmDisabled, 0)
 	},
-#endif
 };
 
 PCIe_DDI_DESCRIPTOR DdiList [] = {
-	// DP0 to HDMI0/DP
+	// DP0 to HDMI0/DP0
 	{
 		0,
 		PCIE_ENGINE_DATA_INITIALIZER (PcieDdiEngine, 24, 27),
-		PCIE_DDI_DATA_INITIALIZER (ConnectorTypeHDMI, Aux1, Hdp1)
+		PCIE_DDI_DATA_INITIALIZER (ConnectorTypeDP, Aux1, Hdp1)
 	},
-	// DP1 to FCH
+	// DP1 to HDMI1/DP1
 	{
 		0,
 		PCIE_ENGINE_DATA_INITIALIZER (PcieDdiEngine, 28, 31),
-		PCIE_DDI_DATA_INITIALIZER (ConnectorTypeNutmegDpToVga, Aux2, Hdp2)
+		PCIE_DDI_DATA_INITIALIZER (ConnectorTypeDP, Aux2, Hdp2)
 	},
-	// DP2 to HDMI1/DP
-	{
-		0,
-//    PCIE_ENGINE_DATA_INITIALIZER (PcieUnusedEngine, 32, 38),
-		PCIE_ENGINE_DATA_INITIALIZER (PcieDdiEngine, 32, 35),
-		//PCIE_DDI_DATA_INITIALIZER (ConnectorTypeEDP, Aux3, Hdp3)
-		PCIE_DDI_DATA_INITIALIZER (ConnectorTypeHDMI, Aux3, Hdp3)
-	},
-	// GFX Lane 15-12
-	{
-		0,
-		PCIE_ENGINE_DATA_INITIALIZER (PcieUnusedEngine, 12, 15),
-		PCIE_DDI_DATA_INITIALIZER (ConnectorTypeHDMI, Aux4, Hdp4)
-	},
-	// GFX Lane 11-8
-	{
-		0,
-		PCIE_ENGINE_DATA_INITIALIZER (PcieUnusedEngine, 16, 19),
-		PCIE_DDI_DATA_INITIALIZER (ConnectorTypeHDMI, Aux5, Hdp5)
-	},
-	// GFX Lane 7-4
+	// DP2 to MINI-DDI Card
 	{
 		DESCRIPTOR_TERMINATE_LIST,
-		PCIE_ENGINE_DATA_INITIALIZER (PcieUnusedEngine, 20, 23),
-		PCIE_DDI_DATA_INITIALIZER (ConnectorTypeHDMI, Aux6, Hdp6)
-	}
+		PCIE_ENGINE_DATA_INITIALIZER (PcieDdiEngine, 32, 35),
+		PCIE_DDI_DATA_INITIALIZER (ConnectorTypeDP, Aux3, Hdp3)
+	},
 };
 
 PCIe_COMPLEX_DESCRIPTOR Trinity = {
@@ -131,7 +154,7 @@ PCIe_COMPLEX_DESCRIPTOR Trinity = {
  *  OemCustomizeInitEarly
  *
  *  Description:
- *    This is the stub function will call the host environment through the binary block
+ *    This stub function will call the host environment through the binary block
  *    interface (call-out port) to provide a user hook opportunity
  *
  *  Parameters:
@@ -159,9 +182,7 @@ OemCustomizeInitEarly (
 	//
 	// Allocate buffer for PCIe_COMPLEX_DESCRIPTOR , PCIe_PORT_DESCRIPTOR and PCIe_DDI_DESCRIPTOR
 	//
-	AllocHeapParams.RequestedBufferSize = (sizeof (PCIe_COMPLEX_DESCRIPTOR)  +
-					       sizeof (PCIe_PORT_DESCRIPTOR) * 7 +
-					       sizeof (PCIe_DDI_DESCRIPTOR)) * 6;
+	AllocHeapParams.RequestedBufferSize = sizeof(Trinity) + sizeof(PortList) + sizeof(DdiList);
 
 	AllocHeapParams.BufferHandle = AMD_MEM_MISC_HANDLES_START;
 	AllocHeapParams.Persist = HEAP_LOCAL_CACHE;
@@ -174,30 +195,30 @@ OemCustomizeInitEarly (
 
 	TrinityPcieComplexListPtr  =  (PCIe_COMPLEX_DESCRIPTOR *) AllocHeapParams.BufferPtr;
 
-	AllocHeapParams.BufferPtr += sizeof (PCIe_COMPLEX_DESCRIPTOR);
+	AllocHeapParams.BufferPtr += sizeof(Trinity);
 	TrinityPciePortPtr         =  (PCIe_PORT_DESCRIPTOR *)AllocHeapParams.BufferPtr;
 
-	AllocHeapParams.BufferPtr += sizeof (PCIe_PORT_DESCRIPTOR) * 7;
+	AllocHeapParams.BufferPtr += sizeof(PortList);
 	TrinityPcieDdiPtr          =  (PCIe_DDI_DESCRIPTOR *) AllocHeapParams.BufferPtr;
 
 	LibAmdMemFill (TrinityPcieComplexListPtr,
 		       0,
-		       sizeof (PCIe_COMPLEX_DESCRIPTOR),
+		       sizeof(Trinity),
 		       &InitEarly->StdHeader);
 
 	LibAmdMemFill (TrinityPciePortPtr,
 		       0,
-		       sizeof (PCIe_PORT_DESCRIPTOR) * 7,
+		       sizeof(PortList),
 		       &InitEarly->StdHeader);
 
 	LibAmdMemFill (TrinityPcieDdiPtr,
 		       0,
-		       sizeof (PCIe_DDI_DESCRIPTOR) * 6,
+		       sizeof(DdiList),
 		       &InitEarly->StdHeader);
 
-	LibAmdMemCopy  (TrinityPcieComplexListPtr, &Trinity, sizeof (PCIe_COMPLEX_DESCRIPTOR), &InitEarly->StdHeader);
-	LibAmdMemCopy  (TrinityPciePortPtr, &PortList[0], sizeof (PCIe_PORT_DESCRIPTOR) * 7, &InitEarly->StdHeader);
-	LibAmdMemCopy  (TrinityPcieDdiPtr, &DdiList[0], sizeof (PCIe_DDI_DESCRIPTOR) * 6, &InitEarly->StdHeader);
+	LibAmdMemCopy  (TrinityPcieComplexListPtr, &Trinity, sizeof(Trinity), &InitEarly->StdHeader);
+	LibAmdMemCopy  (TrinityPciePortPtr, &PortList[0], sizeof(PortList), &InitEarly->StdHeader);
+	LibAmdMemCopy  (TrinityPcieDdiPtr, &DdiList[0], sizeof(DdiList), &InitEarly->StdHeader);
 
 	((PCIe_COMPLEX_DESCRIPTOR*)TrinityPcieComplexListPtr)->PciePortList =  (PCIe_PORT_DESCRIPTOR*)TrinityPciePortPtr;
 	((PCIe_COMPLEX_DESCRIPTOR*)TrinityPcieComplexListPtr)->DdiLinkList  =  (PCIe_DDI_DESCRIPTOR*)TrinityPcieDdiPtr;

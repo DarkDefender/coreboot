@@ -14,15 +14,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "agesawrapper.h"
 #include "amdlib.h"
-#include "dimmSpd.h"
 #include "BiosCallOuts.h"
 #include "heapManager.h"
 #include "SB800.h"
+#include <northbridge/amd/agesa/family14/dimmSpd.h>
 
 STATIC BIOS_CALLOUT_STRUCT BiosCallouts[] =
 {
@@ -419,7 +419,11 @@ AGESA_STATUS BiosReset (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 AGESA_STATUS BiosReadSpd (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 {
 	AGESA_STATUS Status;
-	Status = AmdMemoryReadSPD (Func, Data, (AGESA_READ_SPD_PARAMS *)ConfigPtr);
+#ifdef __PRE_RAM__
+	Status = agesa_ReadSPD (Func, Data, ConfigPtr);
+#else
+	Status = AGESA_UNSUPPORTED;
+#endif
 
 	return Status;
 }
@@ -594,7 +598,7 @@ AGESA_STATUS BiosGnbPcieSlotReset (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 					Status = AGESA_SUCCESS;
 					break;
 				case DeassertSlotReset:
-					Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG25);
+					Data8 = Read64Mem8(GpioMmioAddr+SB_GPIO_REG02);
 					Data8 |= BIT6 ;
 					Write64Mem8 (GpioMmioAddr+SB_GPIO_REG02, Data8);       // MPCIE_RST0, GPIO02
 					Status = AGESA_SUCCESS;

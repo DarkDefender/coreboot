@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -22,17 +22,17 @@
 #include <device/pci.h>
 #include <arch/io.h>
 #include <cpu/x86/msr.h>
+#include "BiosCallOuts.h"
 #include <cpu/amd/mtrr.h>
 #include <device/pci_def.h>
 #include <arch/acpi.h>
-#include "BiosCallOuts.h"
 #include <cpu/amd/agesa/s3_resume.h>
 #include "agesawrapper.h"
 
 /*************************************************
  * enable the dedicated function in parmer board.
  *************************************************/
-static void parmer_enable(device_t dev)
+static void mainboard_enable(device_t dev)
 {
 	printk(BIOS_INFO, "Mainboard " CONFIG_MAINBOARD_PART_NUMBER " Enable.\n");
 	/*
@@ -47,5 +47,5 @@ static void parmer_enable(device_t dev)
 }
 
 struct chip_operations mainboard_ops = {
-	.enable_dev = parmer_enable,
+	.enable_dev = mainboard_enable,
 };

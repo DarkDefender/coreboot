@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -806,7 +806,7 @@ static void smm_lock( void )
  * @param the root device
  */
 
-static void init(device_t dev)
+static void mainboard_init(device_t dev)
 {
 #if CONFIG_PCI_OPTION_ROM_RUN_REALMODE
 	INT15_function_extensions int15_func;
@@ -832,7 +832,7 @@ static void init(device_t dev)
 * enable the dedicated function in sina board.
 * This function called early than rs690_enable.
 *************************************************/
-static void enable_dev(device_t dev)
+static void mainboard_enable(device_t dev)
 {
 
 	printk(BIOS_INFO, "%s %s[%x/%x] %s\n",
@@ -845,9 +845,9 @@ static void enable_dev(device_t dev)
 	detect_hw_variant(dev);
 	update_subsystemid(dev);
 
-	dev->ops->init = init;  // rest of mainboard init later
+	dev->ops->init = mainboard_init;  // rest of mainboard init later
 }
 
 struct chip_operations mainboard_ops = {
-	.enable_dev = enable_dev,
+	.enable_dev = mainboard_enable,
 };

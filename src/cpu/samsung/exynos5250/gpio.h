@@ -21,7 +21,7 @@
 #ifndef EXYNOS5250_GPIO_H_
 #define EXYNOS5250_GPIO_H_
 
-#include <cpu/samsung/exynos-common/gpio.h>
+#include <cpu/samsung/exynos5-common/gpio.h>
 
 struct exynos5_gpio_part1 {
 	struct s5p_gpio_bank a0;
@@ -476,6 +476,15 @@ void gpio_set_rate(int gpio, int mode);
  *		invalid. Otherwise returns the calculated value
  */
 int gpio_decode_number(unsigned gpio_list[], int count);
+
+/*
+ * similar to gpio_decode_number, but reads only a single GPIO
+ *
+ * @param gpio		GPIO to read
+ * @return -1 if the value cannot be determined. Otherwise returns
+ *              the corresponding MVL3 enum value.
+ */
+int gpio_read_mvl3(unsigned gpio);
 
 void gpio_info(void);
 

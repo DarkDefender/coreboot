@@ -48,7 +48,7 @@ static int determine_total_number_of_cores(void)
 	int count = 0;
 	for(cpu = all_devices; cpu; cpu = cpu->next) {
 		if ((cpu->path.type != DEVICE_PATH_APIC) ||
-			(cpu->bus->dev->path.type != DEVICE_PATH_APIC_CLUSTER)) {
+			(cpu->bus->dev->path.type != DEVICE_PATH_CPU_CLUSTER)) {
 			continue;
 		}
 		if (!cpu->enabled) {
@@ -67,7 +67,7 @@ static int determine_total_number_of_cores(void)
  */
 static int get_fsb(void)
 {
-	const u32 fsbcode = rdmsr(0xcd).lo & 7;
+	const u32 fsbcode = rdmsr(MSR_FSB_FREQ).lo & 7;
 	switch (fsbcode) {
 		case 0: return  800; /*  / 3 == 266 */
 		case 1: return  400; /*  / 3 == 133 */

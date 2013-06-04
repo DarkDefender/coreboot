@@ -6,10 +6,7 @@
 #include <cpu/cpu.h>
 #include <stdlib.h>
 #include <string.h>
-
-#if CONFIG_WRITE_HIGH_TABLES
 #include <cbmem.h>
-#endif
 
 static void pci_domain_set_resources(device_t dev)
 {
@@ -87,11 +84,9 @@ static void pci_domain_set_resources(device_t dev)
 				(remaplimitk + 64*1024) - remapbasek);
 		}
 
-#if CONFIG_WRITE_HIGH_TABLES
 		/* Leave some space for ACPI, PIRQ and MP tables */
 		high_tables_base = (tolmk * 1024) - HIGH_MEMORY_SIZE;
 		high_tables_size = HIGH_MEMORY_SIZE;
-#endif
 	}
 	assign_resources(dev->link_list);
 }
@@ -125,10 +120,10 @@ static struct device_operations cpu_bus_ops = {
 static void enable_dev(struct device *dev)
 {
         /* Set the operations if it is a special bus type */
-        if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+        if (dev->path.type == DEVICE_PATH_DOMAIN) {
                 dev->ops = &pci_domain_ops;
         }
-        else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
+        else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
                 dev->ops = &cpu_bus_ops;
         }
 }

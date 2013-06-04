@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -32,6 +32,7 @@
 #include "chip.h"		/* struct southbridge_amd_cimx_sb800_config */
 #include "sb_cimx.h"		/* AMD CIMX wrapper entries */
 #include "smbus.h"
+#include "fan.h"
 
 /*implement in mainboard.c*/
 void set_pcie_reset(void);
@@ -126,6 +127,13 @@ static void lpc_init(device_t dev)
 	printk(BIOS_DEBUG, "SB800 - Late.c - lpc_init - Start.\n");
 
 	rtc_check_update_cmos_date(RTC_HAS_ALTCENTURY);
+
+	/* Initialize the real time clock.
+	 * The 0 argument tells rtc_init not to
+	 * update CMOS unless it is invalid.
+	 * 1 tells rtc_init to always initialize the CMOS.
+	 */
+	rtc_init(0);
 
 	printk(BIOS_DEBUG, "SB800 - Late.c - lpc_init - End.\n");
 }
@@ -360,13 +368,13 @@ static void sb800_enable(device_t dev)
 		/* the first sb800 device */
 		switch (GPP_CFGMODE) { /* config the GPP PCIe ports */
 		case GPP_CFGMODE_X2200:
-			abcfg_reg(0xc0, 0x01FF, 0x030); /* x2 Port_0, x2 Port_1 */
+			abcfg_reg(0xc0, 0x01FF, 0x032); /* x2 Port_0, x2 Port_1 */
 			break;
 		case GPP_CFGMODE_X2110:
-			abcfg_reg(0xc0, 0x01FF, 0x070); /* x2 Port_0, x1 Port_1&2 */
+			abcfg_reg(0xc0, 0x01FF, 0x073); /* x2 Port_0, x1 Port_1&2 */
 			break;
 		case GPP_CFGMODE_X1111:
-			abcfg_reg(0xc0, 0x01FF, 0x0F0); /* x1 Port_0&1&2&3 */
+			abcfg_reg(0xc0, 0x01FF, 0x0F4); /* x1 Port_0&1&2&3 */
 			break;
 		case GPP_CFGMODE_X4000:
 		default:
@@ -418,6 +426,12 @@ static void sb800_enable(device_t dev)
 
 
 	case (0x14 << 3) | 3: /* 0:14:3 LPC */
+		/* Initialize the fans */
+#if CONFIG_SB800_IMC_FAN_CONTROL
+		init_sb800_IMC_fans(dev);
+#elif CONFIG_SB800_MANUAL_FAN_CONTROL
+		init_sb800_MANUAL_fans(dev);
+#endif
 		break;
 
 	case (0x14 << 3) | 4: /* 0:14:4 PCI */

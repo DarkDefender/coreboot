@@ -813,7 +813,7 @@ typedef enum {
 #define  PCIE_PORT_DATA_INITIALIZER(mPortPresent, mChannelType, mDevAddress, mHotplug, mMaxLinkSpeed, mMaxLinkCap, mAspm, mResetId) \
 {mPortPresent, mChannelType, mDevAddress, 0, mMaxLinkSpeed, mAspm, mHotplug, mResetId, {0, mMaxLinkCap} }
 #define  PCIE_DDI_DATA_INITIALIZER(mConnectorType, mAuxIndex, mHpdIndex ) \
-{mConnectorType, mAuxIndex, mHpdIndex, {0, 0}}
+{mConnectorType, mAuxIndex, mHpdIndex, {{0}, {0}}}
 #define  PCIE_DDI_DATA_INITIALIZER_V1(mConnectorType, mAuxIndex, mHpdIndex, mMapping0, mMapping1) \
 {mConnectorType, mAuxIndex, mHpdIndex, {mMapping0, mMapping1}}
 
@@ -905,13 +905,13 @@ typedef struct {
                                                         *    {
                                                         *      0,   //Descriptor flags
                                                         *      PCIE_ENGINE_DATA_INITIALIZER (PcieDdiEngine, 24, 27),
-                                                        *      PCIE_DDI_DATA_INITIALIZER (ConnectorTypeDP, Aux1, Hdp1, 0)
+                                                        *      PCIE_DDI_DATA_INITIALIZER (ConnectorTypeDP, Aux1, Hdp1)
                                                         *    },
                                                         *    // Initialize Ddi descriptor (DDI interface Lanes 28:31, HDMI, ...)
                                                         *    {
                                                         *      DESCRIPTOR_TERMINATE_LIST, //Descriptor flags  !!!IMPORTANT!!! Terminate last element of array
                                                         *      PCIE_ENGINE_DATA_INITIALIZER (PcieDdiEngine, 28, 31),
-                                                        *      PCIE_DDI_DATA_INITIALIZER (ConnectorTypeHDMI, Aux2, Hdp2, 0)
+                                                        *      PCIE_DDI_DATA_INITIALIZER (ConnectorTypeHDMI, Aux2, Hdp2)
                                                         *    }
                                                         *  };
                                                         * PCIe_COMPLEX_DESCRIPTOR PlatformTopology = {
@@ -1129,8 +1129,12 @@ typedef enum {
 
 ///< CPU MSR Register definitions ------------------------------------------
 #define SYS_CFG     0xC0010010
+#ifndef TOP_MEM
 #define TOP_MEM     0xC001001A
+#endif
+#ifndef TOP_MEM2
 #define TOP_MEM2    0xC001001D
+#endif
 #define HWCR        0xC0010015
 #define NB_CFG      0xC001001F
 

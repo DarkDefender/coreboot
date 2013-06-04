@@ -1,3 +1,23 @@
+/*
+ * This file is part of the coreboot project.
+ *
+ * Copyright (C) 2004 Stefan Reinauer <stefan.reinauer@coreboot.org>
+ * Copyright (C) 2010 Kevin O'Connor <kevin@koconnor.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -26,8 +46,8 @@ static void qemu_nb_init(device_t dev)
 
 	/* The PIRQ table is not working well for interrupt routing purposes.
 	 * so we'll just set the IRQ directly.
-	*/
-	printk(BIOS_INFO, "setting ethernet\n");
+	 */
+	printk(BIOS_INFO, "Setting up ethernet...\n");
 	pci_assign_irqs(0, 3, enetIrqs);
 }
 
@@ -44,32 +64,3 @@ static const struct pci_driver nb_driver __pci_driver = {
 	.vendor = 0x8086,
 	.device = 0x1237,
 };
-
-static void qemu_init(device_t dev)
-{
-	/* The VGA OPROM already lives at 0xc0000,
-	 * force coreboot to use it.
-	 */
-	dev->on_mainboard = 1;
-
-	/* Now do the usual initialization */
-	pci_dev_init(dev);
-}
-
-static struct device_operations vga_operations = {
-	.read_resources   = pci_dev_read_resources,
-	.set_resources    = pci_dev_set_resources,
-	.enable_resources = pci_dev_enable_resources,
-	.init             = qemu_init,
-	.ops_pci          = 0,
-};
-
-static const struct pci_driver vga_driver __pci_driver = {
-	.ops = &vga_operations,
-	.vendor = 0x1013,
-	.device = 0x00b8,
-};
-
-struct chip_operations mainboard_ops = {
-};
-

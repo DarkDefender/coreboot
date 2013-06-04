@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /*----------------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ agesawrapper_amdinitcpuio (
 	PciData = 1;
 	LibAmdPciWrite(AccessWidth32, PciAddress, &PciData, &StdHeader);
 
-	/* The platform BIOS needs to ensure the memory ranges of SB800 legacy
+	/* The platform BIOS needs to ensure the memory ranges of Hudson legacy
 	 * devices (TPM, HPET, BIOS RAM, Watchdog Timer, I/O APIC and ACPI) are
 	 * set to non-posted regions.
 	 */
@@ -166,7 +166,7 @@ agesawrapper_amdinitmmio (
 	/* Set ROM cache onto WP to decrease post time */
 	MsrReg = (0x0100000000ull - CONFIG_ROM_SIZE) | 5ull;
 	LibAmdMsrWrite (0x20C, &MsrReg, &StdHeader);
-	MsrReg = (0x1000000000000ull - CONFIG_ROM_SIZE) | 0x800ull;
+	MsrReg = ((1ULL << CONFIG_CPU_ADDR_BITS) - CONFIG_ROM_SIZE) | 0x800ull;
 	LibAmdMsrWrite (0x20D, &MsrReg, &StdHeader);
 
 	Status = AGESA_SUCCESS;
@@ -559,7 +559,6 @@ STATIC VOID s3_resume_init_data(FCH_DATA_BLOCK *FchParams)
 	FchParams->Sata.SataRaidSsid           = UserOptions.FchBldCfg->CfgSataRaidSsid;
 	FchParams->Sata.SataAhciSsid           = UserOptions.FchBldCfg->CfgSataAhciSsid;
 	FchParams->Sata.SataIdeSsid            = UserOptions.FchBldCfg->CfgSataIdeSsid;
-	FchParams->Gec.GecShadowRomBase        = UserOptions.FchBldCfg->CfgGecShadowRomBase;
 	FchParams->Spi.RomBaseAddress          = UserOptions.FchBldCfg->CfgSpiRomBaseAddress;
 	FchParams->Sd.SdSsid                   = UserOptions.FchBldCfg->CfgSdSsid;
 	FchParams->Spi.LpcSsid                 = UserOptions.FchBldCfg->CfgLpcSsid;

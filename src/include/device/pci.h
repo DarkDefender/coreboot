@@ -20,7 +20,7 @@
 #include <device/pci_def.h>
 #include <device/resource.h>
 #include <device/device.h>
-#ifndef __PRE_RAM__
+#if !defined(__PRE_RAM__) && !defined(__SMM__)
 #include <device/pci_ops.h>
 #include <device/pci_rom.h>
 
@@ -105,9 +105,6 @@ static inline const struct pci_bus_operations *ops_pci_bus(struct bus *bus)
 		bops = pci_config_default();
 	return bops;
 }
-
-unsigned mainboard_pci_subsystem_vendor_id(struct device *dev);
-unsigned mainboard_pci_subsystem_device_id(struct device *dev);
 
 #endif
 #endif /* PCI_H */

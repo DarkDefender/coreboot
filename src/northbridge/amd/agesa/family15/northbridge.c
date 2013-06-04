@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -330,7 +330,7 @@ static void amdfam15_link_read_bases(device_t dev, u32 nodeid, u32 link)
 }
 
 
-static void read_resources(device_t dev)
+static void nb_read_resources(device_t dev)
 {
 	u32 nodeid;
 	struct bus *link;
@@ -341,6 +341,20 @@ static void read_resources(device_t dev)
 			amdfam15_link_read_bases(dev, nodeid, link->link_num);
 		}
 	}
+
+	/*
+	 * This MMCONF resource must be reserved in the PCI domain.
+	 * It is not honored by the coreboot resource allocator if it is in
+	 * the CPU_CLUSTER.
+	 */
+#if CONFIG_MMCONF_SUPPORT
+	struct resource *resource = new_resource(dev, 0xc0010058);
+	resource->base = CONFIG_MMCONF_BASE_ADDRESS;
+	resource->size = CONFIG_MMCONF_BUS_NUMBER * 4096 * 256;
+	resource->flags = IORESOURCE_MEM | IORESOURCE_RESERVE |
+	    IORESOURCE_FIXED | IORESOURCE_STORED | IORESOURCE_ASSIGNED;
+#endif
+
 }
 
 
@@ -427,7 +441,7 @@ static void create_vga_resource(device_t dev, unsigned nodeid)
 }
 
 
-static void set_resources(device_t dev)
+static void nb_set_resources(device_t dev)
 {
 	unsigned nodeid;
 	struct bus *bus;
@@ -447,6 +461,12 @@ static void set_resources(device_t dev)
 		if (bus->children) {
 			assign_resources(bus);
 		}
+	}
+
+	/* Print the MMCONF region if it has been reserved. */
+	res = find_resource(dev, 0xc0010058);
+	if (res) {
+		report_resource_stored(dev, res, " <mmconfig>");
 	}
 }
 
@@ -478,8 +498,8 @@ static unsigned scan_chains(device_t dev, unsigned max)
 }
 
 static struct device_operations northbridge_operations = {
-	.read_resources	  = read_resources,
-	.set_resources	  = set_resources,
+	.read_resources	  = nb_read_resources,
+	.set_resources	  = nb_set_resources,
 	.enable_resources = pci_dev_enable_resources,
 	.init		  = northbridge_init,
 	.scan_bus	  = scan_chains,
@@ -570,12 +590,12 @@ static void domain_enable_resources(device_t dev)
 {
 	u32 val;
 	/* Must be called after PCI enumeration and resource allocation */
-	printk(BIOS_DEBUG, "\nFam15 - domain_enable_resources: AmdInitMid.\n");
+	printk(BIOS_DEBUG, "\nFam15 - %s: AmdInitMid.\n", __func__);
 	val = agesawrapper_amdinitmid();
 	if (val) {
 		printk(BIOS_DEBUG, "agesawrapper_amdinitmid failed: %x \n", val);
 	}
-	printk(BIOS_DEBUG, "  ader - leaving domain_enable_resources.\n");
+	printk(BIOS_DEBUG, "  Fam15 - leaving %s.\n", __func__);
 }
 
 
@@ -787,7 +807,6 @@ static void domain_set_resources(device_t dev)
 					ram_resource(dev, (idx | i), basek, pre_sizek);
 					idx += 0x10;
 					sizek -= pre_sizek;
-#if CONFIG_WRITE_HIGH_TABLES
 					if (high_tables_base==0) {
 						/* Leave some space for ACPI, PIRQ and MP tables */
 #if CONFIG_GFXUMA
@@ -799,7 +818,6 @@ static void domain_set_resources(device_t dev)
 						printk(BIOS_DEBUG, " split: %dK table at =%08llx\n",
 							 (u32)(high_tables_size / 1024), high_tables_base);
 					}
-#endif
 				}
 				basek = mmio_basek;
 			}
@@ -814,7 +832,6 @@ static void domain_set_resources(device_t dev)
 
 		ram_resource(dev, (idx | i), basek, sizek);
 		idx += 0x10;
-#if CONFIG_WRITE_HIGH_TABLES
 		printk(BIOS_DEBUG, "node %d: mmio_basek=%08lx, basek=%08llx, limitk=%08llx\n",
 				i, mmio_basek, basek, limitk);
 		if (high_tables_base==0) {
@@ -826,7 +843,6 @@ static void domain_set_resources(device_t dev)
 #endif
 			high_tables_size = HIGH_MEMORY_SIZE;
 		}
-#endif
 	}
 
 #if CONFIG_GFXUMA
@@ -918,7 +934,7 @@ static u32 cpu_bus_scan(device_t dev, u32 max)
 	if (dev_mc && dev_mc->bus) {
 		printk(BIOS_DEBUG, "%s found", dev_path(dev_mc));
 		pci_domain = dev_mc->bus->dev;
-		if (pci_domain && (pci_domain->path.type == DEVICE_PATH_PCI_DOMAIN)) {
+		if (pci_domain && (pci_domain->path.type == DEVICE_PATH_DOMAIN)) {
 			printk(BIOS_DEBUG, "\n%s move to ",dev_path(dev_mc));
 			dev_mc->bus->secondary = CONFIG_CBB; // move to 0xff
 			printk(BIOS_DEBUG, "%s",dev_path(dev_mc));
@@ -933,7 +949,7 @@ static u32 cpu_bus_scan(device_t dev, u32 max)
 		if (dev_mc && dev_mc->bus) {
 			printk(BIOS_DEBUG, "%s found\n", dev_path(dev_mc));
 			pci_domain = dev_mc->bus->dev;
-			if (pci_domain && (pci_domain->path.type == DEVICE_PATH_PCI_DOMAIN)) {
+			if (pci_domain && (pci_domain->path.type == DEVICE_PATH_DOMAIN)) {
 				if ((pci_domain->link_list) && (pci_domain->link_list->children == dev_mc)) {
 					printk(BIOS_DEBUG, "%s move to ",dev_path(dev_mc));
 					dev_mc->bus->secondary = CONFIG_CBB; // move to 0xff
@@ -1095,22 +1111,10 @@ static void cpu_bus_noop(device_t dev)
 
 static void cpu_bus_read_resources(device_t dev)
 {
-#if CONFIG_MMCONF_SUPPORT
-	struct resource *resource = new_resource(dev, 0xc0010058);
-	resource->base = CONFIG_MMCONF_BASE_ADDRESS;
-	resource->size = CONFIG_MMCONF_BUS_NUMBER * 4096*256;
-	resource->flags = IORESOURCE_MEM | IORESOURCE_RESERVE |
-		IORESOURCE_FIXED | IORESOURCE_STORED |  IORESOURCE_ASSIGNED;
-#endif
 }
 
 static void cpu_bus_set_resources(device_t dev)
 {
-	struct resource *resource = find_resource(dev, 0xc0010058);
-	if (resource) {
-		report_resource_stored(dev, resource, " <mmconfig>");
-	}
-	pci_dev_set_resources(dev);
 }
 
 static struct device_operations cpu_bus_ops = {
@@ -1135,9 +1139,9 @@ static void root_complex_enable_dev(struct device *dev)
 	}
 
 	/* Set the operations if it is a special bus type */
-	if (dev->path.type == DEVICE_PATH_PCI_DOMAIN) {
+	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
-	} else if (dev->path.type == DEVICE_PATH_APIC_CLUSTER) {
+	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
 		dev->ops = &cpu_bus_ops;
 	}
 }

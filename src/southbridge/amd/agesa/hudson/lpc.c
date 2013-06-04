@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -23,6 +23,7 @@
 #include <device/pnp.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
+#include <device/pci_def.h>
 #include <pc80/mc146818rtc.h>
 #include <pc80/isa-dma.h>
 #include <arch/io.h>
@@ -68,6 +69,13 @@ static void lpc_init(device_t dev)
 	pci_write_config8(dev, 0xBB, byte);
 
 	rtc_check_update_cmos_date(RTC_HAS_ALTCENTURY);
+
+	/* Initialize the real time clock.
+	 * The 0 argument tells rtc_init not to
+	 * update CMOS unless it is invalid.
+	 * 1 tells rtc_init to always initialize the CMOS.
+	 */
+	rtc_init(0);
 }
 
 static void hudson_lpc_read_resources(device_t dev)
@@ -104,11 +112,12 @@ static void hudson_lpc_set_resources(struct device *dev)
 {
 	struct resource *res;
 
+	/* Special case. SPI Base Address. The SpiRomEnable should STAY set. */
+	res = find_resource(dev, SPIROM_BASE_ADDRESS_REGISTER);
+	res->base |= PCI_COMMAND_MEMORY;
+
 	pci_dev_set_resources(dev);
 
-	/* Specical case. SPI Base Address. The SpiRomEnable should be set. */
-	res = find_resource(dev, 0xA0);
-	pci_write_config32(dev, 0xA0, res->base | 1 << 1);
 
 }
 

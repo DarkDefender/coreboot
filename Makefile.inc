@@ -19,7 +19,9 @@
 
 #######################################################################
 # misleadingly named, this is the coreboot version
-export KERNELVERSION := $(shell if [ -d "$(top)/.git" -a -f "`which git`" ]; then git describe --dirty 2>/dev/null || git describe; else echo unknown; fi)
+export KERNELVERSION := $(shell if [ -d "$(top)/.git" -a -f "`which git`" ]; \
+       then git describe --dirty --always || git describe; \
+       else echo 4.0$(KERNELREVISION); fi)
 
 #######################################################################
 # Basic component discovery
@@ -48,7 +50,7 @@ PHONY+= clean-abuild coreboot lint lint-stable build-dirs
 
 #######################################################################
 # root source directories of coreboot
-subdirs-y := src/lib src/boot src/console src/devices src/ec src/southbridge
+subdirs-y := src/lib src/console src/device src/ec src/southbridge
 subdirs-y += src/northbridge src/superio src/drivers src/cpu src/vendorcode
 subdirs-y += util/cbfstool util/sconfig util/nvramtool
 subdirs-y += src/arch/$(ARCHDIR-y)
@@ -58,7 +60,7 @@ subdirs-y += site-local
 
 #######################################################################
 # Add source classes and their build options
-classes-y := ramstage romstage smm cpu_microcode
+classes-y := ramstage romstage bootblock smm smmstub cpu_microcode rmodules
 
 #######################################################################
 # Helper functions for ramstage postprocess
@@ -99,25 +101,32 @@ romstage-S-ccopts:=-D__PRE_RAM__
 ifeq ($(CONFIG_TRACE),y)
 ramstage-c-ccopts:= -finstrument-functions
 endif
+ifeq ($(CONFIG_COVERAGE),y)
+ramstage-c-ccopts+=-fprofile-arcs -ftest-coverage
+endif
 
 ifeq ($(CONFIG_USE_BLOBS),y)
 forgetthis:=$(shell git submodule update --init --checkout 3rdparty)
-else
-ifeq ($(CONFIG_REQUIRES_BLOB),y)
-$(error Your current configuration requires binary-only components, but you did not choose to use them)
-endif
 endif
 
+bootblock-c-ccopts:=-D__BOOT_BLOCK__ -D__PRE_RAM__
+bootblock-S-ccopts:=-D__BOOT_BLOCK__ -D__PRE_RAM__
+
+smmstub-c-ccopts:=-D__SMM__
+smmstub-S-ccopts:=-D__SMM__
 smm-c-ccopts:=-D__SMM__
 smm-S-ccopts:=-D__SMM__
 
 # SMM TSEG base is dynamic
+ifneq ($(CONFIG_SMM_MODULES),y)
 ifeq ($(CONFIG_SMM_TSEG),y)
 smm-c-ccopts += -fpic
+endif
 endif
 
 ramstage-c-deps:=$$(OPTION_TABLE_H)
 romstage-c-deps:=$$(OPTION_TABLE_H)
+bootblock-c-deps:=$$(OPTION_TABLE_H)
 
 #######################################################################
 # Add handler to compile ACPI's ASL
@@ -157,6 +166,11 @@ cbfs-files-handler= \
 		$(if $(wildcard $(1)$($(2)-file)), \
 			$(eval tmp-cbfs-file:= $(wildcard $(1)$($(2)-file))), \
 			$(eval tmp-cbfs-file:= $($(2)-file))) \
+		$(if $(strip $($(2)-required)), \
+			$(if $(wildcard $(tmp-cbfs-file)),, \
+				$(info This build configuration requires $($(2)-required)) \
+				$(eval FAILBUILD:=1) \
+			)) \
 		$(if $(tmp-cbfs-method), \
 			$(eval tmp-old-cbfs-file:=$(tmp-cbfs-file)) \
 			$(eval tmp-cbfs-file:=$(shell mkdir -p $(obj)/mainboard/$(MAINBOARDDIR); mktemp $(obj)/mainboard/$(MAINBOARDDIR)/cbfs-file.XXXXXX).out) \
@@ -165,7 +179,8 @@ cbfs-files-handler= \
 		$(eval $(2)-name:=) \
 		$(eval $(2)-type:=) \
 		$(eval $(2)-compression:=) \
-		$(eval $(2)-position:=)
+		$(eval $(2)-position:=) \
+		$(eval $(2)-required:=)
 
 #######################################################################
 # a variety of flags for our build
@@ -184,7 +199,7 @@ COREBOOT_EXTRA_VERSION := -$(call strip_quotes,$(CONFIG_LOCALVERSION))
 endif
 
 INCLUDES := -Isrc -Isrc/include -I$(obj) -Isrc/arch/$(ARCHDIR-y)/include
-INCLUDES += -Isrc/devices/oprom/include
+INCLUDES += -Isrc/device/oprom/include
 # abspath is a workaround for romcc
 INCLUDES += -include $(src)/include/kconfig.h
 
@@ -283,6 +298,10 @@ $(obj)/%.romstage.o $(abspath $(obj))/%.romstage.o: $(obj)/%.c $(obj)/config.h $
 	@printf "    CC         $(subst $(obj)/,,$(@))\n"
 	$(CC) -MMD -D__PRE_RAM__ $(CFLAGS) -c -o $@ $<
 
+$(obj)/%.bootblock.o $(abspath $(obj))/%.bootblock.o: $(obj)/%.c $(obj)/config.h $(OPTION_TABLE_H)
+	@printf "    CC         $(subst $(obj)/,,$(@))\n"
+	$(CC) -MMD $(bootblock-c-ccopts) $(CFLAGS) -c -o $@ $<
+
 #######################################################################
 # Clean up rules
 clean-abuild:
@@ -340,6 +359,7 @@ gitconfig:
 			chmod +x .git/hooks/$$hook;		     \
 		fi;						     \
 	done
+	git config remote.origin.push HEAD:refs/for/master
 	(git config --global user.name >/dev/null && git config --global user.email >/dev/null) || (printf 'Please configure your name and email in git:\n\n git config --global user.name "Your Name Comes Here"\n git config --global user.email your.email@example.com\n'; exit 1)
 
 crossgcc: clean-for-update

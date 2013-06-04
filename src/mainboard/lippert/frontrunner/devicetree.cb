@@ -1,11 +1,11 @@
 chip northbridge/amd/gx2
-  device lapic_cluster 0 on
+  device cpu_cluster 0 on
     chip cpu/amd/geode_gx2
       device lapic 0 on end
     end
   end
 
-  device pci_domain 0 on
+  device domain 0 on
     device pci 0.0 on end
       chip southbridge/amd/cs5535
   	register "setupflash" = "0"

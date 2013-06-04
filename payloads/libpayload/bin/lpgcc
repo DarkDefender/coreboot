@@ -27,19 +27,25 @@
 ## SUCH DAMAGE.
 
 # GCC wrapper for libpayload
+if [ -z "${V}" ] && [ "${V}" = 1 ]; then
+	DEBUGME=1
+else
+	DEBUGME=0
+fi
+
+if [ $DEBUGME -eq 1 ]; then
+	echo "CC = $CC"
+fi
+
 # let's not recurse.
 # This is a hack, I know, but it makes sure that really simple user errors
 # don't fork-bomb your machine.
-# echo "CC = $CC"
-
 if [ -n "$CC" ]; then
-b=`basename $CC`
+b=`basename "$CC"`
 if [ "$b" = "lpgcc" ]; then
 CC=""
 fi
 fi
-
-
 
 if [ "$CC" != "" ]; then
 DEFAULT_CC=$CC
@@ -62,7 +68,6 @@ trygccoption() {
 	return $?
 }
 
-DEBUGME=0
 DOLINK=1
 
 # This variable will contain the command line that the user wants to
@@ -102,24 +107,32 @@ while [ $# -gt 0 ]; do
 	shift
 done
 
-if [ "$CONFIG_TARGET_I386" = "y" ]; then
-  _ARCHINCDIR=$_INCDIR/i386
-  _ARCHLIBDIR=$_LIBDIR/i386
+if [ "$CONFIG_ARCH_ARMV7" = "y" ]; then
+  _ARCHINCDIR=$_INCDIR/armv7
+  _ARCHLIBDIR=$_LIBDIR/armv7
+  _ARCHEXTRA=""
 fi
 
-if [ "$CONFIG_TARGET_POWERPC" = "y" ]; then
+if [ "$CONFIG_ARCH_POWERPC" = "y" ]; then
   _ARCHINCDIR=$_INCDIR/powerpc
   _ARCHLIBDIR=$_LIBDIR/powerpc
+  _ARCHEXTRA=""
 fi
 
-_CFLAGS="-m32 -nostdinc -nostdlib -I$_INCDIR -I$_ARCHINCDIR -D__LIBPAYLOAD__=1"
+if [ "$CONFIG_ARCH_X86" = "y" ]; then
+  _ARCHINCDIR=$_INCDIR/x86
+  _ARCHLIBDIR=$_LIBDIR/x86
+  _ARCHEXTRA="-m32 "
+fi
+
+_CFLAGS="$_ARCHEXTRA -nostdinc -nostdlib -I$_INCDIR -I$_ARCHINCDIR -D__LIBPAYLOAD__=1"
 
 # Check for the -fno-stack-protector silliness
 
 trygccoption -fno-stack-protector
 [ $? -eq 0 ] && _CFLAGS="$_CFLAGS -fno-stack-protector"
 
-_CFLAGS="$_CFLAGS -I`$DEFAULT_CC -m32 -print-search-dirs | head -n 1 | cut -d' ' -f2`include"
+_CFLAGS="$_CFLAGS -I`$DEFAULT_CC $_ARCHEXTRA -print-search-dirs | head -n 1 | cut -d' ' -f2`include"
 
 _LDFLAGS="-L$BASE/../lib $_LDSCRIPT -static"
 
@@ -130,7 +143,7 @@ if [ $DOLINK -eq 0 ]; then
 
     $DEFAULT_CC $_CFLAGS $CMDLINE
 else
-    _LIBGCC=`$DEFAULT_CC -m32 -print-libgcc-file-name`
+    _LIBGCC=`$DEFAULT_CC $_ARCHEXTRA -print-libgcc-file-name`
     if [ $DEBUGME -eq 1 ]; then
 	echo "$DEFAULT_CC $_CFLAGS $_LDFLAGS $_ARCHLIBDIR/head.o $CMDLINE -lpayload $_LIBGCC"
     fi

@@ -39,9 +39,21 @@ SECTIONS
 		_etext = .;
 	}
 
+	.ctors : {
+		. = ALIGN(0x100);
+		__CTOR_LIST__ = .;
+		*(.ctors);
+		LONG(0);
+		__CTOR_END__ = .;
+	}
+
 	.rodata : {
 		_rodata = .;
 		. = ALIGN(4);
+
+		/* If any changes are made to the driver start/symbols or the
+		 * section names the equivalent changes need to made to
+		 * rmodule.ld. */
 		console_drivers = .;
 		*(.rodata.console_drivers)
 		econsole_drivers = . ;
@@ -52,6 +64,10 @@ SECTIONS
 		cpu_drivers = . ;
 		*(.rodata.cpu_driver)
 		ecpu_drivers = . ;
+		_bs_init_begin = .;
+		*(.bs_init)
+		_bs_init_end = .;
+
 		*(.rodata)
 		*(.rodata.*)
 		/* kevinh/Ispiri - Added an align, because the objcopy tool
@@ -84,20 +100,6 @@ SECTIONS
 		*(COMMON)
 	}
 	_ebss = .;
-	_end = .;
-
-	/* coreboot really "ends" here. Only heap and stack are placed after
-	 * this line.
-	 */
-
-	. = ALIGN(CONFIG_STACK_SIZE);
-
-	_stack = .;
-	.stack . : {
-		/* Reserve a stack for each possible cpu */
-		. += CONFIG_MAX_CPUS*CONFIG_STACK_SIZE;
-	}
-	_estack = .;
 
         _heap = .;
         .heap . : {

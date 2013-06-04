@@ -65,17 +65,22 @@ menu "Architecture Options"
 
 choice
         prompt "Target Architecture"
-        default TARGET_I386
+        default ARCH_X86
 
-config TARGET_I386
-        bool "x86"
+config ARCH_ARMV7
+        bool "ARMv7"
         help
           Support the x86 architecture
 
-config TARGET_POWERPC
+config ARCH_POWERPC
         bool "PowerPC"
         help
 	  Support the PowerPC architecture
+
+config ARCH_X86
+        bool "x86"
+        help
+          Support the x86 architecture
 
 endchoice
 
@@ -85,7 +90,7 @@ config MEMMAP_RAM_ONLY
 
 config MULTIBOOT
 	bool "Multiboot header support"
-	depends on TARGET_I386
+	depends on ARCH_X86
 	default y
 
 endmenu
@@ -115,7 +120,6 @@ config TINYCURSES
 
 config PDCURSES
 	bool "PDCurses"
-	default y
 	help
 	  libpayload's PDCurses port provides a full features curses
 	  implementation, including libpanel, libmenu and libform (which
@@ -163,9 +167,14 @@ config SERIAL_CONSOLE
 	bool "See output on the serial port console"
 	default y
 
+config X86_SERIAL_CONSOLE
+	bool
+	depends on ARCH_X86 && SERIAL_CONSOLE
+	default y
+
 config SERIAL_IOBASE
 	hex "I/O base for the serial port (default 0x3f8)"
-	depends on SERIAL_CONSOLE
+	depends on X86_SERIAL_CONSOLE
 	default 0x3f8
 
 config SERIAL_SET_SPEED
@@ -198,12 +207,12 @@ config VIDEO_CONSOLE
 
 config VGA_VIDEO_CONSOLE
 	bool "VGA video console driver"
-	depends on VIDEO_CONSOLE
+	depends on ARCH_X86 && VIDEO_CONSOLE
 	default y
 
 config GEODELX_VIDEO_CONSOLE
 	bool "Geode LX video console driver"
-	depends on VIDEO_CONSOLE
+	depends on ARCH_X86 && VIDEO_CONSOLE
 	default n
 
 config COREBOOT_VIDEO_CONSOLE
@@ -234,10 +243,12 @@ menu "Drivers"
 
 config PCI
 	bool "Support for PCI devices"
+	depends on ARCH_X86 # for now
 	default y
 
 config NVRAM
 	bool "Support for reading/writing NVRAM bytes"
+	depends on ARCH_X86 # for now
 	default y
 
 config RTC_PORT_EXTENDED_VIA
@@ -258,6 +269,7 @@ config RTC_PORT_EXTENDED_VIA
 
 config SPEAKER
 	bool "Support for PC speaker"
+	depends on ARCH_X86
 	default y
 
 config STORAGE
@@ -394,6 +406,11 @@ config BIG_ENDIAN
 	bool
 
 config LITTLE_ENDIAN
+	default n
+	bool
+
+# Whether the target system has an IO address space.
+config IO_ADDRESS_SPACE
 	default n
 	bool
 

@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <console/console.h>
@@ -123,7 +123,7 @@ static void get_ide_dma66(void)
 * enable the dedicated function in bimini board.
 * This function called early than rs780_enable.
 *************************************************/
-static void bimini_enable(device_t dev)
+static void mainboard_enable(device_t dev)
 {
 	printk(BIOS_INFO, "Mainboard BIMINI Enable. dev=0x%p\n", dev);
 
@@ -133,5 +133,5 @@ static void bimini_enable(device_t dev)
 }
 
 struct chip_operations mainboard_ops = {
-	.enable_dev = bimini_enable,
+	.enable_dev = mainboard_enable,
 };

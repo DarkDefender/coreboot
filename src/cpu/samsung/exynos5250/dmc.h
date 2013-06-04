@@ -152,13 +152,34 @@ enum ddr_mode {
 	DDR_MODE_COUNT,
 };
 
+/* For reasons unknown, people are in the habit of taking a 32-bit
+ * field with 2 possible values and packing it with, say, 2 bits. A
+ * non-robust encoding, using only 2 bits of a 32-bit field, is
+ * incredibly difficult to deal with when things go wrong, because
+ * there are a lot of things that get expressed as 0, 1, or 2. If
+ * you're scanning with jtag or dumping memory it is really hard to
+ * tell when you've hit the beginning of the struct. So, let's be a
+ * bit smart here. First, while it's common to let the enum count
+ * entries for you, when there are two of them, we can do the
+ * counting. And, let's set the values to something we can easily scan
+ * for in memory. Since '1' and '2' are rather common, we pick
+ * something that's actually of some value when things go wrong.  This
+ * setup motivated by a use case: something's going wrong and having a
+ * manuf name of '1' or '2' is completely useless!
+ */
 enum mem_manuf {
 	MEM_MANUF_AUTODETECT,
-	MEM_MANUF_ELPIDA,
-	MEM_MANUF_SAMSUNG,
+	MEM_MANUF_ELPIDA = 0xe7b1da,
+	MEM_MANUF_SAMSUNG = 0x5a5096,
 
-	MEM_MANUF_COUNT,
+	MEM_MANUF_COUNT = 2, // fancy that.
 };
+
+enum {
+	MEM_TIMINGS_MSR_COUNT	= 4,
+};
+
+#define DMC_INTERLEAVE_SIZE		0x1f
 
 /* CONCONTROL register fields */
 #define CONCONTROL_DFI_INIT_START_SHIFT	28
@@ -206,6 +227,100 @@ enum mem_manuf {
 
 #define PHY_CON42_CTRL_RDLAT_SHIFT	0
 #define PHY_CON42_CTRL_RDLAT_MASK	(0x1f << PHY_CON42_CTRL_RDLAT_SHIFT)
+
+/* These are the memory timings for a particular memory type and speed */
+struct mem_timings {
+	enum mem_manuf mem_manuf;	/* Memory manufacturer */
+	enum ddr_mode mem_type;		/* Memory type */
+	unsigned int frequency_mhz;	/* Frequency of memory in MHz */
+
+	/* Here follow the timing parameters for the selected memory */
+	uint8_t apll_mdiv;
+	uint8_t apll_pdiv;
+	uint8_t apll_sdiv;
+	uint8_t mpll_mdiv;
+	uint8_t mpll_pdiv;
+	uint8_t mpll_sdiv;
+	uint8_t cpll_mdiv;
+	uint8_t cpll_pdiv;
+	uint8_t cpll_sdiv;
+	uint8_t gpll_pdiv;
+	uint16_t gpll_mdiv;
+	uint8_t gpll_sdiv;
+	uint8_t epll_mdiv;
+	uint8_t epll_pdiv;
+	uint8_t epll_sdiv;
+	uint8_t vpll_mdiv;
+	uint8_t vpll_pdiv;
+	uint8_t vpll_sdiv;
+	uint8_t bpll_mdiv;
+	uint8_t bpll_pdiv;
+	uint8_t bpll_sdiv;
+	uint8_t use_bpll;       /* 1 to use BPLL for cdrex, 0 to use MPLL */
+	uint8_t pclk_cdrex_ratio;
+	unsigned int direct_cmd_msr[MEM_TIMINGS_MSR_COUNT];
+
+	unsigned int timing_ref;
+	unsigned int timing_row;
+	unsigned int timing_data;
+	unsigned int timing_power;
+
+	/* DQS, DQ, DEBUG offsets */
+	unsigned int phy0_dqs;
+	unsigned int phy1_dqs;
+	unsigned int phy0_dq;
+	unsigned int phy1_dq;
+	uint8_t phy0_tFS;
+	uint8_t phy1_tFS;
+	uint8_t phy0_pulld_dqs;
+	uint8_t phy1_pulld_dqs;
+
+	uint8_t lpddr3_ctrl_phy_reset;
+	uint8_t ctrl_start_point;
+	uint8_t ctrl_inc;
+	uint8_t ctrl_start;
+	uint8_t ctrl_dll_on;
+	uint8_t ctrl_ref;
+
+	uint8_t ctrl_force;
+	uint8_t ctrl_rdlat;
+	uint8_t ctrl_bstlen;
+
+	uint8_t fp_resync;
+	uint8_t iv_size;
+	uint8_t dfi_init_start;
+	uint8_t aref_en;
+
+	uint8_t rd_fetch;
+
+	uint8_t zq_mode_dds;
+	uint8_t zq_mode_term;
+	uint8_t zq_mode_noterm;	/* 1 to allow termination disable */
+
+	unsigned int memcontrol;
+	unsigned int memconfig;
+
+	unsigned int membaseconfig0;
+	unsigned int membaseconfig1;
+	unsigned int prechconfig_tp_cnt;
+	unsigned int dpwrdn_cyc;
+	unsigned int dsref_cyc;
+	unsigned int concontrol;
+	/* Channel and Chip Selection */
+	uint8_t dmc_channels;		/* number of memory channels */
+	uint8_t chips_per_channel;	/* number of chips per channel */
+	uint8_t chips_to_configure;	/* number of chips to configure */
+	uint8_t send_zq_init;		/* 1 to send this command */
+	unsigned int impedance;		/* drive strength impedeance */
+	uint8_t gate_leveling_enable;	/* check gate leveling is enabled */
+};
+
+/**
+ * Get the correct memory timings for our selected memory type and speed.
+ *
+ * @return pointer to the memory timings that we should use
+ */
+struct mem_timings *get_mem_timings(void);
 
 #endif
 #endif

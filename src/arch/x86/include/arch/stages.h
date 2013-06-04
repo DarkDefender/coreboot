@@ -19,6 +19,8 @@
 
 #ifndef __ARCH_STAGES_H
 #define __ARCH_STAGES_H
-void __attribute__((regparm(0))) copy_and_run(unsigned cpu_reset);
-void __attribute__((regparm(0))) copy_and_run_ap_code_in_car(unsigned ret_addr);
+
+#include <arch/cpu.h>
+
+void asmlinkage copy_and_run(void);
 #endif

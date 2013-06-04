@@ -35,23 +35,25 @@
 #include <usbdebug.h>
 
 static const uint32_t microcode_updates[] = {
-	#include "microcode-2129-m206f257.h"
-	#include "microcode-2334-m016fbB6.h"
-	#include "microcode-2336-m106fbB6.h"
-	#include "microcode-2337-m806fbB6.h"
-	#include "microcode-2346-m16fda3.h"
-	#include "microcode-2347-m206fda3.h"
-	#include "microcode-2348-m806fda3.h"
-	#include "microcode-2374-m16f6cb.h"
-	#include "microcode-2375-m206f6cc.h"
-	#include "microcode-2376-m46f6cd.h"
-	#include "microcode-2380-m106f768.h"
-	#include "microcode-2381-m406f769.h"
-	#include "microcode-2385-m806fa94.h"
-	#include "microcode-2389-m16f25a.h"
-	#include "microcode-2986-m086fbB8.h"
-	#include "microcode-2990-m046fbB9.h"
-	#include "microcode-2991-m406fbB9.h"
+	#include "microcode-m016fbBA.h"
+	#include "microcode-m046fbBC.h"
+	#include "microcode-m086fbBB.h"
+	#include "microcode-m106f76a.h"
+	#include "microcode-m106fbBA.h"
+	#include "microcode-m16f25d.h"
+	#include "microcode-m16f6d0.h"
+	#include "microcode-m16fda4.h"
+	#include "microcode-m206f25c.h"
+	#include "microcode-m206f6d1.h"
+	#include "microcode-m206fbBA.h"
+	#include "microcode-m206fda4.h"
+	#include "microcode-m406f76b.h"
+	#include "microcode-m406fbBC.h"
+	#include "microcode-m46f6d2.h"
+	#include "microcode-m806fa95.h"
+	#include "microcode-m806fbBA.h"
+	#include "microcode-m806fda4.h"
+
 	/*  Dummy terminator  */
         0x0, 0x0, 0x0, 0x0,
         0x0, 0x0, 0x0, 0x0,
@@ -91,16 +93,12 @@ static void enable_vmx(void)
 	wrmsr(IA32_FEATURE_CONTROL, msr);
 }
 
-#define PMG_CST_CONFIG_CONTROL	0xe2
-#define PMG_IO_BASE_ADDR	0xe3
-#define PMG_IO_CAPTURE_ADDR	0xe4
-
 #define HIGHEST_CLEVEL		3
 static void configure_c_states(void)
 {
 	msr_t msr;
 
-	msr = rdmsr(PMG_CST_CONFIG_CONTROL);
+	msr = rdmsr(MSR_PMG_CST_CONFIG_CONTROL);
 
 	msr.lo |= (1 << 15); // config lock until next reset
 	msr.lo |= (1 << 14); // Deeper Sleep
@@ -112,17 +110,17 @@ static void configure_c_states(void)
 	msr.lo &= ~7;
 	msr.lo |= HIGHEST_CLEVEL; // support at most C3
 
-	wrmsr(PMG_CST_CONFIG_CONTROL, msr);
+	wrmsr(MSR_PMG_CST_CONFIG_CONTROL, msr);
 
 	/* Set Processor MWAIT IO BASE */
 	msr.hi = 0;
 	msr.lo = ((PMB0_BASE + 4) & 0xffff) | (((PMB1_BASE + 9) & 0xffff) << 16);
-	wrmsr(PMG_IO_BASE_ADDR, msr);
+	wrmsr(MSR_PMG_IO_BASE_ADDR, msr);
 
 	/* Set C_LVL controls and IO Capture Address */
 	msr.hi = 0;
 	msr.lo = (PMB0_BASE + 4) | ((HIGHEST_CLEVEL - 2) << 16); // -2 because LVL0+1 aren't counted
-	wrmsr(PMG_IO_CAPTURE_ADDR, msr);
+	wrmsr(MSR_PMG_IO_CAPTURE_ADDR, msr);
 }
 
 #define IA32_MISC_ENABLE	0x1a0

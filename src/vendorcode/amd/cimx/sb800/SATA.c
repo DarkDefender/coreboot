@@ -469,7 +469,7 @@ sataInitAfterPciEnum (
   RWPCI (((SATA_BUS_DEV_FUN << 16) + SB_SATA_REG34), AccWidthUint8 | S3_SAVE, 0, 0x70);
 
   if (((pConfig->SataClass) != NATIVE_IDE_MODE) && ((pConfig->SataClass) != LEGACY_IDE_MODE)) {
-    // RIAD or AHCI
+    // RAID or AHCI
     if ((pConfig->SATAMODE.SataMode.SataIdeCombinedMode) == SATA_IDE_COMBINE_DISABLE) {
       RWMEM ((ddBar5 + SB_SATA_BAR5_REG00), AccWidthUint8 | S3_SAVE, ~(BIT2 + BIT1 + BIT0), BIT2 + BIT0);
       RWMEM ((ddBar5 + SB_SATA_BAR5_REG0C), AccWidthUint8 | S3_SAVE, 0xC0, 0x3F);
@@ -544,7 +544,7 @@ sataInitMidPost (
 {
   UINT32   ddBar5;
   sataBar5setting (pConfig, &ddBar5);
-  //If this is not S3 resume and also if SATA set to one of IDE mode, them implement drive detection workaround.
+  //If this is not S3 resume and also if SATA set to one of IDE mode, then implement drive detection workaround.
   if ( ! (pConfig->S3Resume) && ( ((pConfig->SataClass) != AHCI_MODE)  && ((pConfig->SataClass) != RAID_MODE) ) ) {
     sataDriveDetection (pConfig, &ddBar5);
   }

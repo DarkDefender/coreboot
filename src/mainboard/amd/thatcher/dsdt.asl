@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /* DefinitionBlock Statement */
@@ -23,7 +23,7 @@ DefinitionBlock (
 	"DSDT",                 /* Signature */
 	0x02,		/* DSDT Revision, needs to be 2 for 64bit */
 	"AMD   ",               /* OEMID */
-	"PARMER  ",	     /* TABLE ID */
+	"COREBOOT",	     /* TABLE ID */
 	0x00010001	/* OEM Revision */
 	)
 {	/* Start of ASL file */
@@ -188,7 +188,7 @@ DefinitionBlock (
 		PM2D, 0x00000008,
 	}
 
-	/* Power Management I/O registers, TODO:PMIO is quite different in SB800. */
+	/* Power Management I/O registers. */
 	OperationRegion(PIOR, SystemIO, 0x00000CD6, 0x00000002)
 		Field(PIOR, ByteAcc, NoLock, Preserve) {
 		PIOI, 0x00000008,
@@ -1241,6 +1241,33 @@ DefinitionBlock (
 				/* Method(_INI) {
 				*	DBGO("\\_SB\\PCI0\\LpcIsaBr\\_INI\n")
 				} */ /* End Method(_SB.SBRDG._INI) */
+
+				OperationRegion(CFG,PCI_Config,0x0,0x100) // Map PCI Configuration Space
+				Field(CFG,DWordAcc,NoLock,Preserve){
+				Offset(0xA0),
+				BAR,32}		// SPI Controller Base Address Register (Index 0xA0)
+
+				Device(LDRC)	// LPC device: Resource consumption
+				{
+						Name (_HID, EISAID("PNP0C02"))  // ID for Motherboard resources
+						Name (CRS, ResourceTemplate ()  // Current Motherboard resources
+						{
+							Memory32Fixed(ReadWrite,    // Setup for fixed resource location for SPI base address
+							0x00000000,					// Address Base
+							0x00000000,					// Address Length
+							BAR0						// Descriptor Name
+							)
+						})
+
+						Method(_CRS,0,NotSerialized)
+						{
+							CreateDwordField(^CRS,^BAR0._BAS,SPIB)  // Field to hold SPI base address
+							CreateDwordField(^CRS,^BAR0._LEN,SPIL)  // Field to hold SPI address length
+							Store(BAR,SPIB)		// SPI base address mapped
+							Store(0x1000,SPIL)	// 4k space mapped
+							Return(CRS)
+						}
+				}
 
 				/* Real Time Clock Device */
 				Device(RTC0) {
