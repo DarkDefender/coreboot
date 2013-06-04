@@ -83,6 +83,10 @@ unsigned long acpi_fill_mcfg(unsigned long current)
 
 unsigned long acpi_fill_madt(unsigned long current)
 {
+	 device_t dev;
+     u32 dword;
+	 u32 gsi_base = 0;
+     u32 apicid_rs780;
      u32 apicid_sb800;
      /*
 	 * AGESA v5 Apply apic enumeration rules
@@ -97,17 +101,30 @@ unsigned long acpi_fill_madt(unsigned long current)
 	apicid_sb800 = CONFIG_MAX_CPUS + 1;
 #endif  
 
+    apicid_rs780 = apicid_sb800 + 1;
+
     /* create all subtables for processors */
 	current = acpi_create_madt_lapics(current);
 
 	/* Write SB800 IOAPIC, only one */
 	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *) current,
             apicid_sb800, IO_APIC_ADDR, 0);
+	
+    /* IOAPIC on rs780 */
+	gsi_base += IO_APIC_INTERRUPTS;  /* SB800 has 24 IOAPIC entries. */
+	dev = dev_find_slot(0, PCI_DEVFN(0, 0));
+	if (dev) {
+		pci_write_config32(dev, 0xF8, 0x1);
+		dword = pci_read_config32(dev, 0xFC) & 0xfffffff0;
+		current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *) current,
+				apicid_rs780,
+				dword,
+				gsi_base
+				);
+	}
 
 	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
 						current, 0, 0, 2, 0);
-	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
-						current, 0, 9, 9, 0xF);
 	/* 0: mean bus 0--->ISA */
 	/* 0: PIC 0 */
 	/* 2: APIC 2 */
