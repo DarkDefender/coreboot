@@ -485,10 +485,14 @@ AGESA_STATUS BiosReset (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 
 AGESA_STATUS BiosReadSpd (UINT32 Func, UINT32 Data, VOID *ConfigPtr)
 {
-	AGESA_STATUS Status;
-	Status = AmdMemoryReadSPD (Func, Data, ConfigPtr);
+  AGESA_STATUS Status;
+#ifdef __PRE_RAM__
+  Status = agesa_ReadSPD (Func, Data, ConfigPtr);
+#else
+  Status = AGESA_UNSUPPORTED;
+#endif
 
-	return Status;
+  return Status;
 }
 
 AGESA_STATUS BiosDefaultRet (UINT32 Func, UINT32 Data, VOID *ConfigPtr)

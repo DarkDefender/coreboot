@@ -93,6 +93,33 @@
 #define AGESA_ENTRY_INIT_GENERAL_SERVICES         FALSE
 
 #define BLDOPT_REMOVE_DMI             TRUE
+
+//#define BLDOPT_REMOVE_UDIMMS_SUPPORT           TRUE
+#define BLDOPT_REMOVE_SODIMMS_SUPPORT          TRUE
+#define BLDOPT_REMOVE_RDIMMS_SUPPORT           TRUE
+#define BLDOPT_REMOVE_LRDIMMS_SUPPORT          TRUE
+#define BLDOPT_REMOVE_ECC_SUPPORT              TRUE
+//#define BLDOPT_REMOVE_BANK_INTERLEAVE          TRUE
+//#define BLDOPT_REMOVE_DCT_INTERLEAVE           TRUE
+#define BLDOPT_REMOVE_NODE_INTERLEAVE          TRUE
+#define BLDOPT_REMOVE_PARALLEL_TRAINING        TRUE
+#define BLDOPT_REMOVE_ONLINE_SPARE_SUPPORT     TRUE
+//#define BLDOPT_REMOVE_MEM_RESTORE_SUPPORT      TRUE
+#define BLDOPT_REMOVE_MULTISOCKET_SUPPORT        TRUE
+//#define BLDOPT_REMOVE_ACPI_PSTATES             FALSE
+#define BLDOPT_REMOVE_SRAT                     FALSE //TRUE
+#define BLDOPT_REMOVE_SLIT                     FALSE //TRUE
+#define BLDOPT_REMOVE_WHEA                     FALSE //TRUE
+#define	BLDOPT_REMOVE_CRAT			TRUE
+//#define BLDOPT_REMOVE_DMI                      FALSE //TRUE
+//#define BLDOPT_REMOVE_EARLY_SAMPLES            FALSE
+//#define BLDCFG_REMOVE_ACPI_PSTATES_PPC               TRUE
+//#define BLDCFG_REMOVE_ACPI_PSTATES_PCT               TRUE
+//#define BLDCFG_REMOVE_ACPI_PSTATES_PSD               TRUE
+//#define BLDCFG_REMOVE_ACPI_PSTATES_PSS               TRUE
+//#define BLDCFG_REMOVE_ACPI_PSTATES_XPSS              TRUE
+
+
 /*
  * Agesa configuration values selection.
  * Uncomment and specify the value for the configuration options
@@ -168,18 +195,19 @@ CONST AP_MTRR_SETTINGS ROMDATA OntarioApMtrrSettingsList[] =
 //#define BLDCFG_CFG_LCD_BACK_LIGHT_CONTROL       0
 #define BLDCFG_MEM_INIT_PSTATE                  0
 #define BLDCFG_AMD_PSTATE_CAP_VALUE             0
-#define BLDCFG_MEMORY_BUS_FREQUENCY_LIMIT       DDR1333_FREQUENCY
+#define BLDCFG_MEMORY_BUS_FREQUENCY_LIMIT       DDR1866_FREQUENCY
 #define BLDCFG_MEMORY_MODE_UNGANGED             TRUE
-//#define BLDCFG_MEMORY_QUAD_RANK_CAPABLE         TRUE
-//#define BLDCFG_MEMORY_QUADRANK_TYPE             QUADRANK_UNBUFFERED
-#define BLDCFG_MEMORY_SODIMM_CAPABLE            TRUE
-#define BLDCFG_MEMORY_LRDIMM_CAPABLE            FALSE
+#define BLDCFG_MEMORY_QUAD_RANK_CAPABLE         TRUE
+#define BLDCFG_MEMORY_QUADRANK_TYPE             QUADRANK_UNBUFFERED
+#define BLDCFG_MEMORY_RDIMM_CAPABLE               FALSE
+#define BLDCFG_MEMORY_UDIMM_CAPABLE               TRUE
+#define BLDCFG_MEMORY_SODIMM_CAPABLE              FALSE
 #define BLDCFG_MEMORY_ENABLE_BANK_INTERLEAVING  TRUE
 #define BLDCFG_MEMORY_ENABLE_NODE_INTERLEAVING  FALSE
-#define BLDCFG_MEMORY_CHANNEL_INTERLEAVING      FALSE
+#define BLDCFG_MEMORY_CHANNEL_INTERLEAVING      TRUE
 #define BLDCFG_MEMORY_POWER_DOWN                TRUE
 #define BLDCFG_POWER_DOWN_MODE                  POWER_DOWN_BY_CHIP_SELECT
-//#define BLDCFG_ONLINE_SPARE                     FALSE
+#define BLDCFG_ONLINE_SPARE                     FALSE
 //#define BLDCFG_MEMORY_PARITY_ENABLE             FALSE
 #define BLDCFG_BANK_SWIZZLE                     TRUE
 #define BLDCFG_TIMING_MODE_SELECT               TIMING_MODE_AUTO
@@ -190,13 +218,13 @@ CONST AP_MTRR_SETTINGS ROMDATA OntarioApMtrrSettingsList[] =
 #define BLDCFG_MEMORY_ALL_CLOCKS_ON             FALSE
 //#define BLDCFG_ENABLE_ECC_FEATURE               TRUE
 //#define BLDCFG_ECC_REDIRECTION                  FALSE
-//#define BLDCFG_SCRUB_DRAM_RATE                  0
-//#define BLDCFG_SCRUB_L2_RATE                    0
-//#define BLDCFG_SCRUB_L3_RATE                    0
-//#define BLDCFG_SCRUB_IC_RATE                    0
-//#define BLDCFG_SCRUB_DC_RATE                    0
-//#define BLDCFG_ECC_SYNC_FLOOD                   0
-//#define BLDCFG_ECC_SYMBOL_SIZE                  0
+#define BLDCFG_SCRUB_DRAM_RATE                  0
+#define BLDCFG_SCRUB_L2_RATE                    0
+#define BLDCFG_SCRUB_L3_RATE                    0
+#define BLDCFG_SCRUB_IC_RATE                    0
+#define BLDCFG_SCRUB_DC_RATE                    0
+#define BLDCFG_ECC_SYNC_FLOOD                   FALSE
+#define BLDCFG_ECC_SYMBOL_SIZE                  4
 #define BLDCFG_UMA_ALLOCATION_MODE              UMA_AUTO
 #define BLDCFG_UMA_ALLOCATION_SIZE              0
 #define BLDCFG_UMA_ABOVE4G_SUPPORT              FALSE

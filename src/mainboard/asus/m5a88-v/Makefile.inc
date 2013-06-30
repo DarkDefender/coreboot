@@ -16,27 +16,23 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 #
-AGESA_ROOT ?= src/vendorcode/amd/agesa/f15
 
-AGESA_INC := -I$(AGESA_ROOT)/ \
-             -I$(AGESA_ROOT)/Include \
-             -I$(AGESA_ROOT)/Proc/IDS/ \
-             -I$(AGESA_ROOT)/Proc/CPU/ \
-             -I$(AGESA_ROOT)/Proc/CPU/Family
+AGESA_PREFIX ?= $(src)/vendorcode/amd/agesa
+CIMX_PREFIX ?= $(src)/vendorcode/amd/cimx
+AGESA_ROOT ?= $(AGESA_PREFIX)/f15
+SB_CIMX_ROOT ?= $(CIMX_PREFIX)/sb800
 
-CFLAGS += $(AGESA_INC)
+subdirs-y += ../../../../$(AGESA_ROOT)
 
 romstage-y += reset.c
 romstage-y += buildOpts.c
 romstage-y += agesawrapper.c
-romstage-y += dimmSpd.c
 romstage-y += BiosCallOuts.c
 romstage-y += PlatformGnbPcie.c
 
 ramstage-y += reset.c
 ramstage-y += buildOpts.c
 ramstage-y += agesawrapper.c
-ramstage-y += dimmSpd.c
 ramstage-y += BiosCallOuts.c
 ramstage-y += PlatformGnbPcie.c
 
