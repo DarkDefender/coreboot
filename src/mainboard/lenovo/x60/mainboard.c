@@ -28,6 +28,7 @@
 #include <device/pci_ops.h>
 #include <device/pci_ids.h>
 #include <arch/io.h>
+#include <arch/interrupt.h>
 #include <ec/lenovo/pmh7/pmh7.h>
 #include <ec/acpi/ec.h>
 #include <ec/lenovo/h8/h8.h>
@@ -35,6 +36,8 @@
 #include <pc80/mc146818rtc.h>
 #include "dock.h"
 #include <arch/x86/include/arch/acpigen.h>
+#include <x86emu/x86emu.h>
+#define PANEL INT15_5F35_CL_DISPLAY_DEFAULT
 
 int i915lightup(unsigned int physbase, unsigned int iobase, unsigned int mmio,
         unsigned int gfx);
@@ -45,6 +48,37 @@ static acpi_cstate_t cst_entries[] = {
 	{ 2, 17,  250, { 0x01, 8, 0, { 0 }, DEFAULT_PMBASE + LV3, 0 } },
 };
 
+#if CONFIG_PCI_OPTION_ROM_RUN_YABEL || CONFIG_PCI_OPTION_ROM_RUN_REALMODE
+static int int15_handler(void)
+{
+	/* The right way to do this is to move this handler code into
+	 * the mainboard or northbridge code.
+	 * TODO: completely move to mainboards / chipsets.
+	 */
+	printk(BIOS_DEBUG, "%s: AX=%04x BX=%04x CX=%04x DX=%04x\n",
+	       __func__, X86_AX, X86_BX, X86_CX, X86_DX);
+
+	switch (X86_AX) {
+	case 0x5f35: /* Boot Display */
+		X86_AX = 0x005f; // Success
+		X86_CL = PANEL;
+		break;
+	case 0x5f40: /* Boot Panel Type */
+		X86_AX = 0x005f; // Success
+		X86_CL = 3;
+		printk(BIOS_DEBUG, "DISPLAY=%x\n", X86_CL);
+		break;
+	default:
+		/* Interrupt was not handled */
+		printk(BIOS_DEBUG, "Unknown INT15 function %04x!\n", X86_AX);
+		return 0;
+	}
+
+	/* Interrupt handled */
+	return 1;
+}
+#endif
+
 int get_cst_entries(acpi_cstate_t **entries)
 {
 	*entries = cst_entries;
@@ -54,7 +88,6 @@ int get_cst_entries(acpi_cstate_t **entries)
 static void mainboard_enable(device_t dev)
 {
 	device_t dev0, idedev, sdhci_dev;
-	u8 defaults_loaded = 0;
 
 	ec_clr_bit(0x03, 2);
 
@@ -62,6 +95,12 @@ static void mainboard_enable(device_t dev)
 		ec_set_bit(0x03, 2);
 		ec_write(0x0c, 0x88);
 	}
+
+#if CONFIG_PCI_OPTION_ROM_RUN_YABEL || CONFIG_PCI_OPTION_ROM_RUN_REALMODE
+	/* Install custom int15 handler for VGA OPROM */
+	mainboard_interrupt_handlers(0x15, &int15_handler);
+#endif
+
 	/* If we're resuming from suspend, blink suspend LED */
 	dev0 = dev_find_slot(0, PCI_DEVFN(0,0));
 	if (dev0 && pci_read_config32(dev0, SKPAD) == SKPAD_ACPI_S3_MAGIC)
@@ -91,22 +130,6 @@ static void mainboard_enable(device_t dev)
 			/* restore lock */
 			pci_write_config8(sdhci_dev, 0xf9, 0x00);
 		}
-	}
-
-	if (get_option(&defaults_loaded, "cmos_defaults_loaded") < 0) {
-		printk(BIOS_INFO, "failed to get cmos_defaults_loaded");
-		defaults_loaded = 0;
-	}
-
-	if (!defaults_loaded) {
-		printk(BIOS_INFO, "Restoring CMOS defaults\n");
-		set_option("tft_brightness", &(u8[]){ 0xff });
-		set_option("volume", &(u8[]){ 0x03 });
-		/* set baudrate to 115200 baud */
-		set_option("baud_rate", &(u8[]){ 0x00 });
-		/* set default debug_level (DEFAULT_CONSOLE_LOGLEVEL starts at 1) */
-		set_option("debug_level", &(u8[]) { CONFIG_DEFAULT_CONSOLE_LOGLEVEL+1 });
-		set_option("cmos_defaults_loaded", &(u8[]){ 0x01 });
 	}
 }
 

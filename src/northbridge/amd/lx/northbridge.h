@@ -28,5 +28,8 @@ int sizeram(void);
 
 /* northbridgeinit.c */
 void northbridge_init_early(void);
-uint32_t get_systop(void);
+uint32_t get_top_of_ram(void);
+
+/* pll_reset.c */
+unsigned int GeodeLinkSpeed(void);
 #endif

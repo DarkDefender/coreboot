@@ -35,12 +35,17 @@ smm-$(CONFIG_HAVE_SMI_HANDLER) += finalize.c
 # We don't ship that, but booting without it is bound to fail
 cbfs-files-$(CONFIG_HAVE_MRC) += mrc.bin
 mrc.bin-file := $(call strip_quotes,$(CONFIG_MRC_FILE))
-ifeq ($(CONFIG_NORTHBRIDGE_INTEL_IVYBRIDGE),y)
 mrc.bin-position := 0xfffa0000
-endif
-ifeq ($(CONFIG_NORTHBRIDGE_INTEL_SANDYBRIDGE),y)
-mrc.bin-position := 0xfffe0000
-endif
 mrc.bin-type := 0xab
+
+$(obj)/mrc.cache:
+	dd if=/dev/zero count=1 \
+	bs=$(shell printf "%d" $(CONFIG_MRC_CACHE_SIZE) ) | \
+	tr '\000' '\377' > $@
+
+cbfs-files-$(CONFIG_HAVE_MRC) += mrc.cache
+mrc.cache-file := $(obj)/mrc.cache
+mrc.cache-position := 0xfff80000
+mrc.cache-type := 0xac
 
 $(obj)/northbridge/intel/sandybridge/acpi.ramstage.o : $(obj)/build.h

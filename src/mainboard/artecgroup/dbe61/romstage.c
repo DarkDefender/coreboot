@@ -33,8 +33,9 @@
 #include <spd.h>
 #include "southbridge/amd/cs5536/early_smbus.c"
 #include "southbridge/amd/cs5536/early_setup.c"
+#include "northbridge/amd/lx/raminit.h"
 
-static int spd_read_byte(unsigned device, unsigned address)
+int spd_read_byte(unsigned int device, unsigned int address)
 {
 	int i;
 
@@ -50,9 +51,7 @@ static int spd_read_byte(unsigned device, unsigned address)
 	return 0xFF;
 }
 
-#include "northbridge/amd/lx/raminit.h"
 #include "northbridge/amd/lx/pll_reset.c"
-#include "northbridge/amd/lx/raminit.c"
 #include "lib/generic_sdram.c"
 #include "cpu/amd/geode_lx/cpureginit.c"
 #include "cpu/amd/geode_lx/syspreinit.c"

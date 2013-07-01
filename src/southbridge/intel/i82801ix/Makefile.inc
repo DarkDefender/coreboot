@@ -27,7 +27,6 @@ ramstage-y += sata.c
 ramstage-y += hdaudio.c
 ramstage-y += thermal.c
 
-ramstage-y += ../i82801gx/usb_debug.c
 ramstage-y += ../i82801gx/reset.c
 ramstage-y += ../i82801gx/watchdog.c
 
@@ -37,6 +36,3 @@ smm-$(CONFIG_HAVE_SMI_HANDLER) += smihandler.c
 romstage-y += early_init.c
 romstage-y += early_smbus.c
 romstage-y += dmi_setup.c
-romstage-$(CONFIG_USBDEBUG) += ../i82801gx/usb_debug.c
-smm-$(CONFIG_USBDEBUG) += ../i82801gx/usb_debug.c
-

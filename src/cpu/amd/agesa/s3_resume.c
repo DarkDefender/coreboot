@@ -147,6 +147,24 @@ void move_stack_high_mem(void)
 		      :);
 }
 
+#ifndef __PRE_RAM__
+void write_mtrr(struct spi_flash *flash, u32 *p_nvram_pos, unsigned idx)
+{
+	msr_t  msr_data;
+	msr_data = rdmsr(idx);
+
+#if CONFIG_AMD_SB_SPI_TX_LEN >= 8
+	flash->write(flash, *p_nvram_pos, 8, &msr_data);
+	*p_nvram_pos += 8;
+#else
+	flash->write(flash, *p_nvram_pos, 4, &msr_data.lo);
+	*p_nvram_pos += 4;
+	flash->write(flash, *p_nvram_pos, 4, &msr_data.hi);
+	*p_nvram_pos += 4;
+#endif
+}
+#endif
+
 void OemAgesaSaveMtrr(void)
 {
 #ifndef __PRE_RAM__
@@ -174,32 +192,12 @@ void OemAgesaSaveMtrr(void)
 	wrmsr(SYS_CFG, msr_data);
 
 	/* Fixed MTRRs */
-	msr_data = rdmsr(0x250);
+	write_mtrr(flash, &nvram_pos, 0x250);
+	write_mtrr(flash, &nvram_pos, 0x258);
+	write_mtrr(flash, &nvram_pos, 0x259);
 
-	flash->write(flash, nvram_pos, 4, &msr_data.lo);
-	nvram_pos += 4;
-	flash->write(flash, nvram_pos, 4, &msr_data.hi);
-	nvram_pos += 4;
-
-	msr_data = rdmsr(0x258);
-	flash->write(flash, nvram_pos, 4, &msr_data.lo);
-	nvram_pos += 4;
-	flash->write(flash, nvram_pos, 4, &msr_data.hi);
-	nvram_pos += 4;
-
-	msr_data = rdmsr(0x259);
-	flash->write(flash, nvram_pos, 4, &msr_data.lo);
-	nvram_pos += 4;
-	flash->write(flash, nvram_pos, 4, &msr_data.hi);
-	nvram_pos += 4;
-
-	for (i = 0x268; i < 0x270; i++) {
-		msr_data = rdmsr(i);
-		flash->write(flash, nvram_pos, 4, &msr_data.lo);
-		nvram_pos += 4;
-		flash->write(flash, nvram_pos, 4, &msr_data.hi);
-		nvram_pos += 4;
-	}
+	for (i = 0x268; i < 0x270; i++)
+		write_mtrr(flash, &nvram_pos, i);
 
 	/* Disable access to AMD RdDram and WrDram extension bits */
 	msr_data = rdmsr(SYS_CFG);
@@ -207,34 +205,15 @@ void OemAgesaSaveMtrr(void)
 	wrmsr(SYS_CFG, msr_data);
 
 	/* Variable MTRRs */
-	for (i = 0x200; i < 0x210; i++) {
-		msr_data = rdmsr(i);
-		flash->write(flash, nvram_pos, 4, &msr_data.lo);
-		nvram_pos += 4;
-		flash->write(flash, nvram_pos, 4, &msr_data.hi);
-		nvram_pos += 4;
-	}
+	for (i = 0x200; i < 0x210; i++)
+		write_mtrr(flash, &nvram_pos, i);
 
 	/* SYS_CFG */
-	msr_data = rdmsr(0xC0010010);
-	flash->write(flash, nvram_pos, 4, &msr_data.lo);
-	nvram_pos += 4;
-	flash->write(flash, nvram_pos, 4, &msr_data.hi);
-	nvram_pos += 4;
-
+	write_mtrr(flash, &nvram_pos, 0xC0010010);
 	/* TOM */
-	msr_data = rdmsr(0xC001001A);
-	flash->write(flash, nvram_pos, 4, &msr_data.lo);
-	nvram_pos += 4;
-	flash->write(flash, nvram_pos, 4, &msr_data.hi);
-	nvram_pos += 4;
-
+	write_mtrr(flash, &nvram_pos, 0xC001001A);
 	/* TOM2 */
-	msr_data = rdmsr(0xC001001D);
-	flash->write(flash, nvram_pos, 4, &msr_data.lo);
-	nvram_pos += 4;
-	flash->write(flash, nvram_pos, 4, &msr_data.hi);
-	nvram_pos += 4;
+	write_mtrr(flash, &nvram_pos, 0xC001001D);
 
 	flash->spi->rw = SPI_WRITE_FLAG;
 	spi_release_bus(flash->spi);
@@ -291,10 +270,11 @@ u32 OemAgesaSaveS3Info(S3_DATA_TYPE S3DataType, u32 DataSize, void *Data)
 	nvram_pos = 0;
 	flash->write(flash, nvram_pos + pos, sizeof(DataSize), &DataSize);
 
-	for (nvram_pos = 0; nvram_pos < DataSize; nvram_pos += 4) {
+	for (nvram_pos = 0; nvram_pos < DataSize - CONFIG_AMD_SB_SPI_TX_LEN; nvram_pos += CONFIG_AMD_SB_SPI_TX_LEN) {
 		data = *(u32 *) (Data + nvram_pos);
-		flash->write(flash, nvram_pos + pos + 4, sizeof(u32), (u32 *)(Data + nvram_pos));
+		flash->write(flash, nvram_pos + pos + 4, CONFIG_AMD_SB_SPI_TX_LEN, (u8 *)(Data + nvram_pos));
 	}
+	flash->write(flash, nvram_pos + pos + 4, DataSize % CONFIG_AMD_SB_SPI_TX_LEN, (u8 *)(Data + nvram_pos));
 
 	flash->spi->rw = SPI_WRITE_FLAG;
 	spi_release_bus(flash->spi);

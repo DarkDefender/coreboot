@@ -2,12 +2,14 @@
 ## Subdirectories
 ################################################################################
 subdirs-y += amd
+subdirs-y += dmp
 subdirs-y += armltd
 subdirs-y += intel
 subdirs-y += samsung
 subdirs-y += ti
 subdirs-y += via
 subdirs-y += x86
+subdirs-$(CONFIG_CPU_QEMU_X86) += qemu-x86
 
 ################################################################################
 ## Rules for building the microcode blob in CBFS

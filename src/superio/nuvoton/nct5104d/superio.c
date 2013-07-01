@@ -38,34 +38,18 @@ static void nct5104d_init(device_t dev)
 {
 }
 
-static void nct5104d_pnp_set_resources(device_t dev)
-{
-	pnp_enter_exteded_mode(dev);
-	pnp_set_resources(dev);
-	pnp_exit_extended_mode(dev);
-}
-
-static void nct5104d_pnp_enable_resources(device_t dev)
-{
-	pnp_enter_exteded_mode(dev);
-	pnp_enable_resources(dev);
-	pnp_exit_extended_mode(dev);
-}
-
-static void nct5104d_pnp_enable(device_t dev)
-{
-	pnp_enter_exteded_mode(dev);
-	pnp_set_logical_device(dev);
-	(dev->enabled) ? pnp_set_enable(dev,1) : pnp_set_enable(dev,0);
-	pnp_exit_extended_mode(dev);
-}
+static const struct pnp_mode_ops pnp_conf_mode_ops = {
+	.enter_conf_mode  = pnp_enter_exteded_mode,
+	.exit_conf_mode   = pnp_exit_extended_mode,
+};
 
 static struct device_operations ops = {
 	.read_resources   = pnp_read_resources,
-	.set_resources    = nct5104d_pnp_set_resources,
-	.enable_resources = nct5104d_pnp_enable_resources,
-	.enable           = nct5104d_pnp_enable,
+	.set_resources    = pnp_set_resources,
+	.enable_resources = pnp_enable_resources,
+	.enable           = pnp_alt_enable,
 	.init             = nct5104d_init,
+	.ops_pnp_mode     = &pnp_conf_mode_ops,
 };
 
 static struct pnp_info pnp_dev_info[] = {

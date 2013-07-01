@@ -36,6 +36,7 @@
 #include "southbridge/amd/cs5536/early_smbus.c"
 #include "southbridge/amd/cs5536/early_setup.c"
 #include "superio/ite/it8712f/early_serial.c"
+#include "northbridge/amd/lx/raminit.h"
 
 /* Bit0 enables Spread Spectrum, bit1 makes on-board CF slot act as IDE slave. */
 #if CONFIG_ONBOARD_IDE_SLAVE
@@ -74,7 +75,7 @@ static const unsigned char spdbytes[] = {	// 4x Promos V58C2512164SA-J5I
 	[SPD_tRFC]			= 70	// SDRAM Device Minimum Auto Refresh to Active/Auto Refresh [70 ns]
 };
 
-static inline int spd_read_byte(unsigned int device, unsigned int address)
+int spd_read_byte(unsigned int device, unsigned int address)
 {
 	if (device != DIMM0)
 		return 0xFF;	/* No DIMM1, don't even try. */
@@ -110,9 +111,7 @@ static int smc_send_config(unsigned char config_data)
 	return 0;
 }
 
-#include "northbridge/amd/lx/raminit.h"
 #include "northbridge/amd/lx/pll_reset.c"
-#include "northbridge/amd/lx/raminit.c"
 #include "lib/generic_sdram.c"
 #include "cpu/amd/geode_lx/cpureginit.c"
 #include "cpu/amd/geode_lx/syspreinit.c"

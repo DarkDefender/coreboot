@@ -23,7 +23,6 @@ config BOARD_SPECIFIC_OPTIONS # dummy
         def_bool y
   select ARCH_X86
   select CPU_AMD_AGESA_FAMILY14
-  select NORTHBRIDGE_AMD_AGESA_FAMILY14_ROOT_COMPLEX
   select NORTHBRIDGE_AMD_AGESA_FAMILY14
   select SOUTHBRIDGE_AMD_CIMX_SB800
 	select SUPERIO_WINBOND_W83627HF
@@ -31,7 +30,6 @@ config BOARD_SPECIFIC_OPTIONS # dummy
         select HAVE_OPTION_TABLE
         select HAVE_PIRQ_TABLE
         select HAVE_MP_TABLE
-        select HAVE_HARD_RESET
         select SB_HT_CHAIN_UNITID_OFFSET_ONLY
         select LIFT_BSP_APIC_ID
   select SERIAL_CPU_INIT

@@ -78,19 +78,11 @@ static void lpc47b397_init(device_t dev)
 	}
 }
 
-static void lpc47b397_pnp_set_resources(device_t dev)
-{
-	pnp_enter_conf_state(dev);
-	pnp_set_resources(dev);
-	/* dump_pnp_device(dev); */
-	pnp_exit_conf_state(dev);
-}
-
 static void lpc47b397_pnp_enable_resources(device_t dev)
 {
-	pnp_enter_conf_state(dev);
 	pnp_enable_resources(dev);
 
+	pnp_enter_conf_mode(dev);
 	switch(dev->path.pnp.device) {
 	case LPC47B397_HWM:
 		printk(BIOS_DEBUG, "LPC47B397 SensorBus register access enabled\n");
@@ -99,23 +91,21 @@ static void lpc47b397_pnp_enable_resources(device_t dev)
 		break;
 	}
 	/* dump_pnp_device(dev); */
-	pnp_exit_conf_state(dev);
+	pnp_exit_conf_mode(dev);
 }
 
-static void lpc47b397_pnp_enable(device_t dev)
-{
-	pnp_enter_conf_state(dev);
-	pnp_set_logical_device(dev);
-	pnp_set_enable(dev, !!dev->enabled);
-	pnp_exit_conf_state(dev);
-}
+static const struct pnp_mode_ops pnp_conf_mode_ops = {
+	.enter_conf_mode  = pnp_enter_conf_state,
+	.exit_conf_mode   = pnp_exit_conf_state,
+};
 
 static struct device_operations ops = {
 	.read_resources   = pnp_read_resources,
-	.set_resources    = lpc47b397_pnp_set_resources,
+	.set_resources    = pnp_set_resources,
 	.enable_resources = lpc47b397_pnp_enable_resources,
-	.enable           = lpc47b397_pnp_enable,
+	.enable           = pnp_alt_enable,
 	.init             = lpc47b397_init,
+	.ops_pnp_mode     = &pnp_conf_mode_ops,
 };
 
 #define HWM_INDEX 0
@@ -169,12 +159,13 @@ static struct smbus_bus_operations lops_smbus_bus = {
 
 static struct device_operations ops_hwm = {
 	.read_resources   = pnp_read_resources,
-	.set_resources    = lpc47b397_pnp_set_resources,
+	.set_resources    = pnp_set_resources,
 	.enable_resources = lpc47b397_pnp_enable_resources,
-	.enable           = lpc47b397_pnp_enable,
+	.enable           = pnp_alt_enable,
 	.init             = lpc47b397_init,
 	.scan_bus         = scan_static_bus,
 	.ops_smbus_bus    = &lops_smbus_bus,
+	.ops_pnp_mode     = &pnp_conf_mode_ops,
 };
 
 static struct pnp_info pnp_dev_info[] = {

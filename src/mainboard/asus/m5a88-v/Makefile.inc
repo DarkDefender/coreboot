@@ -24,13 +24,11 @@ SB_CIMX_ROOT ?= $(CIMX_PREFIX)/sb800
 
 subdirs-y += ../../../../$(AGESA_ROOT)
 
-romstage-y += reset.c
 romstage-y += buildOpts.c
 romstage-y += agesawrapper.c
 romstage-y += BiosCallOuts.c
 romstage-y += PlatformGnbPcie.c
 
-ramstage-y += reset.c
 ramstage-y += buildOpts.c
 ramstage-y += agesawrapper.c
 ramstage-y += BiosCallOuts.c

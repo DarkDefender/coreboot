@@ -55,33 +55,18 @@ static void w83627thg_init(device_t dev)
 	}
 }
 
-static void w83627thg_set_resources(device_t dev)
-{
-	w83627thg_enter_ext_func_mode(dev);
-	pnp_set_resources(dev);
-	w83627thg_exit_ext_func_mode(dev);
-}
-
-static void w83627thg_enable_resources(device_t dev)
-{
-	w83627thg_enter_ext_func_mode(dev);
-	pnp_enable_resources(dev);
-	w83627thg_exit_ext_func_mode(dev);
-}
-
-static void w83627thg_enable(device_t dev)
-{
-	w83627thg_enter_ext_func_mode(dev);
-	pnp_enable(dev);
-	w83627thg_exit_ext_func_mode(dev);
-}
+static const struct pnp_mode_ops pnp_conf_mode_ops = {
+	.enter_conf_mode  = w83627thg_enter_ext_func_mode,
+	.exit_conf_mode   = w83627thg_exit_ext_func_mode,
+};
 
 static struct device_operations ops = {
 	.read_resources   = pnp_read_resources,
-	.set_resources    = w83627thg_set_resources,
-	.enable_resources = w83627thg_enable_resources,
-	.enable           = w83627thg_enable,
+	.set_resources    = pnp_set_resources,
+	.enable_resources = pnp_enable_resources,
+	.enable           = pnp_enable,
 	.init             = w83627thg_init,
+	.ops_pnp_mode     = &pnp_conf_mode_ops,
 };
 
 static struct pnp_info pnp_dev_info[] = {

@@ -81,34 +81,18 @@ static void w83697hf_init(device_t dev)
 	}
 }
 
-static void w83697hf_pnp_set_resources(device_t dev)
-{
-	pnp_enter_ext_func_mode(dev);
-	pnp_set_resources(dev);
-	pnp_exit_ext_func_mode(dev);
-}
-
-static void w83697hf_pnp_enable(device_t dev)
-{
-	pnp_enter_ext_func_mode(dev);
-	pnp_set_logical_device(dev);
-	pnp_set_enable(dev, !!dev->enabled);
-	pnp_exit_ext_func_mode(dev);
-}
-
-static void w83697hf_pnp_enable_resources(device_t dev)
-{
-	pnp_enter_ext_func_mode(dev);
-	pnp_enable_resources(dev);
-	pnp_exit_ext_func_mode(dev);
-}
+static const struct pnp_mode_ops pnp_conf_mode_ops = {
+	.enter_conf_mode  = pnp_enter_ext_func_mode,
+	.exit_conf_mode   = pnp_exit_ext_func_mode,
+};
 
 static struct device_operations ops = {
 	.read_resources   = pnp_read_resources,
-	.set_resources    = w83697hf_pnp_set_resources,
-	.enable_resources = w83697hf_pnp_enable_resources,
-	.enable           = w83697hf_pnp_enable,
+	.set_resources    = pnp_set_resources,
+	.enable_resources = pnp_enable_resources,
+	.enable           = pnp_alt_enable,
 	.init             = w83697hf_init,
+	.ops_pnp_mode     = &pnp_conf_mode_ops,
 };
 
 static struct pnp_info pnp_dev_info[] = {

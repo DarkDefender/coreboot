@@ -91,7 +91,9 @@ Scope(\_SB) {
 		/* Bus 0, Dev 0 - SR5650 HT */
 		Package() { 0xFFFF, Zero, Zero, 55 },
 
-		/* Bus 0, Dev 1 - CLKCONFIG */
+		/* Bus 0, Dev 1 - PCI Bridge for Internal Graphics */
+		Package(){0x0001FFFF, 0, 0, 18 },
+		Package(){0x0001FFFF, 1, 0, 19 },
 
 		/* Bus 0, Dev 2 - PCIe Bridge for x16 PCIe Slot (GFX0) */
 		Package() {0x0002FFFF, 0, 0, 0x34 },

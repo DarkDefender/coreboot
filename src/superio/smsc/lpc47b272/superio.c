@@ -37,9 +37,6 @@
 
 /* Forward declarations */
 static void enable_dev(device_t dev);
-static void lpc47b272_pnp_set_resources(device_t dev);
-static void lpc47b272_pnp_enable_resources(device_t dev);
-static void lpc47b272_pnp_enable(device_t dev);
 static void lpc47b272_init(device_t dev);
 
 static void pnp_enter_conf_state(device_t dev);
@@ -51,12 +48,18 @@ struct chip_operations superio_smsc_lpc47b272_ops = {
 	.enable_dev = enable_dev
 };
 
+static const struct pnp_mode_ops pnp_conf_mode_ops = {
+	.enter_conf_mode  = pnp_enter_conf_state,
+	.exit_conf_mode   = pnp_exit_conf_state,
+};
+
 static struct device_operations ops = {
 	.read_resources   = pnp_read_resources,
-	.set_resources    = lpc47b272_pnp_set_resources,
-	.enable_resources = lpc47b272_pnp_enable_resources,
-	.enable           = lpc47b272_pnp_enable,
+	.set_resources    = pnp_set_resources,
+	.enable_resources = pnp_enable_resources,
+	.enable           = pnp_alt_enable,
 	.init             = lpc47b272_init,
+	.ops_pnp_mode     = &pnp_conf_mode_ops,
 };
 
 static struct pnp_info pnp_dev_info[] = {
@@ -78,34 +81,6 @@ static void enable_dev(device_t dev)
 {
 	pnp_enable_devices(dev, &pnp_ops, ARRAY_SIZE(pnp_dev_info),
 			   pnp_dev_info);
-}
-
-/**
- * Configure the specified Super I/O device with the resources (I/O space,
- * etc.) that have been allocated for it.
- *
- * @param dev Pointer to structure describing a Super I/O device.
- */
-static void lpc47b272_pnp_set_resources(device_t dev)
-{
-	pnp_enter_conf_state(dev);
-	pnp_set_resources(dev);
-	pnp_exit_conf_state(dev);
-}
-
-static void lpc47b272_pnp_enable_resources(device_t dev)
-{
-	pnp_enter_conf_state(dev);
-	pnp_enable_resources(dev);
-	pnp_exit_conf_state(dev);
-}
-
-static void lpc47b272_pnp_enable(device_t dev)
-{
-	pnp_enter_conf_state(dev);
-	pnp_set_logical_device(dev);
-	pnp_set_enable(dev, !!dev->enabled);
-	pnp_exit_conf_state(dev);
 }
 
 /**

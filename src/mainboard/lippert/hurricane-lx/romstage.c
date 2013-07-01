@@ -36,11 +36,12 @@
 #include "southbridge/amd/cs5536/early_smbus.c"
 #include "southbridge/amd/cs5536/early_setup.c"
 #include "superio/ite/it8712f/early_serial.c"
+#include "northbridge/amd/lx/raminit.h"
 
 /* Bit0 enables Spread Spectrum. */
 #define SMC_CONFIG	0x01
 
-static inline int spd_read_byte(unsigned int device, unsigned int address)
+int spd_read_byte(unsigned int device, unsigned int address)
 {
 	if (device != DIMM0)
 		return 0xFF;	/* No DIMM1, don't even try. */
@@ -69,9 +70,7 @@ static int smc_send_config(unsigned char config_data)
 }
 #endif
 
-#include "northbridge/amd/lx/raminit.h"
 #include "northbridge/amd/lx/pll_reset.c"
-#include "northbridge/amd/lx/raminit.c"
 #include "lib/generic_sdram.c"
 #include "cpu/amd/geode_lx/cpureginit.c"
 #include "cpu/amd/geode_lx/syspreinit.c"

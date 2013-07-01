@@ -242,13 +242,11 @@ get_free_address (hci_t *controller)
 	return -1;		// no free address
 }
 
-static int
-set_address (hci_t *controller, int speed, int hubport, int hubaddr)
+int
+generic_set_address (hci_t *controller, int speed, int hubport, int hubaddr)
 {
 	int adr = get_free_address (controller);	// address to set
 	dev_req_t dr;
-	configuration_descriptor_t *cd;
-	device_descriptor_t *dd;
 
 	memset (&dr, 0, sizeof (dr));
 	dr.data_dir = host_to_device;
@@ -273,11 +271,71 @@ set_address (hci_t *controller, int speed, int hubport, int hubaddr)
 	dev->endpoints[0].direction = SETUP;
 	mdelay (50);
 	if (dev->controller->control (dev, OUT, sizeof (dr), &dr, 0, 0)) {
-		usb_debug ("set_address failed\n");
 		return -1;
 	}
 	mdelay (50);
+
+	return adr;
+}
+
+/* Normalize bInterval to log2 of microframes */
+static int
+usb_decode_interval(const int speed, const endpoint_type type, const unsigned char bInterval)
+{
+#define LOG2(a) ((sizeof(unsigned) << 3) - __builtin_clz(a) - 1)
+	switch (speed) {
+	case LOW_SPEED:
+		switch (type) {
+		case ISOCHRONOUS: case INTERRUPT:
+			return LOG2(bInterval) + 3;
+		default:
+			return 0;
+		}
+	case FULL_SPEED:
+		switch (type) {
+		case ISOCHRONOUS:
+			return (bInterval - 1) + 3;
+		case INTERRUPT:
+			return LOG2(bInterval) + 3;
+		default:
+			return 0;
+		}
+	case HIGH_SPEED:
+		switch (type) {
+		case ISOCHRONOUS: case INTERRUPT:
+			return bInterval - 1;
+		default:
+			return LOG2(bInterval);
+		}
+	case SUPER_SPEED:
+		switch (type) {
+		case ISOCHRONOUS: case INTERRUPT:
+			return bInterval - 1;
+		default:
+			return 0;
+		}
+	default:
+		return 0;
+	}
+#undef LOG2
+}
+
+static int
+set_address (hci_t *controller, int speed, int hubport, int hubaddr)
+{
+	int adr = controller->set_address(controller, speed, hubport, hubaddr);
+	if (adr < 0 || !controller->devices[adr]) {
+		usb_debug ("set_address failed\n");
+		return -1;
+	}
+	configuration_descriptor_t *cd;
+	device_descriptor_t *dd;
+
+	usbdev_t *dev = controller->devices[adr];
 	dev->address = adr;
+	dev->hub = hubaddr;
+	dev->port = hubport;
+	dev->speed = speed;
 	dev->descriptor = get_descriptor (dev, gen_bmRequestType
 		(device_to_host, standard_type, dev_recp), 1, 0, 0);
 	dd = (device_descriptor_t *) dev->descriptor;
@@ -298,7 +356,6 @@ set_address (hci_t *controller, int speed, int hubport, int hubaddr)
 	dev->configuration = get_descriptor (dev, gen_bmRequestType
 		(device_to_host, standard_type, dev_recp), 2, 0, 0);
 	cd = (configuration_descriptor_t *) dev->configuration;
-	set_configuration (dev);
 	interface_descriptor_t *interface =
 		(interface_descriptor_t *) (((char *) cd) + cd->bLength);
 	{
@@ -332,14 +389,17 @@ set_address (hci_t *controller, int speed, int hubport, int hubaddr)
 			endpoint_descriptor_t *endp =
 				(endpoint_descriptor_t *) (((char *) current)
 							   + current->bLength);
-			if (interface->bInterfaceClass == 0x3)
-				endp = (endpoint_descriptor_t *) (((char *) endp) + ((char *) endp)[0]);	// ignore HID descriptor
+			/* Skip any non-endpoint descriptor */
+			if (endp->bDescriptorType != 0x05)
+				endp = (endpoint_descriptor_t *)(((char *)endp) + ((char *)endp)[0]);
+
 			memset (dev->endpoints, 0, sizeof (dev->endpoints));
 			dev->num_endp = 1;	// 0 always exists
 			dev->endpoints[0].dev = dev;
 			dev->endpoints[0].maxpacketsize = dd->bMaxPacketSize0;
 			dev->endpoints[0].direction = SETUP;
 			dev->endpoints[0].type = CONTROL;
+			dev->endpoints[0].interval = usb_decode_interval(dev->speed, CONTROL, endp->bInterval);
 			for (j = 1; j <= current->bNumEndpoints; j++) {
 #ifdef USB_DEBUG
 				static const char *transfertypes[4] = {
@@ -357,12 +417,20 @@ set_address (hci_t *controller, int speed, int hubport, int hubaddr)
 					((endp->bEndpointAddress & 0x80) ==
 					 0) ? OUT : IN;
 				ep->type = endp->bmAttributes;
+				ep->interval = usb_decode_interval(dev->speed, ep->type, endp->bInterval);
 				endp = (endpoint_descriptor_t
 					*) (((char *) endp) + endp->bLength);
 			}
 			current = (interface_descriptor_t *) endp;
 		}
 	}
+
+	if (controller->finish_device_config &&
+			controller->finish_device_config(dev))
+		return adr; /* Device isn't configured correctly,
+			       only control transfers may work. */
+
+	set_configuration(dev);
 
 	int class = dd->bDeviceClass;
 	if (class == 0)
@@ -473,6 +541,8 @@ usb_detach_device(hci_t *controller, int devno)
 		controller->devices[devno]->destroy (controller->devices[devno]);
 		free(controller->devices[devno]);
 		controller->devices[devno] = NULL;
+		if (controller->destroy_device)
+			controller->destroy_device(controller, devno);
 	}
 }
 

@@ -378,6 +378,11 @@ config USB_MSC
 	  storage devices (USB memory sticks, hard drives, CDROM/DVD drives)
 	  Say Y here unless you know exactly what you are doing.
 
+config USB_GEN_HUB
+	bool
+	default n if (!USB_HUB && !USB_XHCI)
+	default y if (USB_HUB || USB_XHCI)
+
 endmenu
 
 menu "Debugging"

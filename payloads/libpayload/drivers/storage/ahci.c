@@ -73,7 +73,7 @@ static inline int ahci_port_is_active(const hba_port_t *const port)
 
 static int ahci_cmdengine_start(hba_port_t *const port)
 {
-	/* Wait for the controller to clear CR.
+	/* CR has to be clear before starting the command engine.
 	   This shouldn't take too long, but we should time out nevertheless. */
 	int timeout = 1000; /* Time out after 1000 * 1us == 1ms. */
 	while ((port->cmd_stat & HBA_PxCMD_CR) && timeout--)
@@ -92,10 +92,10 @@ static int ahci_cmdengine_stop(hba_port_t *const port)
 {
 	port->cmd_stat &= ~HBA_PxCMD_ST;
 
-	/* Wait for the controller to clear FR and CR.
+	/* Wait for the controller to clear CR.
 	   This shouldn't take too long, but we should time out nevertheless. */
 	int timeout = 1000; /* Time out after 1000 * 1us == 1ms. */
-	while ((port->cmd_stat & (HBA_PxCMD_FR | HBA_PxCMD_CR)) && timeout--)
+	while ((port->cmd_stat & HBA_PxCMD_CR) && timeout--)
 		udelay(1);
 	if (timeout < 0) {
 		printf("ahci: Timeout during stopping of command engine.\n");
@@ -103,6 +103,17 @@ static int ahci_cmdengine_stop(hba_port_t *const port)
 	}
 
 	port->cmd_stat &= ~HBA_PxCMD_FRE;
+
+	/* Wait for the controller to clear FR.
+	   This shouldn't take too long, but we should time out nevertheless. */
+	timeout = 1000; /* Time out after 1000 * 1us == 1ms. */
+	while ((port->cmd_stat & HBA_PxCMD_FR) && timeout--)
+		udelay(1);
+	if (timeout < 0) {
+		printf("ahci: Timeout during stopping of command engine.\n");
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -395,10 +406,18 @@ static int ahci_dev_init(hba_ctrl_t *const ctrl,
 	dev->cmdtable = cmdtable;
 	dev->rcvd_fis = rcvd_fis;
 
-	/* Wait for D2H Register FIS with device' signature. */
-	int timeout = 200; /* Time out after 200 * 10ms == 2s. */
+	/*
+	 * Wait for D2H Register FIS with device' signature.
+	 * The drive has to spin up here, so wait up to 30s.
+	 */
+	const int timeout_s = 30; /* Time out after 30s. */
+	int timeout = timeout_s * 100;
 	while ((port->taskfile_data & HBA_PxTFD_BSY) && timeout--)
 		mdelay(10);
+
+	if (port->taskfile_data & HBA_PxTFD_BSY)
+		printf("ahci: Timed out after %d seconds "
+		       "of waiting for device to spin up.\n", timeout_s);
 
 	/* Initialize device or fall through to clean up. */
 	switch (port->signature) {
@@ -471,7 +490,8 @@ static void ahci_port_probe(hba_ctrl_t *const ctrl,
 
 #ifdef CONFIG_STORAGE_AHCI_ONLY_TESTED
 static u32 working_controllers[] = {
-	0x8086 | 0x2929 << 16,
+	0x8086 | 0x2929 << 16, /* Mobile ICH9 */
+	0x8086 | 0x1e03 << 16, /* Mobile Panther Point PCH */
 };
 #endif
 static void ahci_init_pci(pcidev_t dev)

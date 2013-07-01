@@ -46,34 +46,18 @@ static void f71859_init(device_t dev)
 	/* TODO: Might potentially need code for HWM or FDC etc. */
 }
 
-static void f71859_pnp_set_resources(device_t dev)
-{
-	pnp_enter_conf_state(dev);
-	pnp_set_resources(dev);
-	pnp_exit_conf_state(dev);
-}
-
-static void f71859_pnp_enable_resources(device_t dev)
-{
-	pnp_enter_conf_state(dev);
-	pnp_enable_resources(dev);
-	pnp_exit_conf_state(dev);
-}
-
-static void f71859_pnp_enable(device_t dev)
-{
-	pnp_enter_conf_state(dev);
-	pnp_set_logical_device(dev);
-	pnp_set_enable(dev, !!dev->enabled);
-	pnp_exit_conf_state(dev);
-}
+static const struct pnp_mode_ops pnp_conf_mode_ops = {
+	.enter_conf_mode  = pnp_enter_conf_state,
+	.exit_conf_mode   = pnp_exit_conf_state,
+};
 
 static struct device_operations ops = {
 	.read_resources   = pnp_read_resources,
-	.set_resources    = f71859_pnp_set_resources,
-	.enable_resources = f71859_pnp_enable_resources,
-	.enable           = f71859_pnp_enable,
+	.set_resources    = pnp_set_resources,
+	.enable_resources = pnp_enable_resources,
+	.enable           = pnp_alt_enable,
 	.init             = f71859_init,
+	.ops_pnp_mode     = &pnp_conf_mode_ops,
 };
 
 static struct pnp_info pnp_dev_info[] = {

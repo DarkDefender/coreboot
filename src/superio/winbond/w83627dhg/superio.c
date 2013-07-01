@@ -41,11 +41,11 @@ static void w83627dhg_enable_UR2(device_t dev)
 {
 	u8 reg8;
 
-	pnp_enter_ext_func_mode(dev);
+	pnp_enter_conf_mode(dev);
 	reg8 = pnp_read_config(dev, 0x2c);
 	reg8 |= (0x3);
 	pnp_write_config(dev, 0x2c, reg8); // Set pins 78-85-> UART B
-	pnp_exit_ext_func_mode(dev);
+	pnp_exit_conf_mode(dev);
 }
 
 static void w83627dhg_init(device_t dev)
@@ -65,34 +65,18 @@ static void w83627dhg_init(device_t dev)
 	}
 }
 
-static void w83627dhg_pnp_set_resources(device_t dev)
-{
-	pnp_enter_ext_func_mode(dev);
-	pnp_set_resources(dev);
-	pnp_exit_ext_func_mode(dev);
-}
-
-static void w83627dhg_pnp_enable_resources(device_t dev)
-{
-	pnp_enter_ext_func_mode(dev);
-	pnp_enable_resources(dev);
-	pnp_exit_ext_func_mode(dev);
-}
-
-static void w83627dhg_pnp_enable(device_t dev)
-{
-	pnp_enter_ext_func_mode(dev);
-	pnp_set_logical_device(dev);
-	pnp_set_enable(dev, !!dev->enabled);
-	pnp_exit_ext_func_mode(dev);
-}
+static const struct pnp_mode_ops pnp_conf_mode_ops = {
+	.enter_conf_mode  = pnp_enter_ext_func_mode,
+	.exit_conf_mode   = pnp_exit_ext_func_mode,
+};
 
 static struct device_operations ops = {
 	.read_resources   = pnp_read_resources,
-	.set_resources    = w83627dhg_pnp_set_resources,
-	.enable_resources = w83627dhg_pnp_enable_resources,
-	.enable           = w83627dhg_pnp_enable,
+	.set_resources    = pnp_set_resources,
+	.enable_resources = pnp_enable_resources,
+	.enable           = pnp_alt_enable,
 	.init             = w83627dhg_init,
+	.ops_pnp_mode     = &pnp_conf_mode_ops,
 };
 
 static struct pnp_info pnp_dev_info[] = {
@@ -101,8 +85,7 @@ static struct pnp_info pnp_dev_info[] = {
 	{ &ops, W83627DHG_SP1, PNP_IO0 | PNP_IRQ0, {0x07f8, 0}, },
 	{ &ops, W83627DHG_SP2, PNP_IO0 | PNP_IRQ0, {0x07f8, 0}, },
 	{ &ops, W83627DHG_KBC, PNP_IO0 | PNP_IO1 | PNP_IRQ0 | PNP_IRQ1, {0x07ff, 0}, {0x07ff, 4}, },
-	/* the next line makes coreboot hang in pnp_enable_devices() */
-	/* { &ops, W83627DHG_SPI, PNP_IO1, { 0x7f8, 0 }, }, */
+	{ &ops, W83627DHG_SPI, PNP_IO1, {}, { 0x7f8, 0 }, },
 	{ &ops, W83627DHG_GPIO6, },
 	{ &ops, W83627DHG_WDTO_PLED, },
 	{ &ops, W83627DHG_GPIO2, },
