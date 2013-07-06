@@ -118,6 +118,17 @@ void get_bus_conf(void)
 			bus_type[j] = 1;
 	}
 
+	for (i = 0; i < ARRAY_SIZE(bus_sb800); i++) {
+		dev = dev_find_slot(bus_sb800[0], PCI_DEVFN(sbdn_sb800 + 0x15, i));
+		if (dev) {
+			bus_sb800[2 + i] = pci_read_config8(dev, PCI_SECONDARY_BUS);
+			bus_isa = pci_read_config8(dev, PCI_SUBORDINATE_BUS);
+			bus_isa++;
+		}
+	}
+	for (j = bus_sb800[2]; j < bus_isa; j++)
+		bus_type[j] = 1;
+
 	/* rs780 */
 	for (i = 1; i < ARRAY_SIZE(bus_rs780); i++) {
 		dev = dev_find_slot(bus_rs780[0], PCI_DEVFN(sbdn_rs780 + i, 0));
