@@ -148,6 +148,7 @@ void get_bus_conf(void)
 	apicid_sb800 = apicid_base;
 
 #if CONFIG_AMD_SB_CIMX
-	sb_Late_Post();
+	sb_After_Pci_Init();
+    sb_Late_Post();
 #endif
 }
