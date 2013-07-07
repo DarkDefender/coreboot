@@ -291,6 +291,13 @@ DefinitionBlock (
 		PWDA, 1,
 	}
 
+	OperationRegion (GRAM, SystemMemory, 0x0400, 0x0100)
+		Field (GRAM, ByteAcc, Lock, Preserve)
+		{
+			Offset (0x10),
+			FLG0,   8
+		}
+
 	Scope(\_SB) {
         /* PCIe Configuration Space for CONFIG_MMCONF_BUS_NUMBER busses */
 		OperationRegion(PCFG, SystemMemory, PCBA, PCLN)
@@ -856,6 +863,7 @@ DefinitionBlock (
 		/* Clear wake status structure. */
 		Store(0, Index(WKST,0))
 		Store(0, Index(WKST,1))
+        \_SB.PCI0.SIOS (Arg0)
 	} /* End Method(\_PTS) */
 
 	/*
@@ -934,6 +942,7 @@ DefinitionBlock (
 		*	Store(Arg0, Index(WKST,1))
 		* }
 		*/
+        \_SB.PCI0.SIOW (Arg0)
 		Return(WKST)
 	} /* End Method(\_WAK) */
 
@@ -1455,21 +1464,59 @@ DefinitionBlock (
 						IRQNoFlags(){13}
 					})
 				} /* End Device(_SB.PCI0.LpcIsaBr.COPR) */
-#if 0
-				Device(HPTM) {
-					Name(_HID,EISAID("PNP0103"))
-					Name(CRS,ResourceTemplate()	{
-						Memory32Fixed(ReadOnly,0xFED00000, 0x00000400, HPT)	/* 1kb reserved space */
+
+				Device (PS2M) {
+					Name (_HID, EisaId ("PNP0F13"))
+					Name (_CRS, ResourceTemplate () {
+						IO (Decode16, 0x0060, 0x0060, 0x00, 0x01)
+						IO (Decode16, 0x0064, 0x0064, 0x00, 0x01)
+						IRQNoFlags () {12}
 					})
-					Method(_STA, 0) {
+					Method (_STA, 0, NotSerialized) {
+						And (FLG0, 0x04, Local0)
+						If (LEqual (Local0, 0x04)) {
+							Return (0x0F)
+						} Else {
+							Return (0x00)
+						}
+					}
+				}
+
+				Device (PS2K) {
+					Name (_HID, EisaId ("PNP0303"))
+					Method (_STA, 0, NotSerialized) {
+						And (FLG0, 0x04, Local0)
+						If (LEqual (Local0, 0x04)) {
+							Return (0x0F)
+						} Else {
+							Return (0x00)
+						}
+					}
+					Name (_CRS, ResourceTemplate () {
+						IO (Decode16, 0x0060, 0x0060, 0x00, 0x01)
+						IO (Decode16, 0x0064, 0x0064, 0x00, 0x01)
+						IRQNoFlags () {1}
+					})
+				}
+
+#if 0 //acpi_create_hpet
+				Device(HPET) {
+					Name(_HID,EISAID("PNP0103"))
+					Name(CRS, ResourceTemplate() {
+		    				IRQNoFlags () {0}
+		    				IRQNoFlags () {2}
+		   			 	IRQNoFlags () {8}
+						Memory32Fixed(ReadOnly,0xFED00000, 0x00000400, MNT)	/* 1kb reserved space */
+					})
+					Method(_STA, 0, NotSerialized) {
 						Return(0x0F) /* sata is visible */
 					}
-					Method(_CRS, 0)	{
-						CreateDwordField(CRS, ^HPT._BAS, HPBA)
-						Store(HPBA, HPBA)
+					Method(_CRS, 0, NotSerialized) {
+						CreateDwordField(CRS, ^MNT._BAS, HPT)
+						Store(HPBA, HPT)
 						Return(CRS)
 					}
-				} /* End Device(_SB.PCI0.LpcIsaBr.COPR) */
+				} /* End Device(_SB.PCI0.LIBR.HPET) */
 #endif
 			} /* end LIBR */
 
@@ -1485,113 +1532,146 @@ DefinitionBlock (
 				Name(_ADR, 0x00140006)
 			} /* end Ac97modem */
 
-			Name(CRES, ResourceTemplate() {
-				IO(Decode16, 0x0CF8, 0x0CF8, 1,	8)
-
-				WORDIO(ResourceProducer, MinFixed, MaxFixed, PosDecode, EntireRange,
-					0x0000,			/* address granularity */
-					0x0000,			/* range minimum */
-					0x0CF7,			/* range maximum */
-					0x0000,			/* translation */
-					0x0CF8			/* length */
-				)
-
-				WORDIO(ResourceProducer, MinFixed, MaxFixed, PosDecode, EntireRange,
-					0x0000,			/* address granularity */
-					0x0D00,			/* range minimum */
-					0xFFFF,			/* range maximum */
-					0x0000,			/* translation */
-					0xF300			/* length */
-				)
-#if 0
-				Memory32Fixed(READWRITE, 0, 0xA0000, BSMM)
-				Memory32Fixed(READONLY, 0x000A0000, 0x00020000, VGAM) 	/* VGA memory space */
-				Memory32Fixed(READONLY, 0x000C0000, 0x00020000, EMM1)	/* Assume C0000-E0000 empty */
-				Memory32Fixed(READONLY, 0x000E0000, 0x00020000, RDBS)   /* BIOS ROM area */
-
-				/* DRAM Memory from 1MB to TopMem */
-				Memory32Fixed(READWRITE, 0x00100000, 0, DMLO)	/* 1MB to TopMem */
-
-				/* BIOS space just below 4GB */
-				DWORDMemory(
-					ResourceProducer, PosDecode, MinFixed, MaxFixed, Cacheable, ReadWrite,
-					0x00,			/* Granularity */
-					0x00000000,		/* Min */
-					0x00000000,		/* Max */
-					0x00000000,		/* Translation */
-					0x00000000,		/* Max-Min, RLEN */
-					,,
-					PCBM
-				)
-
-				/* DRAM memory from 4GB to TopMem2 */
-				QWORDMemory(ResourceProducer, PosDecode, MinFixed, MaxFixed, Cacheable, ReadWrite,
-					0xFFFFFFFF,		/* Granularity */
-					0x00000000,		/*  Min */
-					0x00000000,		/* Max */
-					0x00000000,		/* Translation */
-					0x00000000,		/* Max-Min, RLEN */
-					,,
-					DMHI
-				)
-
-				/* BIOS space just below 16EB */
-				QWORDMemory(ResourceProducer, PosDecode, MinFixed, MaxFixed, Cacheable, ReadWrite,
-					0xFFFFFFFF,		/* Granularity */
-					0x00000000,		/* Min */
-					0x00000000,		/*  Max */
-					0x00000000,		/* Translation */
-					0x00000000,		/* Max-Min, RLEN */
-					,,
-					PEBM
-				)
-#endif
-                                /* memory space for PCI BARs below 4GB */
-                                Memory32Fixed(ReadOnly, 0x00000000, 0x00000000, MMIO)
-			}) /* End Name(_SB.PCI0.CRES) */
-
-			Method(_CRS, 0) {
-				/* DBGO("\\_SB\\PCI0\\_CRS\n") */
-#if 0
-				CreateDWordField(CRES, ^EMM1._BAS, EM1B)
-				CreateDWordField(CRES, ^EMM1._LEN, EM1L)
-				CreateDWordField(CRES, ^DMLO._BAS, DMLB)
-				CreateDWordField(CRES, ^DMLO._LEN, DMLL)
-				CreateDWordField(CRES, ^PCBM._MIN, PBMB)
-				CreateDWordField(CRES, ^PCBM._LEN, PBML)
-
-				CreateQWordField(CRES, ^DMHI._MIN, DMHB)
-				CreateQWordField(CRES, ^DMHI._LEN, DMHL)
-				CreateQWordField(CRES, ^PEBM._MIN, EBMB)
-				CreateQWordField(CRES, ^PEBM._LEN, EBML)
-
-				If(LGreater(LOMH, 0xC0000)){
-					Store(0xC0000, EM1B)	/* Hole above C0000 and below E0000 */
-					Subtract(LOMH, 0xC0000, EM1L)	/* subtract start, assumes allocation from C0000 going up */
+			/* ITE8718 Support */
+			OperationRegion (IOID, SystemIO, 0x2E, 0x02)	/* sometimes it is 0x4E */
+				Field (IOID, ByteAcc, NoLock, Preserve)
+				{
+					SIOI,   8,    SIOD,   8		/* 0x2E and 0x2F */
 				}
 
-				/* Set size of memory from 1MB to TopMem */
-				Subtract(TOM1, 0x100000, DMLL)
+			IndexField (SIOI, SIOD, ByteAcc, NoLock, Preserve)
+			{
+					Offset (0x07),
+				LDN,	8,	/* Logical Device Number */
+					Offset (0x20),
+				CID1,	8,	/* Chip ID Byte 1, 0x87 */
+				CID2,	8,	/* Chip ID Byte 2, 0x12 */
+					Offset (0x30),
+				ACTR,	8,	/* Function activate */
+					Offset (0xF0),
+				APC0,	8,	/* APC/PME Event Enable Register */
+				APC1,	8,	/* APC/PME Status Register */
+				APC2,	8,	/* APC/PME Control Register 1 */
+				APC3,	8,	/* Environment Controller Special Configuration Register */
+				APC4,	8	/* APC/PME Control Register 2 */
+			}
 
-				/*
-				* If(LNotEqual(TOM2, 0x00000000)){
-				*	Store(0x100000000,DMHB)			DRAM from 4GB to TopMem2
-				*	Subtract(TOM2, 0x100000000, DMHL)
-				* }
-				*/
+			/* Enter the 8718 MB PnP Mode */
+			Method (EPNP)
+			{
+				Store(0x87, SIOI)
+				Store(0x01, SIOI)
+				Store(0x55, SIOI)
+				Store(0x55, SIOI) /* 8718 magic number */
+			}
+			/* Exit the 8718 MB PnP Mode */
+			Method (XPNP)
+			{
+				Store (0x02, SIOI)
+				Store (0x02, SIOD)
+			}
+			/*
+			 * Keyboard PME is routed to SB700 Gevent3. We can wake
+			 * up the system by pressing the key.
+			 */
+			Method (SIOS, 1)
+			{
+				/* We only enable KBD PME for S5. */
+				If (LLess (Arg0, 0x05))
+				{
+					EPNP()
+					/* DBGO("8718F\n") */
 
-				/* If there is no memory above 4GB, put the BIOS just below 4GB */
-				If(LEqual(TOM2, 0x00000000)){
-					Store(PBAD,PBMB)			/* Reserve the "BIOS" space */
-					Store(PBLN,PBML)
+					Store (0x4, LDN)
+					Store (One, ACTR)  /* Enable EC */
+					/*
+					Store (0x4, LDN)
+					Store (0x04, APC4)
+					*/  /* falling edge. which mode? Not sure. */
+
+					Store (0x4, LDN)
+					Store (0x08, APC1) /* clear PME status, Use 0x18 for mouse & KBD */
+					Store (0x4, LDN)
+					Store (0x08, APC0) /* enable PME, Use 0x18 for mouse & KBD */
+
+					XPNP()
 				}
-				Else {  /* Otherwise, put the BIOS just below 16EB */
-					ShiftLeft(PBAD,16,EBMB)		/* Reserve the "BIOS" space */
-					Store(PBLN,EBML)
-				}
-#endif
-                                CreateDWordField(CRES, ^MMIO._BAS, MM1B)
-                                CreateDWordField(CRES, ^MMIO._LEN, MM1L)
+			}
+			Method (SIOW, 1)
+			{
+				EPNP()
+				Store (0x4, LDN)
+				Store (Zero, APC0) /* disable keyboard PME */
+				Store (0x4, LDN)
+				Store (0xFF, APC1) /* clear keyboard PME status */
+				XPNP()
+			}
+
+			Name (CRS, ResourceTemplate ()
+			{
+				WordBusNumber (ResourceProducer, MinFixed, MaxFixed, PosDecode,
+					0x0000,             // Granularity
+					0x0000,             // Range Minimum
+					0x00FF,             // Range Maximum
+					0x0000,             // Translation Offset
+					0x0100,             // Length
+					,,)
+				IO (Decode16,
+					0x0CF8,             // Range Minimum
+					0x0CF8,             // Range Maximum
+					0x01,               // Alignment
+					0x08,               // Length
+					)
+
+				WordIO (ResourceProducer, MinFixed, MaxFixed, PosDecode, EntireRange,
+					0x0000,             // Granularity
+					0x0000,             // Range Minimum
+					0x03AF,             // Range Maximum
+					0x0000,             // Translation Offset
+					0x03B0,             // Length
+					,, , TypeStatic)
+				WordIO (ResourceProducer, MinFixed, MaxFixed, PosDecode, EntireRange,
+					0x0000,             // Granularity
+					0x03E0,             // Range Minimum
+					0x0CF7,             // Range Maximum
+					0x0000,             // Translation Offset
+					0x0918,             // Length
+					,, , TypeStatic)
+
+				WordIO (ResourceProducer, MinFixed, MaxFixed, PosDecode, EntireRange,
+					0x0000,             // Granularity
+					0x03B0,             // Range Minimum
+					0x03BB,             // Range Maximum
+					0x0000,             // Translation Offset
+					0x000C,             // Length
+					,, , TypeStatic)
+				WordIO (ResourceProducer, MinFixed, MaxFixed, PosDecode, EntireRange,
+					0x0000,             // Granularity
+					0x03C0,             // Range Minimum
+					0x03DF,             // Range Maximum
+					0x0000,             // Translation Offset
+					0x0020,             // Length
+					,, , TypeStatic)
+				WordIO (ResourceProducer, MinFixed, MaxFixed, PosDecode, EntireRange,
+					0x0000,             // Granularity
+					0x0D00,             // Range Minimum
+					0xFFFF,             // Range Maximum
+					0x0000,             // Translation Offset
+					0xF300,             // Length
+					,, , TypeStatic)
+				Memory32Fixed(READONLY, 0x000A0000, 0x00020000, VGAM) 	// VGA memory space
+
+				Memory32Fixed (ReadOnly,
+						0xE0000000,         // Address Base
+						0x10000000,         // Address Length, (1MB each Bus, 256 Buses by default)
+						MMIO)
+			})
+
+			Method (_CRS, 0, NotSerialized)
+			{
+				CreateDWordField (CRS, \_SB.PCI0.MMIO._BAS, BAS1)
+				CreateDWordField (CRS, \_SB.PCI0.MMIO._LEN, LEN1)
+
                                 /*
                                  * Declare memory between TOM1 and 4GB as available
                                  * for PCI MMIO.
@@ -1600,13 +1680,14 @@ DefinitionBlock (
                                  * 32bit (0x00000000 - TOM1) will wrap and give the same
                                  * result as 64bit (0x100000000 - TOM1).
                                  */
-                                Store(TOM1, MM1B)
+				Store(TOM1, BAS1)
                                 ShiftLeft(0x10000000, 4, Local0)
                                 Subtract(Local0, TOM1, Local0)
-                                Store(Local0, MM1L)
+                                Store(Local0, LEN1)
+				//DBGO(TOM1)
 
-				Return(CRES) /* note to change the Name buffer */
-			}  /* end of Method(_SB.PCI0._CRS) */
+				Return (CRS)
+			}
 
 			/*
 			*
@@ -1657,7 +1738,7 @@ DefinitionBlock (
 			/* DBGO("\n") */
 		}
 	} /* End Scope SI */
-#if 0
+
 	/* SMBUS Support */
 	Mutex (SBX0, 0x00)
 	OperationRegion (SMB0, SystemIO, 0xB00, 0x0C)
@@ -1822,6 +1903,5 @@ DefinitionBlock (
 			} /* end of _TMP */
 		} /* end of TZ00 */
 	}
-#endif
 }
 /* End of ASL file */
