@@ -76,6 +76,9 @@ DefinitionBlock (
 			/* Describe the AMD Fusion Controller Hub Southbridge */
 			#include <southbridge/amd/cimx/sb800/acpi/fch.asl>
 
+            /* Describe the SuperIO */
+            #include "acpi/superio.asl"
+
 		}
 	}   /* End Scope(_SB)  */
 

@@ -60,6 +60,7 @@ Method(\_PTS, 1) {
 	/* Clear wake status structure. */
 	Store(0, Index(WKST,0))
 	Store(0, Index(WKST,1))
+    \_SB.PCI0.SIOS (Arg0)
 } /* End Method(\_PTS) */
 
 /*
@@ -116,6 +117,7 @@ Method(\_WAK, 1) {
 	*	Store(Arg0, Index(WKST,1))
 	* }
 	*/
+    \_SB.PCI0.SIOW (Arg0)
 	Return(WKST)
 } /* End Method(\_WAK) */
 

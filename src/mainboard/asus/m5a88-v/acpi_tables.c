@@ -22,19 +22,17 @@
 #include <arch/acpi.h>
 #include <arch/acpigen.h>
 #include <arch/ioapic.h>
-#include <arch/io.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <cpu/x86/msr.h>
-#include <cpu/amd/mtrr.h>
-#include <cpu/amd/amdfam10_sysconf.h>
-
 #include "agesawrapper.h"
-
+#include <cpu/amd/mtrr.h>
+#include <cpu/amd/amdfam15.h>
 
 #define DUMP_ACPI_TABLES 0
 
 #if DUMP_ACPI_TABLES == 1
+
 static void dump_mem(u32 start, u32 end)
 {
 
@@ -83,56 +81,25 @@ unsigned long acpi_fill_mcfg(unsigned long current)
 
 unsigned long acpi_fill_madt(unsigned long current)
 {
-	 device_t dev;
-     u32 dword;
-	 u32 gsi_base = 0;
-     u32 apicid_rs780;
-     u32 apicid_sb800;
-     /*
-	 * AGESA v5 Apply apic enumeration rules
-	 * For systems with >= 16 APICs, put the IO-APICs at 0..n and
-	 * put the local-APICs at m..z
-	 * For systems with < 16 APICs, put the Local-APICs at 0..n and
-	 * put the IO-APICs at (n + 1)..z
-	 */
-#if CONFIG_MAX_CPUS >= 16
-	apicid_sb800 = 0x0;
-#else
-	apicid_sb800 = CONFIG_MAX_CPUS + 1;
-#endif  
-
-    apicid_rs780 = apicid_sb800 + 1;
-
-    /* create all subtables for processors */
+	/* create all subtables for processors */
 	current = acpi_create_madt_lapics(current);
 
 	/* Write SB800 IOAPIC, only one */
 	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *) current,
-            apicid_sb800, IO_APIC_ADDR, 0);
-	
-    /* IOAPIC on rs780 */
-	gsi_base += IO_APIC_INTERRUPTS;  /* SB800 has 24 IOAPIC entries. */
-	dev = dev_find_slot(0, PCI_DEVFN(0, 0));
-	if (dev) {
-		pci_write_config32(dev, 0xF8, 0x1);
-		dword = pci_read_config32(dev, 0xFC) & 0xfffffff0;
-		current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *) current,
-				apicid_rs780,
-				dword,
-				gsi_base
-				);
-	}
+			CONFIG_MAX_CPUS, IO_APIC_ADDR, 0);
 
 	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
-						current, 0, 0, 2, 0);
+			current, 0, 0, 2, 0);
+	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
+			current, 0, 9, 9, 0xF);
+
 	/* 0: mean bus 0--->ISA */
 	/* 0: PIC 0 */
 	/* 2: APIC 2 */
 	/* 5 mean: 0101 --> Edige-triggered, Active high */
 
 	/* create all subtables for processors */
-	current += acpi_create_madt_lapic_nmi((acpi_madt_lapic_nmi_t *)current, 0, 5, 1);
-	current += acpi_create_madt_lapic_nmi((acpi_madt_lapic_nmi_t *)current, 1, 5, 1);
+	/* current = acpi_create_madt_lapic_nmis(current, 5, 1); */
 	/* 1: LINT1 connect to NMI */
 
 	return current;
@@ -332,6 +299,9 @@ unsigned long write_acpi_tables(unsigned long start)
 
 	printk(BIOS_DEBUG, "slit\n");
 	dump_mem(slit, ((void *)slit) + slit->header.length);
+
+	printk(BIOS_DEBUG, "alib\n");
+	dump_mem(ssdt, ((void *)alib) + alib->length);
 
 	printk(BIOS_DEBUG, "ssdt\n");
 	dump_mem(ssdt, ((void *)ssdt) + ssdt->length);
