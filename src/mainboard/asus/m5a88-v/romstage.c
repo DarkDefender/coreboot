@@ -18,14 +18,6 @@
  */
 
 
-//#define SYSTEM_TYPE 0	/* SERVER */
-#define SYSTEM_TYPE 1	/* DESKTOP */
-//#define SYSTEM_TYPE 2	/* MOBILE */
-
-//used by incoherent_ht
-#define FAM10_SCAN_PCI_BUS 0
-#define FAM10_ALLOCATE_IO_RANGE 0
-
 #include <lib.h>
 #include <reset.h>
 #include <stdint.h>
@@ -139,8 +131,6 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	/* Initialize i8254 timers */
 	post_code(0x42);
 	setup_i8254();  
-
-    rs780_before_pci_init();
 
 	post_code(0x50);
 	print_debug("Disabling cache as ram ");
