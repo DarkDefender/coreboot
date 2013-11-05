@@ -24,7 +24,6 @@
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <southbridge/intel/bd82x6x/me.h>
 #include <northbridge/intel/sandybridge/sandybridge.h>
-#include <northbridge/intel/sandybridge/pcie_config.c>
 #include <cpu/intel/model_206ax/model_206ax.h>
 
 /* Include romstage serial for SIO helper functions */
@@ -103,10 +102,10 @@ void mainboard_smi_sleep(u8 slp_typ)
 		 * after the transition into suspend.
 		 */
 		if (smm_get_gnvs()->xhci) {
-			u32 reg32 = pcie_read_config32(PCH_XHCI_DEV, 0x74);
+			u32 reg32 = pci_read_config32(PCH_XHCI_DEV, 0x74);
 			reg32 &= ~(1 << 8); /* disable PME */
 			reg32 |= (1 << 15); /* clear PME status */
-			pcie_write_config32(PCH_XHCI_DEV, 0x74, reg32);
+			pci_write_config32(PCH_XHCI_DEV, 0x74, reg32);
 		}
 	}
 

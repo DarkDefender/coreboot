@@ -334,7 +334,7 @@ gcov_exit (void)
     {
       crc32 = crc32_unsigned (crc32, gi_ptr->stamp);
       crc32 = crc32_unsigned (crc32, gi_ptr->n_functions);
- 
+
       for (f_ix = 0; (unsigned)f_ix != gi_ptr->n_functions; f_ix++)
 	{
 	  gfi_ptr = gi_ptr->functions[f_ix];
@@ -396,7 +396,7 @@ gcov_exit (void)
 #endif
     prefix_length = 0;
 
-  /* If no prefix was specified and a prefix stip, then we assume
+  /* If no prefix was specified and a prefix strip, then we assume
      relative.  */
   if (gcov_prefix_strip != 0 && prefix_length == 0)
     {

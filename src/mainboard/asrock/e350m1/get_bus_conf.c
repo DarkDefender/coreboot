@@ -34,7 +34,7 @@
 * and acpi_tables busnum is default.
 */
 u8 bus_isa;
-u8 bus_sb800[3];
+u8 bus_sb800[6];
 u32 apicid_sb800;
 
 /*
@@ -71,7 +71,7 @@ void get_bus_conf(void)
  * call.  The logically correct place to call AmdInitLate is after PCI scan is done,
  * after the decision about S3 resume is made, and before the system tables are
  * written into RAM.  The routine that is responsible for writing the tables is
- * "write_tables", called near the end of "hardwaremain".  There is no platform
+ * "write_tables", called near the end of "main".  There is no platform
  * specific entry point between the S3 resume decision point and the call to
  * "write_tables", and the next platform specific entry points are the calls to
  * the ACPI table write functions.  The first of ose would seem to be the right
@@ -87,9 +87,7 @@ void get_bus_conf(void)
 
   sbdn_sb800 = 0;
 
-  for (i = 0; i < 3; i++) {
-    bus_sb800[i] = 0;
-  }
+  memset(bus_sb800, 0, sizeof(bus_sb800));
 
   for (i = 0; i < 256; i++) {
     bus_type[i] = 0; /* default ISA bus. */

@@ -17,12 +17,14 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <arch/rules.h>
 #include <device/pci_def.h>
 #include <device/resource.h>
 #include <device/device.h>
-#if !defined(__PRE_RAM__) && !defined(__SMM__)
 #include <device/pci_ops.h>
 #include <device/pci_rom.h>
+
+#ifndef __SIMPLE_DEVICE__
 
 /* Common pci operations without a standard interface */
 struct pci_operations {
@@ -77,6 +79,7 @@ unsigned pci_find_capability(device_t dev, unsigned cap);
 struct resource *pci_get_resource(struct device *dev, unsigned long index);
 void pci_dev_set_subsystem(device_t dev, unsigned vendor, unsigned device);
 void pci_dev_init(struct device *dev);
+unsigned int pci_match_simple_dev(device_t dev, pci_devfn_t sdev);
 
 void pci_assign_irqs(unsigned bus, unsigned slot,
 		     const unsigned char pIntAtoD[4]);
@@ -94,17 +97,5 @@ static inline const struct pci_operations *ops_pci(device_t dev)
 	return pops;
 }
 
-static inline const struct pci_bus_operations *ops_pci_bus(struct bus *bus)
-{
-	const struct pci_bus_operations *bops;
-	bops = 0;
-	if (bus && bus->dev && bus->dev->ops) {
-		bops = bus->dev->ops->ops_pci_bus;
-	}
-	if (!bops)
-		bops = pci_config_default();
-	return bops;
-}
-
-#endif
+#endif /* ! __SIMPLE_DEVICE__ */
 #endif /* PCI_H */

@@ -32,20 +32,14 @@ static void inline __attribute__((always_inline))  memcopy(void *dest, const voi
 #if CONFIG_HAVE_ACPI_RESUME
 
 static inline void *backup_resume(void) {
-	unsigned long high_ram_base;
 	void *resume_backup_memory;
 	int suspend = acpi_is_wakeup_early();
 
 	if (!suspend)
 		return NULL;
 
-	/* Start address of high memory tables */
-	high_ram_base = (u32) get_cbmem_toc();
-
-	print_debug_pcar("CBMEM TOC is at: ", (uint32_t)high_ram_base);
-	print_debug_pcar("CBMEM TOC 0-size: ",(uint32_t)(high_ram_base + HIGH_MEMORY_SIZE + 4096));
-
-	cbmem_reinit((u64)high_ram_base);
+	if (!cbmem_reinit())
+		return NULL;
 
 	resume_backup_memory = cbmem_find(CBMEM_ID_RESUME);
 
@@ -88,7 +82,7 @@ static void post_cache_as_ram(void)
 #endif
 #if 1
 	{
-	/* Check value of esp to verify if we have enough rom for stack in Cache as RAM */
+	/* Check value of esp to verify if we have enough room for stack in Cache as RAM */
 	unsigned v_esp;
 	__asm__ volatile (
 		"movl   %%esp, %0\n\t"
@@ -123,7 +117,7 @@ static void post_cache_as_ram(void)
 		/* set new esp */ /* before CONFIG_RAMBASE */
 		"subl   %0, %%esp\n\t"
 		::"a"( (CONFIG_DCACHE_RAM_BASE + CONFIG_DCACHE_RAM_SIZE)- (CONFIG_RAMTOP) )
-		/* discard all registers (eax is used for %0), so gcc redo everything
+		/* discard all registers (eax is used for %0), so gcc redoes everything
 		   after the stack is moved */
 		: "cc", "memory", "%ebx", "%ecx", "%edx", "%esi", "%edi", "%ebp"
 	);

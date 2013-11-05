@@ -278,7 +278,7 @@ void sdram_initialize(struct pei_data *pei_data)
 
 #if CONFIG_USBDEBUG
 	/* mrc.bin reconfigures USB, so reinit it to have debug */
-	early_usbdebug_init();
+	usbdebug_init();
 #endif
 
 	/* For reference print the System Agent version
@@ -303,11 +303,6 @@ void sdram_initialize(struct pei_data *pei_data)
 	/* S3 resume: don't save scrambler seed or MRC data */
 	if (pei_data->boot_mode != 2)
 		save_mrc_data(pei_data);
-}
-
-struct cbmem_entry *get_cbmem_toc(void)
-{
-	return (struct cbmem_entry *)(get_top_of_ram() - HIGH_MEMORY_SIZE);
 }
 
 unsigned long get_top_of_ram(void)

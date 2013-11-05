@@ -54,19 +54,18 @@ enum timestamp_id {
 	TS_SELFBOOT_JUMP = 99,
 };
 
-#if CONFIG_COLLECT_TIMESTAMPS
+#if CONFIG_COLLECT_TIMESTAMPS && (CONFIG_EARLY_CBMEM_INIT || !defined(__PRE_RAM__))
 #include <cpu/x86/tsc.h>
 void timestamp_init(tsc_t base);
 void timestamp_add(enum timestamp_id id, tsc_t ts_time);
 void timestamp_add_now(enum timestamp_id id);
-void timestamp_stash(enum timestamp_id id);
-void timestamp_sync(void);
+void timestamp_reinit(void);
+tsc_t get_initial_timestamp(void);
 #else
 #define timestamp_init(base)
 #define timestamp_add(id, time)
 #define timestamp_add_now(id)
-#define timestamp_stash(id)
-#define timestamp_sync()
+#define timestamp_reinit()
 #endif
 
 #endif

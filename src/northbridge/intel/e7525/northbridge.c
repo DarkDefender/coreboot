@@ -101,9 +101,7 @@ static void pci_domain_set_resources(device_t dev)
 				(remaplimitk + 64*1024) - remapbasek);
 		}
 
-		/* Leave some space for ACPI, PIRQ and MP tables */
-		high_tables_base = (tolmk * 1024) - HIGH_MEMORY_SIZE;
-		high_tables_size = HIGH_MEMORY_SIZE;
+		set_top_of_ram(tolmk * 1024);
 	}
 	assign_resources(dev->link_list);
 }
@@ -120,7 +118,7 @@ static struct device_operations pci_domain_ops = {
 	.enable_resources = NULL,
 	.init             = NULL,
 	.scan_bus         = e7525_domain_scan_bus,
-	.ops_pci_bus      = &pci_cf8_conf1, /* Do we want to use the memory mapped space here? */
+	.ops_pci_bus      = pci_bus_default_ops,
 };
 
 static void mc_read_resources(device_t dev)

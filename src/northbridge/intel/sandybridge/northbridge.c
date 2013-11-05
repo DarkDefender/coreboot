@@ -51,19 +51,11 @@ int bridge_silicon_revision(void)
 	return bridge_revision_id;
 }
 
-static unsigned long get_top_of_ram(void)
+unsigned long get_top_of_ram(void)
 {
 	/* Base of TSEG is top of usable DRAM */
 	u32 tom = pci_read_config32(dev_find_slot(0, PCI_DEVFN(0,0)), TSEG);
 	return (unsigned long) tom;
-}
-
-struct cbmem_entry *get_cbmem_toc(void)
-{
-	static struct cbmem_entry *toc = NULL;
-	if (!toc)
-		toc = (struct cbmem_entry *)(get_top_of_ram() - HIGH_MEMORY_SIZE);
-	return toc;
 }
 
 /* Reserve everything between A segment and 1MB:
@@ -274,9 +266,7 @@ static void pci_domain_set_resources(device_t dev)
 
 	assign_resources(dev->link_list);
 
-	/* Leave some space for ACPI, PIRQ and MP tables */
-	high_tables_base = (tomk * 1024) - HIGH_MEMORY_SIZE;
-	high_tables_size = HIGH_MEMORY_SIZE;
+	set_top_of_ram(tomk * 1024);
 }
 
 	/* TODO We could determine how many PCIe busses we need in
@@ -289,11 +279,7 @@ static struct device_operations pci_domain_ops = {
 	.enable_resources = NULL,
 	.init             = NULL,
 	.scan_bus         = pci_domain_scan_bus,
-#if CONFIG_MMCONF_SUPPORT_DEFAULT
-	.ops_pci_bus	  = &pci_ops_mmconf,
-#else
-	.ops_pci_bus	  = &pci_cf8_conf1,
-#endif
+	.ops_pci_bus	  = pci_bus_default_ops,
 };
 
 static void mc_read_resources(device_t dev)

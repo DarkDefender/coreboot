@@ -13,7 +13,6 @@
 ## GNU General Public License for more details.
 
 romstage-y += romstage.c
-ramstage-y += ramstage.c
 
 bootblock-y += media.c
 romstage-y += media.c
@@ -23,6 +22,6 @@ bootblock-y += timer.c
 romstage-y += timer.c
 ramstage-y += timer.c
 
-bootblock-$(CONFIG_EARLY_CONSOLE) += uart.c
+bootblock-$(CONFIG_BOOTBLOCK_CONSOLE) += uart.c
 romstage-$(CONFIG_EARLY_CONSOLE) += uart.c
 ramstage-y += uart.c

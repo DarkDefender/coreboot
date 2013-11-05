@@ -27,7 +27,7 @@
 #if CONFIG_CONSOLE_SERIAL
 #include <uart.h>
 #endif
-#if CONFIG_USBDEBUG
+#if CONFIG_USBDEBUG && !defined(__ROMCC__)
 #include <usbdebug.h>
 #endif
 #if CONFIG_CONSOLE_NE2K
@@ -60,7 +60,7 @@ extern struct console_driver econsole_drivers[];
 extern int console_loglevel;
 #else
 /* __PRE_RAM__ */
-/* Using a global varible can cause problems when we reset the stack
+/* Using a global variable can cause problems when we reset the stack
  * from cache as ram to ram. If we make this a define USE_SHARED_STACK
  * we could use the same code on all architectures.
  */
@@ -77,7 +77,8 @@ void mainboard_post(u8 value);
 void __attribute__ ((noreturn)) die(const char *msg);
 int do_printk(int msg_level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 
-#if defined(__PRE_RAM__) && !CONFIG_EARLY_CONSOLE
+#if defined(__BOOT_BLOCK__) && !CONFIG_BOOTBLOCK_CONSOLE || \
+    (defined(__PRE_RAM__) && !defined(__BOOT_BLOCK__)) && !CONFIG_EARLY_CONSOLE
 
 static inline void printk(int LEVEL, const char *fmt, ...);
 static inline void printk(int LEVEL, const char *fmt, ...) {

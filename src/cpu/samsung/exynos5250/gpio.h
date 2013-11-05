@@ -1,11 +1,11 @@
 /*
- * (C) Copyright 2010 Samsung Electronics
- * Minkyu Kang <mk7.kang@samsung.com>
+ * This file is part of the coreboot project.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
+ * Copyright (C) 2010 Samsung Electronics
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,70 +14,109 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef EXYNOS5250_GPIO_H_
-#define EXYNOS5250_GPIO_H_
+#ifndef CPU_SAMSUNG_EXYNOS5250_GPIO_H
+#define CPU_SAMSUNG_EXYNOS5250_GPIO_H
 
-#include <cpu/samsung/exynos5-common/gpio.h>
-
-struct exynos5_gpio_part1 {
-	struct s5p_gpio_bank a0;
-	struct s5p_gpio_bank a1;
-	struct s5p_gpio_bank a2;
-	struct s5p_gpio_bank b0;
-	struct s5p_gpio_bank b1;
-	struct s5p_gpio_bank b2;
-	struct s5p_gpio_bank b3;
-	struct s5p_gpio_bank c0;
-	struct s5p_gpio_bank c1;
-	struct s5p_gpio_bank c2;
-	struct s5p_gpio_bank c3;
-	struct s5p_gpio_bank d0;
-	struct s5p_gpio_bank d1;
-	struct s5p_gpio_bank y0;
-	struct s5p_gpio_bank y1;
-	struct s5p_gpio_bank y2;
-	struct s5p_gpio_bank y3;
-	struct s5p_gpio_bank y4;
-	struct s5p_gpio_bank y5;
-	struct s5p_gpio_bank y6;
+struct gpio_bank {
+	unsigned int	con;
+	unsigned int	dat;
+	unsigned int	pull;
+	unsigned int	drv;
+	unsigned int	pdn_con;
+	unsigned int	pdn_pull;
+	unsigned char	res1[8];
 };
 
-struct exynos5_gpio_part2 {
-	struct s5p_gpio_bank x0;
-	struct s5p_gpio_bank x1;
-	struct s5p_gpio_bank x2;
-	struct s5p_gpio_bank x3;
-};
+/* GPIO pins per bank  */
+#define GPIO_PER_BANK 8
 
-struct exynos5_gpio_part3 {
-	struct s5p_gpio_bank e0;
-	struct s5p_gpio_bank e1;
-	struct s5p_gpio_bank f0;
-	struct s5p_gpio_bank f1;
-	struct s5p_gpio_bank g0;
-	struct s5p_gpio_bank g1;
-	struct s5p_gpio_bank g2;
-	struct s5p_gpio_bank h0;
-	struct s5p_gpio_bank h1;
-};
+/* Pin configurations */
+#define GPIO_INPUT	0x0
+#define GPIO_OUTPUT	0x1
+#define GPIO_IRQ	0xf
+#define GPIO_FUNC(x)	(x)
 
-struct exynos5_gpio_part4 {
-	struct s5p_gpio_bank v0;
-	struct s5p_gpio_bank v1;
-	struct s5p_gpio_bank v2;
-	struct s5p_gpio_bank v3;
-};
+/* Pull mode */
+#define GPIO_PULL_NONE	0x0
+#define GPIO_PULL_DOWN	0x1
+#define GPIO_PULL_UP	0x3
 
-struct exynos5_gpio_part5 {
-	struct s5p_gpio_bank v4;
-};
+/* Drive Strength level */
+#define GPIO_DRV_1X	0x0
+#define GPIO_DRV_3X	0x1
+#define GPIO_DRV_2X	0x2
+#define GPIO_DRV_4X	0x3
+#define GPIO_DRV_FAST	0x0
+#define GPIO_DRV_SLOW	0x1
 
-struct exynos5_gpio_part6 {
-	struct s5p_gpio_bank z;
+#define EXYNOS5_GPIO_BASE0	0x11400000
+#define EXYNOS5_GPIO_BASE1	0x13400000
+#define EXYNOS5_GPIO_BASE2	0x10d10000
+#define EXYNOS5_GPIO_BASE3	0x03860000
+
+enum exynos5_gpio_port {
+	/*
+	 * Ordered by base address + offset.
+	 * ETC registers are special, thus not included.
+	 */
+
+	/* base == EXYNOS_GPIO_BASE0 */
+	EXYNOS5_GPA0 = EXYNOS5_GPIO_BASE0 + 0x0000,
+	EXYNOS5_GPA1 = EXYNOS5_GPIO_BASE0 + 0x0020,
+	EXYNOS5_GPA2 = EXYNOS5_GPIO_BASE0 + 0x0040,
+
+	EXYNOS5_GPB0 = EXYNOS5_GPIO_BASE0 + 0x0060,
+	EXYNOS5_GPB1 = EXYNOS5_GPIO_BASE0 + 0x0080,
+	EXYNOS5_GPB2 = EXYNOS5_GPIO_BASE0 + 0x00a0,
+	EXYNOS5_GPB3 = EXYNOS5_GPIO_BASE0 + 0x00c0,
+
+	EXYNOS5_GPC0 = EXYNOS5_GPIO_BASE0 + 0x00e0,
+	EXYNOS5_GPC1 = EXYNOS5_GPIO_BASE0 + 0x0100,
+	EXYNOS5_GPC2 = EXYNOS5_GPIO_BASE0 + 0x0120,
+	EXYNOS5_GPC3 = EXYNOS5_GPIO_BASE0 + 0x0140,
+
+	EXYNOS5_GPD0 = EXYNOS5_GPIO_BASE0 + 0x0160,
+	EXYNOS5_GPD1 = EXYNOS5_GPIO_BASE0 + 0x0180,
+
+	EXYNOS5_GPY0 = EXYNOS5_GPIO_BASE0 + 0x01a0,
+	EXYNOS5_GPY1 = EXYNOS5_GPIO_BASE0 + 0x01c0,
+	EXYNOS5_GPY2 = EXYNOS5_GPIO_BASE0 + 0x01e0,
+	EXYNOS5_GPY3 = EXYNOS5_GPIO_BASE0 + 0x0200,
+	EXYNOS5_GPY4 = EXYNOS5_GPIO_BASE0 + 0x0220,
+	EXYNOS5_GPY5 = EXYNOS5_GPIO_BASE0 + 0x0240,
+	EXYNOS5_GPY6 = EXYNOS5_GPIO_BASE0 + 0x0260,
+
+	EXYNOS5_GPX0 = EXYNOS5_GPIO_BASE0 + 0x0c00,
+	EXYNOS5_GPX1 = EXYNOS5_GPIO_BASE0 + 0x0c20,
+	EXYNOS5_GPX2 = EXYNOS5_GPIO_BASE0 + 0x0c40,
+	EXYNOS5_GPX3 = EXYNOS5_GPIO_BASE0 + 0x0c60,
+
+	/* base == EXYNOS_GPIO_BASE1 */
+	EXYNOS5_GPE0 = EXYNOS5_GPIO_BASE1 + 0x0000,
+	EXYNOS5_GPE1 = EXYNOS5_GPIO_BASE1 + 0x0020,
+
+	EXYNOS5_GPF0 = EXYNOS5_GPIO_BASE1 + 0x0040,
+	EXYNOS5_GPF1 = EXYNOS5_GPIO_BASE1 + 0x0060,
+
+	EXYNOS5_GPG0 = EXYNOS5_GPIO_BASE1 + 0x0080,
+	EXYNOS5_GPG1 = EXYNOS5_GPIO_BASE1 + 0x00a0,
+	EXYNOS5_GPG2 = EXYNOS5_GPIO_BASE1 + 0x00c0,
+
+	EXYNOS5_GPH0 = EXYNOS5_GPIO_BASE1 + 0x00e0,
+	EXYNOS5_GPH1 = EXYNOS5_GPIO_BASE1 + 0x0100,
+
+	/* base == EXYNOS_GPIO_BASE2 */
+	EXYNOS5_GPV0 = EXYNOS5_GPIO_BASE2 + 0x0000,
+	EXYNOS5_GPV1 = EXYNOS5_GPIO_BASE2 + 0x0020,
+	EXYNOS5_GPV2 = EXYNOS5_GPIO_BASE2 + 0x0060,
+	EXYNOS5_GPV3 = EXYNOS5_GPIO_BASE2 + 0x0080,
+	EXYNOS5_GPV4 = EXYNOS5_GPIO_BASE2 + 0x00c0,
+
+	/* base == EXYNOS_GPIO_BASE3 */
+	EXYNOS5_GPZ = EXYNOS5_GPIO_BASE3 + 0x0000,
 };
 
 enum {
@@ -417,8 +456,6 @@ enum exynos5_gpio_pin {
 	GPIO_MAX_PORT
 };
 
-#define gpio_status		gpio_info
-
 /**
  * Set GPIO pin configuration.
  *
@@ -451,34 +488,8 @@ void gpio_set_drv(int gpio, int mode);
  */
 void gpio_set_rate(int gpio, int mode);
 
-/* FIXME(dhendrix) use generic arch/gpio.h API instead */
-//int gpio_direction_input(unsigned gpio);
-//int gpio_direction_output(unsigned gpio, int value);
-
-/**
- * Decode a list of GPIOs into an integer.
- *
- * TODO(sjg@chromium.org): This could perhaps become a generic function?
- *
- * Each GPIO pin can be put into three states using external resistors:
- *	- pulled up
- *	- pulled down
- *	- not connected
- *
- * Read each GPIO in turn to produce an integer value. The first GPIO
- * produces a number 1 * (0 to 2), the second produces 3 * (0 to 2), etc.
- * In this way, each GPIO increases the number of possible states by a
- * factor of 3.
- *
- * @param gpio_list	List of GPIO numbers to decode
- * @param count		Number of GPIOs in list
- * @return -1 if the value cannot be determined, or any GPIO number is
- *		invalid. Otherwise returns the calculated value
- */
-int gpio_decode_number(unsigned gpio_list[], int count);
-
 /*
- * similar to gpio_decode_number, but reads only a single GPIO
+ * reads only a single GPIO
  *
  * @param gpio		GPIO to read
  * @return -1 if the value cannot be determined. Otherwise returns
@@ -488,4 +499,80 @@ int gpio_read_mvl3(unsigned gpio);
 
 void gpio_info(void);
 
-#endif	/* EXYNOS5250_GPIO_H_ */
+/*
+ * Generic GPIO API for U-Boot
+ *
+ * GPIOs are numbered from 0 to GPIO_COUNT-1 which value is defined
+ * by the SOC/architecture.
+ *
+ * Each GPIO can be an input or output. If an input then its value can
+ * be read as 0 or 1. If an output then its value can be set to 0 or 1.
+ * If you try to write an input then the value is undefined. If you try
+ * to read an output, barring something very unusual,  you will get
+ * back the value of the output that you previously set.
+ *
+ * In some cases the operation may fail, for example if the GPIO number
+ * is out of range, or the GPIO is not available because its pin is
+ * being used by another function. In that case, functions may return
+ * an error value of -1.
+ */
+
+/**
+ * Make a GPIO an input.
+ *
+ * @param gpio	GPIO number
+ * @return 0 if ok, -1 on error
+ */
+int gpio_direction_input(unsigned gpio);
+
+/**
+ * Make a GPIO an output, and set its value.
+ *
+ * @param gpio	GPIO number
+ * @param value	GPIO value (0 for low or 1 for high)
+ * @return 0 if ok, -1 on error
+ */
+int gpio_direction_output(unsigned gpio, int value);
+
+/**
+ * Get a GPIO's value. This will work whether the GPIO is an input
+ * or an output.
+ *
+ * @param gpio	GPIO number
+ * @return 0 if low, 1 if high, -1 on error
+ */
+int gpio_get_value(unsigned gpio);
+
+/**
+ * Set an output GPIO's value. The GPIO must already be an output or
+ * this function may have no effect.
+ *
+ * @param gpio	GPIO number
+ * @param value	GPIO value (0 for low or 1 for high)
+ * @return 0 if ok, -1 on error
+ */
+int gpio_set_value(unsigned gpio, int value);
+
+/*
+ * Many-value logic (3 states). This can be used for inputs whereby presence
+ * of external pull-up or pull-down resistors can be added to overcome internal
+ * pull-ups/pull-downs and force a single value.
+ *
+ * Thus, external pull resistors can force a 0 or 1 and if the value changes
+ * along with internal pull-up/down enable then the input is floating.
+ *
+ *     Vpd | Vpu | MVL
+ *    -----------------
+ *      0  |  0  | 0
+ *    -----------------
+ *      0  |  1  | Z    <-- floating input will follow internal pull up/down
+ *    -----------------
+ *      1  |  1  | 1
+ */
+enum mvl3 {
+	LOGIC_0,
+	LOGIC_1,
+	LOGIC_Z,		/* high impedence / tri-stated / floating */
+};
+
+#endif	/* CPU_SAMSUNG_EXYNOS5250_GPIO_H */

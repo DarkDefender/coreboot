@@ -20,6 +20,7 @@
  */
 
 #include <types.h>
+#include <arch/hlt.h>
 #include <arch/io.h>
 #include <console/console.h>
 #include <cpu/x86/cache.h>
@@ -206,7 +207,7 @@ static void dump_tco_status(u32 tco_sts)
  *  1. the chipset can do it
  *  2. we don't need to worry about how we leave 0xcf8/0xcfc behind
  */
-#include "../../../northbridge/intel/i945/pcie_config.c"
+#include <arch/pci_mmio_cfg.h>
 
 int southbridge_io_trap_handler(int smif)
 {
@@ -318,13 +319,13 @@ static void southbridge_smi_sleep(unsigned int node, smm_state_save_area_t *stat
 		/* Always set the flag in case CMOS was changed on runtime. For
 		 * "KEEP", switch to "OFF" - KEEP is software emulated
 		 */
-		reg8 = pcie_read_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_3);
+		reg8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_3);
 		if (s5pwr == MAINBOARD_POWER_ON) {
 			reg8 &= ~1;
 		} else {
 			reg8 |= 1;
 		}
-		pcie_write_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_3, reg8);
+		pci_write_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_3, reg8);
 
 		/* also iterates over all bridges on bus 0 */
 		busmaster_disable_on_bus(0);
@@ -332,12 +333,14 @@ static void southbridge_smi_sleep(unsigned int node, smm_state_save_area_t *stat
 	default: printk(BIOS_DEBUG, "SMI#: ERROR: SLP_TYP reserved\n"); break;
 	}
 
+#if !CONFIG_SMM_TSEG
 	/* Unlock the SMI semaphore. We're currently in SMM, and the semaphore
 	 * will never be unlocked because the next outl will switch off the CPU.
 	 * This might open a small race between the smi_release_lock() and the outl()
 	 * for other SMI handlers. Not sure if this could cause trouble. */
 	 if (slp_typ == 5)
 		smi_release_lock();
+#endif
 
 	/* Write back to the SLP register to cause the originally intended
 	 * event again. We need to set BIT13 (SLP_EN) though to make the
@@ -345,6 +348,9 @@ static void southbridge_smi_sleep(unsigned int node, smm_state_save_area_t *stat
 	 */
 	outl(reg32 | SLP_EN, pmbase + PM1_CNT);
 
+	/* Make sure to stop executing code here for S3/S4/S5 */
+	if (slp_typ > 1)
+		hlt();
 	/* In most sleep states, the code flow of this function ends at
 	 * the line above. However, if we entered sleep state S1 and wake
 	 * up again, we will continue to execute code in this function.
@@ -448,7 +454,7 @@ static void southbridge_smi_gpi(unsigned int node, smm_state_save_area_t *state_
 {
 	u16 reg16;
 	reg16 = inw(pmbase + ALT_GP_SMI_STS);
-	outl(reg16, pmbase + ALT_GP_SMI_STS);
+	outw(reg16, pmbase + ALT_GP_SMI_STS);
 
 	reg16 &= inw(pmbase + ALT_GP_SMI_EN);
 
@@ -488,7 +494,7 @@ static void southbridge_smi_tco(unsigned int node, smm_state_save_area_t *state_
 	if (tco_sts & (1 << 8)) { // BIOSWR
 		u8 bios_cntl;
 
-		bios_cntl = pcie_read_config16(PCI_DEV(0, 0x1f, 0), 0xdc);
+		bios_cntl = pci_read_config16(PCI_DEV(0, 0x1f, 0), 0xdc);
 
 		if (bios_cntl & 1) {
 			/* BWE is RW, so the SMI was caused by a
@@ -502,7 +508,7 @@ static void southbridge_smi_tco(unsigned int node, smm_state_save_area_t *state_
 			 * box.
 			 */
 			printk(BIOS_DEBUG, "Switching back to RO\n");
-			pcie_write_config32(PCI_DEV(0, 0x1f, 0), 0xdc, (bios_cntl & ~1));
+			pci_write_config32(PCI_DEV(0, 0x1f, 0), 0xdc, (bios_cntl & ~1));
 		} /* No else for now? */
 	} else if (tco_sts & (1 << 3)) { /* TIMEOUT */
 		/* Handle TCO timeout */
@@ -629,7 +635,7 @@ void southbridge_smi_handler(unsigned int node, smm_state_save_area_t *state_sav
 	u32 smi_sts;
 
 	/* Update global variable pmbase */
-	pmbase = pcie_read_config16(PCI_DEV(0, 0x1f, 0), 0x40) & 0xfffc;
+	pmbase = pci_read_config16(PCI_DEV(0, 0x1f, 0), 0x40) & 0xfffc;
 
 	/* We need to clear the SMI status registers, or we won't see what's
 	 * happening in the following calls.

@@ -182,6 +182,7 @@ config EARLY_CBMEM_INIT
 config DYNAMIC_CBMEM
 	bool "The CBMEM space is dynamically grown."
 	default n
+	select EARLY_CBMEM_INIT
 	help
 	  Instead of reserving a static amount of CBMEM space the CBMEM
 	  area grows dynamically.  CBMEM can be used both in romstage (after
@@ -189,7 +190,7 @@ config DYNAMIC_CBMEM
 
 config COLLECT_TIMESTAMPS
 	bool "Create a table of timestamps collected during boot"
-	depends on (EARLY_CBMEM_INIT || DYNAMIC_CBMEM)
+	default n
 	help
 	  Make coreboot create a table of timer-ID/timer-value pairs to
 	  allow measuring time spent at different phases of the boot process.
@@ -235,6 +236,18 @@ endif
 if ARCH_ARMV7
 source src/arch/armv7/Kconfig
 endif
+
+config HAVE_ARCH_MEMSET
+	bool
+	default n
+
+config HAVE_ARCH_MEMCPY
+	bool
+	default n
+
+config HAVE_ARCH_MEMMOVE
+	bool
+	default n
 
 menu "Chipset"
 
@@ -322,7 +335,7 @@ config TIMER_QUEUE
 	def_bool n
 	depends on HAVE_MONOTONIC_TIMER
 	help
-	  Provide a timer queue for performing time-based callbacks. 
+	  Provide a timer queue for performing time-based callbacks.
 
 config COOP_MULTITASKING
 	def_bool n
@@ -527,6 +540,16 @@ config PAYLOAD_ELF
 	  You will be able to specify the location and file name of the
 	  payload image later.
 
+config PAYLOAD_LINUX
+	bool "A Linux payload"
+	help
+	  Select this option if you have a Linux bzImage which coreboot
+	  should run as soon as the basic hardware initialization
+	  is completed.
+
+	  You will be able to specify the location and file name of the
+	  payload image later.
+
 config PAYLOAD_SEABIOS
 	bool "SeaBIOS"
 	depends on ARCH_X86
@@ -572,6 +595,16 @@ config SEABIOS_MASTER
 	  Newest SeaBIOS version
 endchoice
 
+config SEABIOS_PS2_TIMEOUT
+	prompt "PS/2 keyboard controller initialization timeout (milliseconds)" if PAYLOAD_SEABIOS
+	default 0
+	depends on EXPERT
+	int
+	help
+	  Some PS/2 keyboard controllers don't respond to commands immediately
+	  after powering on. This specifies how long SeaBIOS will wait for the
+	  keyboard controller to become ready before giving up.
+
 choice
 	prompt "FILO version"
 	default FILO_STABLE
@@ -593,6 +626,13 @@ config PAYLOAD_FILE
 	default "payload.elf"
 	help
 	  The path and filename of the ELF executable file to use as payload.
+
+config PAYLOAD_FILE
+	string "Linux path and filename"
+	depends on PAYLOAD_LINUX
+	default "bzImage"
+	help
+	  The path and filename of the bzImage kernel to use as payload.
 
 config PAYLOAD_FILE
 	depends on PAYLOAD_SEABIOS
@@ -618,9 +658,19 @@ config COMPRESSED_PAYLOAD_LZMA
 	  In order to reduce the size payloads take up in the ROM chip
 	  coreboot can compress them using the LZMA algorithm.
 
-config COMPRESSED_PAYLOAD_NRV2B
-	bool
-	default n
+config LINUX_COMMAND_LINE
+	string "Linux command line"
+	depends on PAYLOAD_LINUX
+	default ""
+	help
+	  A command line to add to the Linux kernel.
+
+config LINUX_INITRD
+	string "Linux initrd"
+	depends on PAYLOAD_LINUX
+	default ""
+	help
+	  An initrd image to add to the Linux kernel.
 
 endmenu
 
@@ -924,6 +974,16 @@ config DEBUG_SPI_FLASH
 	depends on SPI_FLASH
 	help
 	  This option enables additional SPI flash related debug messages.
+
+config DEBUG_USBDEBUG
+	bool "Output verbose USB 2.0 EHCI debug dongle messages"
+	default n
+	depends on USBDEBUG
+	help
+	  This option enables additional USB 2.0 debug dongle related messages.
+
+	  Select this to debug the connection of usbdebug dongle. Note that
+	  you need some other working console to receive the messages.
 
 if SOUTHBRIDGE_INTEL_BD82X6X && DEFAULT_CONSOLE_LOGLEVEL_8
 # Only visible with the right southbridge and loglevel.

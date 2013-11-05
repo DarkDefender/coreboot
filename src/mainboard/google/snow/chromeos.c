@@ -1,7 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2013 Google, Inc.
+ * Copyright 2013 Google Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,27 +23,13 @@
 #include <ec/google/chromeec/ec_commands.h>
 #include <string.h>
 #include <vendorcode/google/chromeos/chromeos.h>
-
 #include <cpu/samsung/exynos5250/cpu.h>
 #include <cpu/samsung/exynos5250/gpio.h>
-#include <cpu/samsung/exynos5-common/gpio.h>
 
 enum {
 	ACTIVE_LOW = 0,
 	ACTIVE_HIGH = 1
 };
-
-enum {
-	WP_GPIO = 6,
-	RECMODE_GPIO = 0,
-	LID_GPIO = 5,
-	POWER_GPIO = 3
-};
-
-static struct exynos5_gpio_part1 *gpio_pt1 =
-	(struct exynos5_gpio_part1 *)EXYNOS5_GPIO_PART1_BASE;
-static struct exynos5_gpio_part2 *gpio_pt2 =
-	(struct exynos5_gpio_part2 *)EXYNOS5_GPIO_PART2_BASE;
 
 void fill_lb_gpios(struct lb_gpios *gpios)
 {
@@ -52,7 +38,7 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 	/* Write Protect: active low */
 	gpios->gpios[count].port = EXYNOS5_GPD1;
 	gpios->gpios[count].polarity = ACTIVE_LOW;
-	gpios->gpios[count].value = s5p_gpio_get_value(&gpio_pt1->d1, WP_GPIO);
+	gpios->gpios[count].value = gpio_get_value(GPIO_D16); // WP_GPIO
 	strncpy((char *)gpios->gpios[count].name, "write protect",
 		GPIO_MAX_NAME_LENGTH);
 	count++;
@@ -68,7 +54,7 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 	/* Lid: active high */
 	gpios->gpios[count].port = EXYNOS5_GPX3;
 	gpios->gpios[count].polarity = ACTIVE_HIGH;
-	gpios->gpios[count].value = s5p_gpio_get_value(&gpio_pt2->x3, LID_GPIO);
+	gpios->gpios[count].value = gpio_get_value(GPIO_X35); // LID_GPIO
 	strncpy((char *)gpios->gpios[count].name, "lid", GPIO_MAX_NAME_LENGTH);
 	count++;
 
@@ -76,7 +62,7 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 	gpios->gpios[count].port = EXYNOS5_GPX1;
 	gpios->gpios[count].polarity = ACTIVE_LOW;
 	gpios->gpios[count].value =
-		s5p_gpio_get_value(&gpio_pt2->x1, POWER_GPIO);
+		gpio_get_value(GPIO_X13); // POWER_GPIO
 	strncpy((char *)gpios->gpios[count].name, "power",
 		GPIO_MAX_NAME_LENGTH);
 	count++;
@@ -93,7 +79,6 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 	gpios->count = count;
 
 	printk(BIOS_ERR, "Added %d GPIOS size %d\n", count, gpios->size);
-
 }
 
 int get_developer_mode_switch(void)
@@ -106,7 +91,7 @@ int get_recovery_mode_switch(void)
 	uint32_t ec_events;
 
 	/* The GPIO is active low. */
-	if (!s5p_gpio_get_value(&gpio_pt1->y1, RECMODE_GPIO))
+	if (!gpio_get_value(GPIO_Y10)) // RECMODE_GPIO
 		return 1;
 
 	ec_events = google_chromeec_get_events_b();

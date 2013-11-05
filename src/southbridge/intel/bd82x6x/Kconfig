@@ -27,9 +27,10 @@ if SOUTHBRIDGE_INTEL_BD82X6X || SOUTHBRIDGE_INTEL_C216
 
 config SOUTH_BRIDGE_OPTIONS # dummy
 	def_bool y
+	select SOUTHBRIDGE_INTEL_COMMON
 	select IOAPIC
 	select HAVE_HARD_RESET
-	select HAVE_USBDEBUG
+	select HAVE_USBDEBUG_OPTIONS
 	select HAVE_SMI_HANDLER
 	select USE_WATCHDOG_ON_BOOT
 	select PCIEXP_ASPM
@@ -147,5 +148,15 @@ config LOCK_MANAGEMENT_ENGINE
 	  that the ME firmware is no longer going to change.
 
 	  If unsure, say N.
+
+config LOCK_SPI_ON_RESUME
+	bool "Lock all flash ROM sections on S3 resume"
+	default n
+	help
+	  If the flash ROM shall be protected against write accesses from the
+	  operating system (OS), the locking procedure has to be repeated after
+	  each resume from S3. Select this if you never want to update the flash
+	  ROM from within your OS. Notice: Even with this option, the write lock
+	  has still to be enabled on the normal boot path (e.g. by the payload).
 
 endif

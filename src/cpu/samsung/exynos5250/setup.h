@@ -1,15 +1,11 @@
 /*
- * Machine Specific Values for SMDK5250 board based on Exynos5
+ * This file is part of the coreboot project.
  *
  * Copyright (C) 2012 Samsung Electronics
  *
- * See file CREDITS for list of people who contributed to this
- * project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -18,12 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _SMDK5250_SETUP_H
-#define _SMDK5250_SETUP_H
+/* Machine Specific Values for SMDK5250 board based on Exynos5 */
+
+#ifndef CPU_SAMSUNG_EXYNOS5250_SETUP_H
+#define CPU_SAMSUNG_EXYNOS5250_SETUP_H
 
 struct exynos5_dmc;
 enum ddr_mode;
@@ -664,7 +661,7 @@ struct exynos5_phy_control;
 #define MEM_TERM_EN	(1 << 31)	/* Termination enable for memory */
 #define PHY_TERM_EN	(1 << 30)	/* Termination enable for PHY */
 #define DMC_CTRL_SHGATE	(1 << 29)	/* Duration of DQS gating signal */
-#define FP_RSYNC	(1 << 3)	/* Force DLL resyncronization */
+#define FP_RSYNC	(1 << 3)	/* Force DLL resynchronization */
 
 /* Driver strength for CK, CKE, CS & CA */
 #define IMP_OUTPUT_DRV_40_OHM	0x5
@@ -679,7 +676,7 @@ struct exynos5_phy_control;
 
 struct mem_timings;
 
-/* Errors that we can encourter in low-level setup */
+/* Errors that we can encounter in low-level setup */
 enum {
 	SETUP_ERR_OK,
 	SETUP_ERR_RDLV_COMPLETE_TIMEOUT = -1,
@@ -687,8 +684,6 @@ enum {
 };
 
 /* Functions common between LPDDR2 and DDR3 */
-/* FIXME(dhendrix): conflicts with arch system.h version of sdelay()... */
-//void sdelay(unsigned long);
 
 /* CPU info initialization code */
 void cpu_info_init(void);
@@ -708,7 +703,6 @@ void mem_ctrl_init(void);
 int ddr3_mem_ctrl_init(struct mem_timings *mem, unsigned long mem_iv_size,
 		       int mem_reset);
 
-void tzpc_init(void);
 /*
  * Configure ZQ I/O interface
  *

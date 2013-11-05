@@ -12,17 +12,11 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select HAVE_ACPI_TABLES
 	select HAVE_OPTION_TABLE
 	select HAVE_ACPI_RESUME
-	select MMCONF_SUPPORT
 	select HAVE_SMI_HANDLER
 	select GFXUMA
-	select EXTERNAL_MRC_BLOB
 	select EARLY_CBMEM_INIT
 	select ENABLE_VMX
 	select HAVE_MRC
-
-config MRC_FILE
-	string
-	default "3rdparty/northbridge/intel/sandybridge/systemagent-ivybridge.bin"
 
 config MAINBOARD_DIR
 	string

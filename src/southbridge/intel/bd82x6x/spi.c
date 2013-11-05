@@ -34,19 +34,19 @@
 #define min(a, b) ((a)<(b)?(a):(b))
 
 #ifdef __SMM__
-#include <northbridge/intel/sandybridge/pcie_config.c>
+#include <arch/pci_mmio_cfg.h>
 #define pci_read_config_byte(dev, reg, targ)\
-	*(targ) = pcie_read_config8(dev, reg)
+	*(targ) = pci_read_config8(dev, reg)
 #define pci_read_config_word(dev, reg, targ)\
-	*(targ) = pcie_read_config16(dev, reg)
+	*(targ) = pci_read_config16(dev, reg)
 #define pci_read_config_dword(dev, reg, targ)\
-	*(targ) = pcie_read_config32(dev, reg)
+	*(targ) = pci_read_config32(dev, reg)
 #define pci_write_config_byte(dev, reg, val)\
-	pcie_write_config8(dev, reg, val)
+	pci_write_config8(dev, reg, val)
 #define pci_write_config_word(dev, reg, val)\
-	pcie_write_config16(dev, reg, val)
+	pci_write_config16(dev, reg, val)
 #define pci_write_config_dword(dev, reg, val)\
-	pcie_write_config32(dev, reg, val)
+	pci_write_config32(dev, reg, val)
 #else /* !__SMM__ */
 #include <device/device.h>
 #include <device/pci.h>
@@ -677,7 +677,7 @@ int spi_xfer(struct spi_slave *slave, const void *dout,
 	}
 
 	/*
-	 * Check if this is a write command atempting to transfer more bytes
+	 * Check if this is a write command attempting to transfer more bytes
 	 * than the controller can handle. Iterations for writes are not
 	 * supported here because each SPI write command needs to be preceded
 	 * and followed by other SPI commands, and this sequence is controlled

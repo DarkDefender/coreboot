@@ -36,6 +36,8 @@ struct edid {
 	unsigned int nonconformant;
 	unsigned int type;
 	unsigned int bpp;
+	unsigned int xres;
+	unsigned int yres;
 	unsigned int voltage;
 	unsigned int sync;
 	unsigned int xsize_cm;
@@ -62,5 +64,8 @@ struct edid {
 	const char *stereo;
 };
 
+/* Defined in src/lib/edid.c */
 int decode_edid(unsigned char *edid, int size, struct edid *out);
+void set_vbe_mode_info_valid(struct edid *edid, uintptr_t fb_addr);
+
 #endif /* EDID_H */

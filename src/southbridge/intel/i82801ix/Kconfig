@@ -20,6 +20,7 @@
 
 config SOUTHBRIDGE_INTEL_I82801IX
 	bool
+	select SOUTHBRIDGE_INTEL_COMMON
 	select IOAPIC
 	select HAVE_USBDEBUG
 	select HAVE_HARD_RESET
@@ -35,10 +36,6 @@ config EHCI_BAR
 config EHCI_DEBUG_OFFSET
 	hex
 	default 0xa0
-
-config USBDEBUG_DEFAULT_PORT
-	int
-	default 1
 
 config BOOTBLOCK_SOUTHBRIDGE_INIT
         string

@@ -11,11 +11,9 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select HAVE_ACPI_TABLES
 	select HAVE_OPTION_TABLE
 	select HAVE_ACPI_RESUME
-	select MMCONF_SUPPORT
 	select HAVE_SMI_HANDLER
 	select GFXUMA
 	select CHROMEOS
-	select EXTERNAL_MRC_BLOB
 
 config MAINBOARD_DIR
 	string

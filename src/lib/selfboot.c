@@ -19,11 +19,10 @@
  */
 
 #include <arch/byteorder.h>
+#include <arch/stages.h>
 #include <console/console.h>
 #include <cpu/cpu.h>
 #include <fallback.h>
-#include <boot/elf.h>
-#include <boot/elf_boot.h>
 #include <boot/coreboot_tables.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -361,7 +360,7 @@ static int build_self_segment_list(
 			       (void *)(intptr_t)ntohll(segment->load_addr));
 			*entry =  ntohll(segment->load_addr);
 			/* Per definition, a payload always has the entry point
-			 * as last segment. Thus, we use the occurence of the
+			 * as last segment. Thus, we use the occurrence of the
 			 * entry point as break condition for the loop.
 			 * Can we actually just look at the number of section?
 			 */
@@ -455,15 +454,6 @@ static int load_self_segments(
 						return 0;
 					break;
 				}
-#if CONFIG_COMPRESSED_PAYLOAD_NRV2B
-				case CBFS_COMPRESS_NRV2B: {
-					printk(BIOS_DEBUG, "using NRV2B\n");
-					unsigned long unrv2b(u8 *src, u8 *dst, unsigned long *ilen_p);
-					unsigned long tmp;
-					len = unrv2b(src, dest, &tmp);
-					break;
-				}
-#endif
 				case CBFS_COMPRESS_NONE: {
 					printk(BIOS_DEBUG, "it's not compressed!\n");
 					memcpy(dest, src, len);

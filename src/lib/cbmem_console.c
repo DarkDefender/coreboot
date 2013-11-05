@@ -19,12 +19,12 @@
 
 #include <console/console.h>
 #include <cbmem.h>
-#include <cpu/x86/car.h>
+#include <arch/early_variables.h>
 #include <string.h>
 
 /*
  * Structure describing console buffer. It is overlaid on a flat memory area,
- * whith buffer_body covering the extent of the memory. Once the buffer is
+ * with buffer_body covering the extent of the memory. Once the buffer is
  * full, the cursor keeps going but the data is dropped on the floor. This
  * allows to tell how much data was lost in the process.
  */
@@ -45,17 +45,6 @@ static struct cbmem_console *cbmem_console_p CAR_GLOBAL;
 
 static struct cbmem_console car_cbmem_console CAR_CBMEM;
 
-/*
- * Once DRAM is initialized and the cache as ram mode is disabled, while still
- * running from ROM, the console buffer in the cache as RAM area becomes
- * unavailable.
- *
- * By this time the console log buffer is already available in
- * CBMEM. The location at 0x600 is used as the redirect pointer allowing to
- * find out where the actual console log buffer is.
- */
-#define CBMEM_CONSOLE_REDIRECT (*((struct cbmem_console **)0x600))
-
 #else
 
 /*
@@ -69,30 +58,12 @@ static u8 static_console[40000];
 
 static inline struct cbmem_console *current_console(void)
 {
-#if CONFIG_CAR_MIGRATION || !defined(__PRE_RAM__)
 	return car_get_var(cbmem_console_p);
-#else
-	/*
-	 * This check allows to tell if the cache as RAM mode has been exited
-	 * or not. If it has been exited, the real memory is being used
-	 * (resulting in the variable on the stack located below
-	 * DCACHE_RAM_BASE), use the redirect pointer to find out where the
-	 * actual console buffer is.
-	 */
-	if ((uintptr_t)__builtin_frame_address(0) <
-	    (uintptr_t)CONFIG_DCACHE_RAM_BASE)
-		return CBMEM_CONSOLE_REDIRECT;
-	return car_get_var(cbmem_console_p);
-#endif /* CONFIG_CAR_MIGRATION */
 }
 
 static inline void current_console_set(struct cbmem_console *new_console_p)
 {
-#if CONFIG_CAR_MIGRATION || !defined(__PRE_RAM__)
 	car_set_var(cbmem_console_p, new_console_p);
-#else
-	CBMEM_CONSOLE_REDIRECT = new_console_p;
-#endif
 }
 
 static inline void init_console_ptr(void *storage, u32 total_space)
@@ -138,7 +109,7 @@ void cbmemc_tx_byte(unsigned char data)
  * the CBMEM console buffer contents.
  *
  * If there is overflow - add to the destination area a string, reporting the
- * overflow and the number of dropped charactes.
+ * overflow and the number of dropped characters.
  */
 static void copy_console_buffer(struct cbmem_console *new_cons_p)
 {
@@ -195,27 +166,27 @@ static void copy_console_buffer(struct cbmem_console *new_cons_p)
 
 void cbmemc_reinit(void)
 {
-	struct cbmem_console *cbm_cons_p;
+	struct cbmem_console *cbm_cons_p = NULL;
 
-#ifdef __PRE_RAM__
-	cbm_cons_p = cbmem_add(CBMEM_ID_CONSOLE,
-			       CONFIG_CONSOLE_CBMEM_BUFFER_SIZE);
+#ifndef __PRE_RAM__
+	cbm_cons_p = cbmem_find(CBMEM_ID_CONSOLE);
+#endif
+
 	if (!cbm_cons_p) {
-		current_console_set(NULL);
-		return;
+		cbm_cons_p = cbmem_add(CBMEM_ID_CONSOLE,
+							CONFIG_CONSOLE_CBMEM_BUFFER_SIZE);
+
+		if (!cbm_cons_p) {
+			current_console_set(NULL);
+			return;
+		}
+
+		cbm_cons_p->buffer_size = CONFIG_CONSOLE_CBMEM_BUFFER_SIZE -
+			sizeof(struct cbmem_console);
+
+		cbm_cons_p->buffer_cursor = 0;
 	}
 
-	cbm_cons_p->buffer_size = CONFIG_CONSOLE_CBMEM_BUFFER_SIZE -
-		sizeof(struct cbmem_console);
-
-	cbm_cons_p->buffer_cursor = 0;
-#else
-	cbm_cons_p = cbmem_find(CBMEM_ID_CONSOLE);
-
-	if (!cbm_cons_p)
-		return;
-
-#endif
 	copy_console_buffer(cbm_cons_p);
 
 	current_console_set(cbm_cons_p);

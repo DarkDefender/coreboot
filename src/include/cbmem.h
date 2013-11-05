@@ -70,6 +70,7 @@
 #define CBMEM_ID_ROOT		0xff4007ff
 #define CBMEM_ID_VBOOT_HANDOFF	0x780074f0
 #define CBMEM_ID_CAR_GLOBALS	0xcac4e6a3
+#define CBMEM_ID_EHCI_DEBUG	0xe4c1deb9
 #define CBMEM_ID_NONE		0x00000000
 #define CBMEM_ID_AGESA_RUNTIME	0x41474553
 
@@ -86,7 +87,7 @@ struct cbmem_entry;
  * implemented by the board or chipset to define the upper address where
  * cbmem lives. This address is required to be a 32-bit address. Additionally,
  * the address needs to be consistent in both romstage and ramstage.  The
- * dynamic cbmem infrasturue allocates new regions below the last allocated
+ * dynamic cbmem infrastructure allocates new regions below the last allocated
  * region. Regions are defined by a cbmem_entry struct that is opaque. Regions
  * may be removed, but the last one added is the only that can be removed.
  *
@@ -100,7 +101,7 @@ struct cbmem_entry;
 
 #define DYN_CBMEM_ALIGN_SIZE (4096)
 
-/* Initialze cbmem to be empty. */
+/* Initialize cbmem to be empty. */
 void cbmem_initialize_empty(void);
 
 /* Return the top address for dynamic cbmem. The address returned needs to
@@ -125,27 +126,26 @@ int cbmem_entry_remove(const struct cbmem_entry *entry);
 void *cbmem_entry_start(const struct cbmem_entry *entry);
 u64 cbmem_entry_size(const struct cbmem_entry *entry);
 
-#ifndef __PRE_RAM__
-/* Add the cbmem memory used to the memory tables. */
-struct lb_memory;
-void cbmem_add_lb_mem(struct lb_memory *mem);
-#endif /* __PRE_RAM__ */
 
 #else /* !CONFIG_DYNAMIC_CBMEM */
 
 #ifndef __PRE_RAM__
-extern uint64_t high_tables_base, high_tables_size;
-void set_cbmem_toc(struct cbmem_entry *);
+void set_top_of_ram(uint64_t ramtop);
+void backup_top_of_ram(uint64_t ramtop);
+void cbmem_late_set_table(uint64_t base, uint64_t size);
+int cbmem_base_check(void);
 #endif
 
-void cbmem_init(u64 baseaddr, u64 size);
-int cbmem_reinit(u64 baseaddr);
+int cbmem_reinit(void);
 
-extern struct cbmem_entry *get_cbmem_toc(void);
+void get_cbmem_table(uint64_t *base, uint64_t *size);
+struct cbmem_entry *get_cbmem_toc(void);
 
 #endif /* CONFIG_DYNAMIC_CBMEM */
 
 /* Common API between cbmem and dynamic cbmem. */
+
+unsigned long get_top_of_ram(void);
 
 /* By default cbmem is attempted to be recovered. Returns 0 if cbmem was
  * recovered or 1 if cbmem had to be reinitialized. */
@@ -159,6 +159,9 @@ void *cbmem_find(u32 id);
 
 #ifndef __PRE_RAM__
 /* Ramstage only functions. */
+/* Add the cbmem memory used to the memory tables. */
+struct lb_memory;
+void cbmem_add_lb_mem(struct lb_memory *mem);
 void cbmem_list(void);
 void cbmem_arch_init(void);
 void cbmem_print_entry(int n, u32 id, u64 start, u64 size);

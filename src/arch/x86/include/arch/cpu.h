@@ -2,13 +2,14 @@
 #define ARCH_CPU_H
 
 #include <stdint.h>
+#include <arch/rules.h>
 
 /*
  * EFLAGS bits
  */
 #define X86_EFLAGS_CF	0x00000001 /* Carry Flag */
 #define X86_EFLAGS_PF	0x00000004 /* Parity Flag */
-#define X86_EFLAGS_AF	0x00000010 /* Auxillary carry Flag */
+#define X86_EFLAGS_AF	0x00000010 /* Auxiliary carry Flag */
 #define X86_EFLAGS_ZF	0x00000040 /* Zero Flag */
 #define X86_EFLAGS_SF	0x00000080 /* Sign Flag */
 #define X86_EFLAGS_TF	0x00000100 /* Trap Flag */
@@ -141,11 +142,12 @@ static inline unsigned int cpuid_edx(unsigned int op)
 #define X86_VENDOR_ANY     0xfe
 #define X86_VENDOR_UNKNOWN 0xff
 
-#if !defined(__PRE_RAM__) && !defined(__SMM__)
-#include <device/device.h>
-
 int cpu_phys_address_size(void);
 int cpu_have_cpuid(void);
+
+#ifndef __SIMPLE_DEVICE__
+
+struct device;
 
 struct cpu_device_id {
 	unsigned vendor;
@@ -163,7 +165,7 @@ struct cpu_driver *find_cpu_driver(struct device *cpu);
 struct thread;
 
 struct cpu_info {
-	device_t cpu;
+	struct device *cpu;
 	unsigned int index;
 #if CONFIG_COOP_MULTITASKING
 	struct thread *thread;
@@ -188,8 +190,6 @@ static inline unsigned long cpu_index(void)
 	ci = cpu_info();
 	return ci->index;
 }
-#else
-#include <arch/io.h>
 #endif
 
 #ifndef __ROMCC__ // romcc is segfaulting in some cases

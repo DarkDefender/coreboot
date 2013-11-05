@@ -64,9 +64,7 @@ static void cpu_pci_domain_set_resources(device_t dev)
 	ram_resource(dev, idx++, 0, 640);
 	ram_resource(dev, idx++, 768, tolmk - 768);
 
-	/* Leave some space for ACPI, PIRQ and MP tables */
-	high_tables_base = (tomk * 1024) - HIGH_MEMORY_SIZE;
-	high_tables_size = HIGH_MEMORY_SIZE;
+	set_top_of_ram(tomk * 1024);
 
 	assign_resources(dev->link_list);
 }
@@ -108,6 +106,7 @@ static struct device_operations pci_domain_ops = {
 	.enable_resources	= NULL,
 	.init			= NULL,
 	.scan_bus		= pci_domain_scan_bus,
+	.ops_pci_bus	= pci_bus_default_ops,
 #if CONFIG_GENERATE_SMBIOS_TABLES
 	.get_smbios_data	= rdc_get_smbios_data,
 #endif
@@ -118,7 +117,6 @@ static void enable_dev(struct device *dev)
 	/* Set the operations if it is a special bus type */
 	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
-		pci_set_method(dev);
 	}
 }
 

@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __PRE_RAM__
-#define __PRE_RAM__ // Use simple device model for this file even in ramstage
-#endif
+// Use simple device model for this file even in ramstage
+#define __SIMPLE_DEVICE__
+
 #include <arch/io.h>
 #include <reset.h>
 
@@ -36,7 +36,7 @@ static void set_bios_reset(void)
 {
 	u32 nodes;
 	u32 htic;
-	device_t dev;
+	pci_devfn_t dev;
 	int i;
 
 	nodes = ((pci_read_config32(PCI_DEV(CONFIG_CBB, CONFIG_CDB, 0), 0x60) >> 4) & 7) + 1;

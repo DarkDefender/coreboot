@@ -32,8 +32,6 @@
 #include <lib.h>
 #include <smbios.h>
 
-uint64_t high_tables_base = 0;
-uint64_t high_tables_size;
 
 void cbmem_arch_init(void)
 {
@@ -53,20 +51,14 @@ struct lb_memory *write_tables(void)
 	unsigned long high_table_pointer;
 
 #if !CONFIG_DYNAMIC_CBMEM
-	if (!high_tables_base) {
-		printk(BIOS_ERR, "ERROR: High Tables Base is not set.\n");
-		// Are there any boards without?
-		// Stepan thinks we should die() here!
-	}
-
-	printk(BIOS_DEBUG, "High Tables Base is %llx.\n", high_tables_base);
+	cbmem_base_check();
 #endif
 
 	rom_table_start = 0xf0000;
 	rom_table_end =   0xf0000;
 
 	/* Start low addr at 0x500, so we don't run into conflicts with the BDA
-	 * in case our data structures grow beyound 0x400. Only multiboot, GDT
+	 * in case our data structures grow beyond 0x400. Only multiboot, GDT
 	 * and the coreboot table use low_tables.
 	 */
 	low_table_start = 0;
@@ -214,7 +206,7 @@ struct lb_memory *write_tables(void)
 	 */
 	cbmem_add(CBMEM_ID_RESUME, HIGH_MEMORY_SAVE);
 #endif
-#if CONFIG_NORTHBRIDGE_AMD_AGESA_FAMILY14 || CONFIG_NORTHBRIDGE_AMD_AGESA_FAMILY15_TN
+#if CONFIG_NORTHBRIDGE_AMD_AGESA_FAMILY14 || CONFIG_NORTHBRIDGE_AMD_AGESA_FAMILY15_TN || CONFIG_NORTHBRIDGE_AMD_AGESA_FAMILY16_KB
 	cbmem_add(CBMEM_ID_RESUME_SCRATCH, CONFIG_HIGH_SCRATCH_MEMORY_SIZE);
 #endif
 #endif
@@ -227,9 +219,18 @@ struct lb_memory *write_tables(void)
 	if (high_table_pointer) {
 		unsigned long new_high_table_pointer;
 
+		/* FIXME: The high_table_base parameter is not reference when tables are high,
+		 * or high_table_pointer >1 MB.
+		 */
+#if CONFIG_DYNAMIC_CBMEM
+		u64 fixme_high_tables_base = 0;
+#else
+		u64 fixme_high_tables_base = (u32)get_cbmem_toc();
+#endif
+
 		/* Also put a forwarder entry into 0-4K */
 		new_high_table_pointer = write_coreboot_table(low_table_start, low_table_end,
-				high_tables_base, high_table_pointer);
+				fixme_high_tables_base, high_table_pointer);
 
 		if (new_high_table_pointer > (high_table_pointer +
 					MAX_COREBOOT_TABLE_SIZE))

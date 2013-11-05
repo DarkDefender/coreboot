@@ -684,6 +684,7 @@ static void domain_set_resources(device_t dev)
 #endif
 	unsigned long mmio_basek;
 	u32 pci_tolm;
+	u64 ramtop = 0;
 	int i, idx;
 	struct bus *link;
 #if CONFIG_HW_MEM_HOLE_SIZEK != 0
@@ -807,17 +808,8 @@ static void domain_set_resources(device_t dev)
 					ram_resource(dev, (idx | i), basek, pre_sizek);
 					idx += 0x10;
 					sizek -= pre_sizek;
-					if (high_tables_base==0) {
-						/* Leave some space for ACPI, PIRQ and MP tables */
-#if CONFIG_GFXUMA
-						high_tables_base = uma_memory_base - HIGH_MEMORY_SIZE;
-#else
-						high_tables_base = (mmio_basek * 1024) - HIGH_MEMORY_SIZE;
-#endif
-						high_tables_size = HIGH_MEMORY_SIZE;
-						printk(BIOS_DEBUG, " split: %dK table at =%08llx\n",
-							 (u32)(high_tables_size / 1024), high_tables_base);
-					}
+					if (!ramtop)
+						ramtop = mmio_basek * 1024;
 				}
 				basek = mmio_basek;
 			}
@@ -834,19 +826,15 @@ static void domain_set_resources(device_t dev)
 		idx += 0x10;
 		printk(BIOS_DEBUG, "node %d: mmio_basek=%08lx, basek=%08llx, limitk=%08llx\n",
 				i, mmio_basek, basek, limitk);
-		if (high_tables_base==0) {
-			/* Leave some space for ACPI, PIRQ and MP tables */
-#if CONFIG_GFXUMA
-			high_tables_base = uma_memory_base - HIGH_MEMORY_SIZE;
-#else
-			high_tables_base = (limitk * 1024) - HIGH_MEMORY_SIZE;
-#endif
-			high_tables_size = HIGH_MEMORY_SIZE;
-		}
+		if (!ramtop)
+			ramtop = limitk * 1024;
 	}
 
 #if CONFIG_GFXUMA
+	set_top_of_ram(uma_memory_base);
 	uma_resource(dev, 7, uma_memory_base >> 10, uma_memory_size >> 10);
+#else
+	set_top_of_ram(ramtop);
 #endif
 
 	for(link = dev->link_list; link; link = link->next) {
@@ -863,12 +851,7 @@ static struct device_operations pci_domain_ops = {
 	.enable_resources = domain_enable_resources,
 	.init		  = NULL,
 	.scan_bus	  = f15_pci_domain_scan_bus,
-
-#if CONFIG_MMCONF_SUPPORT_DEFAULT
-	.ops_pci_bus	  = &pci_ops_mmconf,
-#else
-	.ops_pci_bus	  = &pci_cf8_conf1,
-#endif
+	.ops_pci_bus	  = pci_bus_default_ops,
 };
 
 

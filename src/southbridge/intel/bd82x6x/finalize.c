@@ -20,12 +20,19 @@
 
 #include <arch/io.h>
 #include <console/post_codes.h>
-#include <northbridge/intel/sandybridge/pcie_config.c>
 #include "pch.h"
 #include <spi-generic.h>
 
 void intel_pch_finalize_smm(void)
 {
+#if CONFIG_LOCK_SPI_ON_RESUME
+	/* Copy flash regions from FREG0-4 to PR0-4
+	   and enable write protection bit31 */
+	int i;
+	for (i = 0; i < 20; i += 4)
+		RCBA32(0x3874 + i) = RCBA32(0x3854 + i) | (1 << 31);
+#endif
+
 	/* Set SPI opcode menu */
 	RCBA16(0x3894) = SPI_OPPREFIX;
 	RCBA16(0x3896) = SPI_OPTYPE;
@@ -50,15 +57,15 @@ void intel_pch_finalize_smm(void)
 	RCBA_AND_OR(8, 0x3420, ~0U, (1 << 7));
 
 	/* Global SMI Lock */
-	pcie_or_config16(PCH_LPC_DEV, 0xa0, 1 << 4);
+	pci_or_config16(PCH_LPC_DEV, 0xa0, 1 << 4);
 
 	/* GEN_PMCON Lock */
-	pcie_or_config8(PCH_LPC_DEV, 0xa6, (1 << 1) | (1 << 2));
+	pci_or_config8(PCH_LPC_DEV, 0xa6, (1 << 1) | (1 << 2));
 
 	/* R/WO registers */
 	RCBA32(0x21a4) = RCBA32(0x21a4);
-	pcie_write_config32(PCI_DEV(0, 27, 0), 0x74,
-		    pcie_read_config32(PCI_DEV(0, 27, 0), 0x74));
+	pci_write_config32(PCI_DEV(0, 27, 0), 0x74,
+		    pci_read_config32(PCI_DEV(0, 27, 0), 0x74));
 
 	/* Indicate finalize step with post code */
 	outb(POST_OS_BOOT, 0x80);

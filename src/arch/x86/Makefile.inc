@@ -61,16 +61,27 @@ prebuild-files = \
 	$(if $(call extract_nth,4,$(file)),-b $(call extract_nth,4,$(file))) &&)
 prebuilt-files = $(foreach file,$(cbfs-files), $(call extract_nth,1,$(file)))
 
-$(obj)/coreboot.pre1: $(objcbfs)/bootblock.bin $$(prebuilt-files) $(CBFSTOOL)
+$(obj)/coreboot.pre1: $(objcbfs)/bootblock.bin $$(prebuilt-files) $(CBFSTOOL) $$(cpu_ucode_cbfs_file)
 	$(CBFSTOOL) $@.tmp create -m x86 -s $(CONFIG_COREBOOT_ROMSIZE_KB)K \
 		-B $(objcbfs)/bootblock.bin -a 64 \
 		-o $$(( $(CONFIG_ROM_SIZE) - $(CONFIG_CBFS_SIZE) ))
 	$(prebuild-files) true
+	$(call add-cpu-microcode-to-cbfs,$@.tmp)
 	mv $@.tmp $@
 else
 .PHONY: $(obj)/coreboot.pre1
 $(obj)/coreboot.pre1: $(CBFSTOOL)
 	mv $(obj)/coreboot.rom $@
+endif
+
+ifeq ($(CONFIG_PAYLOAD_LINUX),y)
+LINUX_ADDITIONAL_CONFIG:=
+ifneq ($(strip $(call strip_quotes,$(CONFIG_LINUX_COMMAND_LINE))),)
+  LINUX_ADDITIONAL_CONFIG+=-C $(CONFIG_LINUX_COMMAND_LINE)
+endif
+ifneq ($(strip $(call strip_quotes,$(CONFIG_LINUX_INITRD))),)
+  LINUX_ADDITIONAL_CONFIG+=-I $(CONFIG_LINUX_INITRD)
+endif
 endif
 
 $(obj)/coreboot.rom: $(obj)/coreboot.pre $(objcbfs)/coreboot_ram.elf $(CBFSTOOL) $(call strip_quotes,$(COREBOOT_ROM_DEPENDENCIES)) $$(INTERMEDIATE) $$(VBOOT_STUB_ELF)
@@ -84,9 +95,19 @@ ifeq ($(CONFIG_PAYLOAD_ELF),y)
 	@printf "    PAYLOAD    $(CONFIG_PAYLOAD_FILE) (compression: $(CBFS_PAYLOAD_COMPRESS_FLAG))\n"
 	$(CBFSTOOL) $@.tmp add-payload -f $(CONFIG_PAYLOAD_FILE) -n $(CONFIG_CBFS_PREFIX)/payload -c $(CBFS_PAYLOAD_COMPRESS_FLAG)
 endif
+ifeq ($(CONFIG_PAYLOAD_LINUX),y)
+	@printf "    PAYLOAD    $(CONFIG_PAYLOAD_FILE) (compression: $(CBFS_PAYLOAD_COMPRESS_FLAG))\n"
+	$(CBFSTOOL) $@.tmp add-payload -f $(CONFIG_PAYLOAD_FILE) -n $(CONFIG_CBFS_PREFIX)/payload -c $(CBFS_PAYLOAD_COMPRESS_FLAG) $(LINUX_ADDITIONAL_CONFIG)
+endif
 ifeq ($(CONFIG_PAYLOAD_SEABIOS),y)
 	@printf "    PAYLOAD    SeaBIOS (internal, compression: $(CBFS_PAYLOAD_COMPRESS_FLAG))\n"
 	$(CBFSTOOL) $@.tmp add-payload -f $(CONFIG_PAYLOAD_FILE) -n $(CONFIG_CBFS_PREFIX)/payload -c $(CBFS_PAYLOAD_COMPRESS_FLAG)
+ifneq ($(CONFIG_SEABIOS_PS2_TIMEOUT),)
+ifneq ($(CONFIG_SEABIOS_PS2_TIMEOUT),0)
+	@printf "    SeaBIOS    Wait up to $(CONFIG_SEABIOS_PS2_TIMEOUT) ms for PS/2 keyboard controller initialization\n"
+	$(CBFSTOOL) $@.tmp add-int -i $(CONFIG_SEABIOS_PS2_TIMEOUT) -n etc/ps2-keyboard-spinup
+endif
+endif
 endif
 ifeq ($(CONFIG_PAYLOAD_FILO),y)
 	@printf "    PAYLOAD    FILO (internal, compression: $(CBFS_PAYLOAD_COMPRESS_FLAG))\n"
@@ -406,6 +427,7 @@ seabios:
 			HOSTCC="$(HOSTCC)" \
 			CC="$(CC)" LD="$(LD)" OBJDUMP="$(OBJDUMP)" \
 			OBJCOPY="$(OBJCOPY)" STRIP="$(STRIP)" \
+			AS="$(AS)" CPP="$(CPP)" \
 			CONFIG_SEABIOS_MASTER=$(CONFIG_SEABIOS_MASTER) \
 			CONFIG_SEABIOS_STABLE=$(CONFIG_SEABIOS_STABLE) \
 			OUT=$(abspath $(obj)) IASL="$(IASL)"

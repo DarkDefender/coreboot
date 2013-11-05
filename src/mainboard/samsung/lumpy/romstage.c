@@ -137,42 +137,33 @@ void main(unsigned long bist)
 	u32 pm1_cnt;
 	u16 pm1_sts;
 
-#if CONFIG_COLLECT_TIMESTAMPS
-	tsc_t start_romstage_time;
-	tsc_t before_dram_time;
-	tsc_t after_dram_time;
-	tsc_t base_time = {
-		.lo = pci_read_config32(PCI_DEV(0, 0x00, 0), 0xdc),
-		.hi = pci_read_config32(PCI_DEV(0, 0x1f, 2), 0xd0)
-	};
-#endif
-
 	struct pei_data pei_data = {
-		.pei_version = PEI_VERSION,
-		.mchbar = DEFAULT_MCHBAR,
-		.dmibar = DEFAULT_DMIBAR,
-		.epbar = DEFAULT_EPBAR,
-		.pciexbar = CONFIG_MMCONF_BASE_ADDRESS,
-		.smbusbar = SMBUS_IO_BASE,
-		.wdbbar = 0x4000000,
-		.wdbsize = 0x1000,
-		.hpet_address = CONFIG_HPET_ADDRESS,
-		.rcba = DEFAULT_RCBABASE,
-		.pmbase = DEFAULT_PMBASE,
-		.gpiobase = DEFAULT_GPIOBASE,
-		.thermalbase = 0xfed08000,
-		.system_type = 0, // 0 Mobile, 1 Desktop/Server
-		.tseg_size = CONFIG_SMM_TSEG_SIZE,
-		.spd_addresses = { 0x50, 0x00,0xf0,0x00 },
-		.ts_addresses = { 0x30, 0x00, 0x00, 0x00 },
-		.ec_present = 1,
+		pei_version: PEI_VERSION,
+		mchbar: DEFAULT_MCHBAR,
+		dmibar: DEFAULT_DMIBAR,
+		epbar: DEFAULT_EPBAR,
+		pciexbar: CONFIG_MMCONF_BASE_ADDRESS,
+		smbusbar: SMBUS_IO_BASE,
+		wdbbar: 0x4000000,
+		wdbsize: 0x1000,
+		hpet_address: CONFIG_HPET_ADDRESS,
+		rcba: DEFAULT_RCBABASE,
+		pmbase: DEFAULT_PMBASE,
+		gpiobase: DEFAULT_GPIOBASE,
+		thermalbase: 0xfed08000,
+		system_type: 0, // 0 Mobile, 1 Desktop/Server
+		tseg_size: CONFIG_SMM_TSEG_SIZE,
+		spd_addresses: { 0xa0, 0x00,0x00,0x00 },
+		ts_addresses: { 0x30, 0x00, 0x00, 0x00 },
+		ec_present: 1,
 		// 0 = leave channel enabled
 		// 1 = disable dimm 0 on channel
 		// 2 = disable dimm 1 on channel
 		// 3 = disable dimm 0+1 on channel
-		.dimm_channel0_disabled = 2,
-		.dimm_channel1_disabled = 2,
-		.usb_port_config = {
+		dimm_channel0_disabled: 2,
+		dimm_channel1_disabled: 2,
+		max_ddr3_freq: 1333,
+		usb_port_config: {
 			{ 1, 0, 0x0080 }, /* P0: Port 0      (OC0) */
 			{ 1, 1, 0x0080 }, /* P1: Port 1      (OC1) */
 			{ 1, 0, 0x0040 }, /* P2: MINIPCIE1   (no OC) */
@@ -188,8 +179,6 @@ void main(unsigned long bist)
 			{ 0, 4, 0x0000 }, /* P12: Empty */
 			{ 0, 4, 0x0000 }, /* P13: Empty */
 		},
-		.spd_data = {
-		}
 	};
 
 	typedef const uint8_t spd_blob[256];
@@ -197,9 +186,8 @@ void main(unsigned long bist)
 	spd_blob *spd_data;
 
 
-#if CONFIG_COLLECT_TIMESTAMPS
-	start_romstage_time = rdtsc();
-#endif
+	timestamp_init(get_initial_timestamp());
+	timestamp_add_now(TS_START_ROMSTAGE);
 
 	if (bist == 0)
 		enable_lapic();
@@ -312,14 +300,10 @@ void main(unsigned long bist)
 
 	post_code(0x39);
 	pei_data.boot_mode = boot_mode;
-#if CONFIG_COLLECT_TIMESTAMPS
-	before_dram_time = rdtsc();
-#endif
+	timestamp_add_now(TS_BEFORE_INITRAM);
 	sdram_initialize(&pei_data);
 
-#if CONFIG_COLLECT_TIMESTAMPS
-	after_dram_time = rdtsc();
-#endif
+	timestamp_add_now(TS_AFTER_INITRAM);
 	post_code(0x3a);
 	/* Perform some initialization that must run before stage2 */
 	early_pch_init();
@@ -363,15 +347,5 @@ void main(unsigned long bist)
 #if CONFIG_CHROMEOS
 	init_chromeos(boot_mode);
 #endif
-#if CONFIG_COLLECT_TIMESTAMPS
-	timestamp_init(base_time);
-	timestamp_add(TS_START_ROMSTAGE, start_romstage_time );
-	timestamp_add(TS_BEFORE_INITRAM, before_dram_time );
-	timestamp_add(TS_AFTER_INITRAM, after_dram_time );
 	timestamp_add_now(TS_END_ROMSTAGE);
-#endif
-#if CONFIG_CONSOLE_CBMEM
-	/* Keep this the last thing this function does. */
-	cbmemc_reinit();
-#endif
 }

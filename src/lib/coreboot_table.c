@@ -399,7 +399,7 @@ static unsigned long lb_table_fini(struct lb_header *head)
 /* Routines to extract part so the coreboot table or
  * information from the coreboot table after we have written it.
  * Currently get_lb_mem relies on a global we can change the
- * implementaiton.
+ * implementation.
  */
 static struct lb_memory *mem_ranges = NULL;
 
@@ -539,12 +539,7 @@ unsigned long write_coreboot_table(
 		lb_add_memory_range(mem, LB_MEM_TABLE,
 			rom_table_start, rom_table_end - rom_table_start);
 
-#if CONFIG_DYNAMIC_CBMEM
 	cbmem_add_lb_mem(mem);
-#else /* CONFIG_DYNAMIC_CBMEM */
-	lb_add_memory_range(mem, LB_MEM_TABLE,
-		high_tables_base, high_tables_size);
-#endif /* CONFIG_DYNAMIC_CBMEM */
 
 	/* No other memory areas can be added after the memory table has been
 	 * committed as the entries won't show up in the serialize mem table. */
@@ -567,7 +562,7 @@ unsigned long write_coreboot_table(
 	/* Record our GPIO settings (ChromeOS specific) */
 	lb_gpios(head);
 
-	/* pass along the VDAT buffer adress */
+	/* pass along the VDAT buffer address */
 	lb_vdat(head);
 
 	/* pass along VBNV offsets in CMOS */

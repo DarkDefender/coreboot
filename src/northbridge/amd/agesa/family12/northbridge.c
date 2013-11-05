@@ -34,7 +34,7 @@
 #include <cpu/amd/mtrr.h>
 
 #include "northbridge.h"
-#include "SbEarly.h"
+#include "sb_cimx.h"
 #include "agesawrapper.h"
 
 //#define FX_DEVS NODE_NUMS
@@ -590,6 +590,7 @@ static void domain_set_resources(device_t dev)
 #endif
     unsigned long mmio_basek;
     u32 pci_tolm;
+    u64 ramtop = 0;
     int idx;
     struct bus *link;
 #if CONFIG_HW_MEM_HOLE_SIZEK != 0
@@ -722,20 +723,9 @@ printk(BIOS_DEBUG, "adsr - 0xa0000 to 0xbffff resource.\n");
                     ram_resource(dev, idx, basek, pre_sizek);
                     idx += 0x10;
                     sizek -= pre_sizek;
-                    if (high_tables_base==0) {
-                    /* Leave some space for ACPI, PIRQ and MP tables */
-#if CONFIG_GFXUMA
-                        high_tables_base = uma_memory_base - HIGH_MEMORY_SIZE;
-#else
-                        high_tables_base = (mmio_basek * 1024) - HIGH_MEMORY_SIZE;
-#endif
-                        high_tables_size = HIGH_MEMORY_SIZE;
-                        printk(BIOS_DEBUG, " split: %dK table at =%08llx\n",
-				 (u32)(high_tables_size / 1024),
-                                 high_tables_base);
-                    }
+                    if (!ramtop)
+                            ramtop = mmio_basek * 1024;
                 }
-
                 basek = mmio_basek;
             }
             if ((basek + sizek) <= 4*1024*1024) {
@@ -751,23 +741,16 @@ printk(BIOS_DEBUG, "adsr - 0xa0000 to 0xbffff resource.\n");
         idx += 0x10;
         printk(BIOS_DEBUG, "%d: mmio_basek=%08lx, basek=%08llx, limitk=%08llx\n",
                  0, mmio_basek, basek, limitk);
-        if (high_tables_base==0) {
-        /* Leave some space for ACPI, PIRQ and MP tables */
-#if CONFIG_GFXUMA
-            high_tables_base = uma_memory_base - HIGH_MEMORY_SIZE;
-            printk(BIOS_DEBUG, "  adsr - uma_memory_base = %llx.\n", uma_memory_base);
-#else
-            high_tables_base = (limitk * 1024) - HIGH_MEMORY_SIZE;
-#endif
-            high_tables_size = HIGH_MEMORY_SIZE;
-        }
+        if (!ramtop)
+                 ramtop = limitk * 1024;
     }
 	printk(BIOS_DEBUG, "  adsr - mmio_basek = %lx.\n", mmio_basek);
-	printk(BIOS_DEBUG, "  adsr - high_tables_size = %llx.\n",
-		high_tables_size);
 
 #if CONFIG_GFXUMA
+	set_top_of_ram(uma_memory_base);
 	uma_resource(dev, 7, uma_memory_base >> 10, uma_memory_size >> 10);
+#else
+	set_top_of_ram(ramtop);
 #endif
 
     for(link = dev->link_list; link; link = link->next) {

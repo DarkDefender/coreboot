@@ -18,45 +18,44 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+// Use simple device model for this file even in ramstage
+#define __SIMPLE_DEVICE__
+
 #include <stdint.h>
 #include <arch/io.h>
 #include <usbdebug.h>
 #include <device/pci_def.h>
 #include "sb700.h"
 
-#define EHCI_EOR		(CONFIG_EHCI_BAR + 0x20)
-#define DEBUGPORT_MISC_CONTROL	(EHCI_EOR + 0x80)
+#define DEBUGPORT_MISC_CONTROL		0x80
 
-void set_debug_port(unsigned int port)
+pci_devfn_t pci_ehci_dbg_dev(unsigned int hcd_idx)
 {
+	if (hcd_idx==2)
+		return PCI_DEV(0, 0x13, 2);
+	else
+		return PCI_DEV(0, 0x12, 2);
+}
+
+void pci_ehci_dbg_set_port(pci_devfn_t dev, unsigned int port)
+{
+	u32 base_regs = pci_ehci_base_regs(dev);
 	u32 reg32;
 
 	/* Write the port number to DEBUGPORT_MISC_CONTROL[31:28]. */
-	reg32 = read32(DEBUGPORT_MISC_CONTROL);
+	reg32 = read32(base_regs + DEBUGPORT_MISC_CONTROL);
 	reg32 &= ~(0xf << 28);
 	reg32 |= (port << 28);
 	reg32 |= (1 << 27); /* Enable Debug Port port number remapping. */
-	write32(DEBUGPORT_MISC_CONTROL, reg32);
+	write32(base_regs + DEBUGPORT_MISC_CONTROL, reg32);
 }
 
-/*
- * Note: The SB700 has two EHCI devices, D18:F2 and D19:F2.
- * This code currently only supports the first one, i.e., USB Debug devices
- * attached to physical USB ports belonging to the first EHCI device.
- */
-void enable_usbdebug(unsigned int port)
+void pci_ehci_dbg_enable(pci_devfn_t dev, unsigned long base)
 {
-	device_t dev = PCI_DEV(0, 0x12, 2); /* USB EHCI, D18:F2 */
-
 	/* Set the EHCI BAR address. */
-	pci_write_config32(dev, EHCI_BAR_INDEX, CONFIG_EHCI_BAR);
+	pci_write_config32(dev, EHCI_BAR_INDEX, base);
 
 	/* Enable access to the EHCI memory space registers. */
 	pci_write_config8(dev, PCI_COMMAND, PCI_COMMAND_MEMORY);
 
-	/*
-	* Select the requested physical USB port (1-15) as the Debug Port.
-	* Must be called after the EHCI BAR has been set up (see above).
-	*/
-	set_debug_port(port);
 }

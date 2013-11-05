@@ -19,13 +19,14 @@
  * MA 02110-1301 USA
  */
 
-#ifndef __PRE_RAM__
-#define __PRE_RAM__ // Use simple device model for this file even in ramstage
-#endif
+// Use simple device model for this file even in ramstage
+#define __SIMPLE_DEVICE__
+
 #include <stdint.h>
 #include <arch/io.h>
 #include <device/pci_def.h>
 #include <console/console.h>
+#include <cbmem.h>
 #include "gm45.h"
 
 /** Decodes used Graphics Mode Select (GMS) to kilobytes. */
@@ -83,9 +84,9 @@ u32 decode_igd_gtt_size(const u32 gsm)
 	}
 }
 
-u32 get_top_of_ram(void)
+unsigned long get_top_of_ram(void)
 {
-	const device_t dev = PCI_DEV(0, 0, 0);
+	const pci_devfn_t dev = PCI_DEV(0, 0, 0);
 
 	u32 tor;
 

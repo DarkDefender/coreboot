@@ -266,11 +266,7 @@ static void vx900_set_resources(device_t dev)
 	u64 tor = vx900_remap_above_4g(mcu, pci_tolm);
 	ram_resource(dev, idx++, RAM_4GB >> 10, (tor - RAM_4GB) >> 10);
 
-	/* Leave some space for ACPI, PIRQ and MP tables */
-	high_tables_base = (tolmk << 10) - HIGH_MEMORY_SIZE;
-	high_tables_size = HIGH_MEMORY_SIZE;
-	printk(BIOS_DEBUG, "high_tables_base: %08llx, size %lld\n",
-	       high_tables_base, high_tables_size);
+	set_top_of_ram(tolmk << 10);
 
 	print_debug("======================================================\n");
 	assign_resources(dev->link_list);
@@ -304,8 +300,7 @@ static struct device_operations pci_domain_ops = {
 	.enable_resources = NULL,
 	.init = NULL,
 	.scan_bus = pci_domain_scan_bus,
-	/* We always run with MMCONF enabled. */
-	.ops_pci_bus = &pci_ops_mmconf,
+	.ops_pci_bus = pci_bus_default_ops,
 };
 
 static void cpu_bus_init(device_t dev)

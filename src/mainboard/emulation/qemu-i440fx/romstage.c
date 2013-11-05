@@ -29,7 +29,7 @@
 #include <timestamp.h>
 #include "drivers/pc80/udelay_io.c"
 #include "lib/delay.c"
-#include "cpu/x86/lapic/boot_cpu.c"
+#include "cpu/x86/lapic.h"
 
 #include "memory.c"
 
@@ -49,13 +49,8 @@ void main(unsigned long bist)
 	//dump_pci_devices();
 
 	cbmem_was_initted = !cbmem_initialize();
-#if CONFIG_COLLECT_TIMESTAMPS
+
 	timestamp_init(rdtsc());
 	timestamp_add_now(TS_START_ROMSTAGE);
-#endif
-#if CONFIG_CONSOLE_CBMEM
-	/* Keep this the last thing this function does. */
-	cbmemc_reinit();
-#endif
 
 }

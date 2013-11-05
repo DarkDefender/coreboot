@@ -38,6 +38,9 @@
 #if CONFIG_CHROMEOS
 #include <vendorcode/google/chromeos/chromeos.h>
 #endif
+#if CONFIG_EC_GOOGLE_CHROMEEC
+#include <ec/google/chromeec/ec.h>
+#endif
 #include "haswell.h"
 #include "northbridge/intel/haswell/haswell.h"
 #include "northbridge/intel/haswell/raminit.h"
@@ -197,24 +200,18 @@ void romstage_common(const struct romstage_params *params)
 	int wake_from_s3;
 	struct romstage_handoff *handoff;
 
-#if CONFIG_COLLECT_TIMESTAMPS
-	tsc_t start_romstage_time;
-	tsc_t before_dram_time;
-	tsc_t after_dram_time;
-	tsc_t base_time = {
-		.lo = pci_read_config32(PCI_DEV(0, 0x00, 0), 0xdc),
-		.hi = pci_read_config32(PCI_DEV(0, 0x1f, 2), 0xd0)
-	};
-#endif
-
-#if CONFIG_COLLECT_TIMESTAMPS
-	start_romstage_time = rdtsc();
-#endif
+	timestamp_init(get_initial_timestamp());
+	timestamp_add_now(TS_START_ROMSTAGE);
 
 	if (params->bist == 0)
 		enable_lapic();
 
 	wake_from_s3 = early_pch_init(params->gpio_map, params->rcba_config);
+
+#if CONFIG_EC_GOOGLE_CHROMEEC
+	/* Ensure the EC is in the right mode for recovery */
+	google_chromeec_early_init();
+#endif
 
 	/* Halt if there was a built in self test failure */
 	report_bist_failure(params->bist);
@@ -244,17 +241,15 @@ void romstage_common(const struct romstage_params *params)
 
 	post_code(0x3a);
 	params->pei_data->boot_mode = boot_mode;
-#if CONFIG_COLLECT_TIMESTAMPS
-	before_dram_time = rdtsc();
-#endif
+
+	timestamp_add_now(TS_BEFORE_INITRAM);
 
 	report_platform_info();
 
 	sdram_initialize(params->pei_data);
 
-#if CONFIG_COLLECT_TIMESTAMPS
-	after_dram_time = rdtsc();
-#endif
+	timestamp_add_now(TS_AFTER_INITRAM);
+
 	post_code(0x3b);
 
 	intel_early_me_status();
@@ -283,13 +278,7 @@ void romstage_common(const struct romstage_params *params)
 #if CONFIG_CHROMEOS
 	init_chromeos(boot_mode);
 #endif
-#if CONFIG_COLLECT_TIMESTAMPS
-	timestamp_init(base_time);
-	timestamp_add(TS_START_ROMSTAGE, start_romstage_time );
-	timestamp_add(TS_BEFORE_INITRAM, before_dram_time );
-	timestamp_add(TS_AFTER_INITRAM, after_dram_time );
 	timestamp_add_now(TS_END_ROMSTAGE);
-#endif
 }
 
 static inline void prepare_for_resume(struct romstage_handoff *handoff)

@@ -1,59 +1,57 @@
 /*
+ * This file is part of the coreboot project.
+ *
  * Copyright (C) 2012 Samsung Electronics
  *
- * See file CREDITS for list of people who contributed to this
- * project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __EXYNOS_PINMUX_H
-#define __EXYNOS_PINMUX_H
+#ifndef CPU_SAMSUNG_EXYNOS5250_PINMUX_H
+#define CPU_SAMSUNG_EXYNOS5250_PINMUX_H
 
-//#include <asm/arch/periph.h>
-#include "periph.h"
+void exynos_pinmux_uart0(void);
+void exynos_pinmux_uart1(void);
+void exynos_pinmux_uart2(void);
+void exynos_pinmux_uart3(void);
 
-enum {
-	PINMUX_FLAG_NONE	= 0x00000000,
+void exynos_pinmux_sdmmc0(void);
+void exynos_pinmux_sdmmc1(void);
+void exynos_pinmux_sdmmc2(void);
+void exynos_pinmux_sdmmc3(void);
 
-	/* Flags for eMMC */
-	PINMUX_FLAG_8BIT_MODE	= 1 << 0,	/* SDMMC 8-bit mode */
+void exynos_pinmux_sromc(int bank, int sixteen_bit);
 
-	/*
-	 * Flags for SPI.
-	 */
-	PINMUX_FLAG_SLAVE_MODE	= 1 << 0,	/* Slave mode */
+void exynos_pinmux_spi0(void);
+void exynos_pinmux_spi1(void);
+void exynos_pinmux_spi2(void);
+void exynos_pinmux_spi3(void);
+void exynos_pinmux_spi4(void);
 
-	/* Flags for SROM controller */
-	PINMUX_FLAG_BANK	= 3 << 0,	/* bank number (0-3) */
-	PINMUX_FLAG_16BIT	= 1 << 2,	/* 16-bit width */
-};
+void exynos_pinmux_backlight(void);
+void exynos_pinmux_lcd(void);
 
-/**
- * Configures the pinmux for a particular peripheral.
- *
- * Each gpio can be configured in many different ways (4 bits on exynos)
- * such as "input", "output", "special function", "external interrupt"
- * etc. This function will configure the peripheral pinmux along with
- * pull-up/down and drive strength.
- *
- * @param peripheral	peripheral to be configured
- * @param flags		configure flags
- * @return 0 if ok, -1 on error (e.g. unsupported peripheral)
- */
-int exynos_pinmux_config(enum periph_id peripheral, int flags);
+void exynos_pinmux_i2c0(void);
+void exynos_pinmux_i2c1(void);
+void exynos_pinmux_i2c2(void);
+void exynos_pinmux_i2c3(void);
+void exynos_pinmux_i2c4(void);
+void exynos_pinmux_i2c5(void);
+void exynos_pinmux_i2c6(void);
+void exynos_pinmux_i2c7(void);
+
+void exynos_pinmux_dphpd(void);
+
+void exynos_pinmux_i2s1(void);
 
 #endif

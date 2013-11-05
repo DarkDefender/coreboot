@@ -46,9 +46,10 @@ prebuild-files = \
 prebuilt-files = $(foreach file,$(cbfs-files), $(call extract_nth,1,$(file)))
 
 # TODO Change -b to Kconfig variable.
-$(obj)/coreboot.pre: $(objcbfs)/bootblock.bin $(objcbfs)/romstage.elf $$(prebuilt-files) $(CBFSTOOL)
+$(obj)/coreboot.pre: $(objcbfs)/bootblock.bin $(objcbfs)/romstage.elf $$(prebuilt-files) $(CBFSTOOL) $$(cpu_ucode_cbfs_file)
 	$(CBFSTOOL) $@.tmp create -m armv7 -s $(CONFIG_COREBOOT_ROMSIZE_KB)K \
-		-B $(objcbfs)/bootblock.bin -a 64 -b 0x0000 \
+		-B $(objcbfs)/bootblock.bin -a 64 \
+		-b $(CONFIG_BOOTBLOCK_ROM_OFFSET) \
 		-H $(CONFIG_CBFS_HEADER_ROM_OFFSET) \
 		-o $(CONFIG_CBFS_ROM_OFFSET)
 	@printf "    CBFS       $(subst $(obj)/,,$(@))\n"
@@ -56,6 +57,7 @@ $(obj)/coreboot.pre: $(objcbfs)/bootblock.bin $(objcbfs)/romstage.elf $$(prebuil
 		-f $(objcbfs)/romstage.elf -b 0 \
 		-n $(CONFIG_CBFS_PREFIX)/romstage -c none
 	$(prebuild-files) true
+	$(call add-cpu-microcode-to-cbfs,$@.tmp)
 	mv $@.tmp $@
 else
 .PHONY: $(obj)/coreboot.pre
@@ -109,7 +111,7 @@ $(objcbfs)/%.elf: $(objcbfs)/%.debug
 stages_c = $(src)/arch/armv7/stages.c
 stages_o = $(obj)/arch/armv7/stages.o
 
-$(stages_o): $(stages_c)
+$(stages_o): $(stages_c) $(obj)/config.h
 	@printf "    CC         $(subst $(obj)/,,$(@))\n"
 	$(CC) -I. $(INCLUDES) -c -o $@ $< -marm
 
@@ -161,8 +163,39 @@ $(obj)/mainboard/$(MAINBOARDDIR)/romstage.pre.inc: $(src)/mainboard/$(MAINBOARDD
 ramstage-y += exception.c
 ramstage-y += exception_asm.S
 
+bootblock-$(CONFIG_BOOTBLOCK_CONSOLE) += early_console.c
+bootblock-y += cache.c
+
+romstage-y += cache.c
+romstage-y += div0.c
+romstage-$(CONFIG_EARLY_CONSOLE) += early_console.c
+
+ramstage-y += div0.c
+#ramstage-y += interrupts.c
+ramstage-y += cache.c
+ramstage-y += mmu.c
+
+romstage-y += eabi_compat.c
+ramstage-y += eabi_compat.c
+bootblock-y += eabi_compat.c
+
+ramstage-y += boot.c
+ramstage-y += tables.c
+
+romstage-y += memset.S
+ramstage-y += memset.S
+bootblock-y += memset.S
+romstage-y += memcpy.S
+ramstage-y += memcpy.S
+bootblock-y += memcpy.S
+romstage-y += memmove.S
+ramstage-y += memmove.S
+bootblock-y += memmove.S
+
+$(obj)/arch/armv7/coreboot_table.ramstage.o : $(OPTION_TABLE_H)
+
 romstage-srcs += $(objgenerated)/crt0.s
-ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/mainboard.c
+ramstage-srcs += $(wildcard src/mainboard/$(MAINBOARDDIR)/mainboard.c)
 ifeq ($(CONFIG_GENERATE_PIRQ_TABLE),y)
 ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/irq_tables.c
 endif
@@ -194,7 +227,7 @@ bootblock_lds = $(src)/arch/armv7/bootblock.lds
 bootblock_lds += $(chipset_bootblock_lds)
 
 bootblock_inc += $(src)/arch/armv7/bootblock.inc
-bootblock_inc += $(src)/arch/armv7/lib/id.inc
+bootblock_inc += $(src)/arch/armv7/id.inc
 bootblock_inc += $(chipset_bootblock_inc)
 bootblock_inc += $(objgenerated)/bootblock.inc
 
@@ -217,14 +250,14 @@ $(objgenerated)/bootblock.s: $(objgenerated)/bootblock_inc.S $(obj)/config.h $(o
 	@printf "    CC         $(subst $(obj)/,,$(@))\n"
 	$(CC) $(bootblock-S-ccopts) -MMD -x assembler-with-cpp -E -I$(src)/include -I$(src)/arch/armv7/include -I$(obj) -include $(obj)/build.h -include $(obj)/config.h -I. -I$(src) $< -o $@
 
-$(objgenerated)/bootblock.inc: $(src)/arch/armv7/$(subst ",,$(CONFIG_BOOTBLOCK_SOURCE)) $(bootblock_custom) $(OPTION_TABLE_H)
+$(objgenerated)/bootblock.inc: $(src)/arch/armv7/$(subst ",,$(CONFIG_BOOTBLOCK_SOURCE)) $(bootblock_custom) $(OPTION_TABLE_H) $(obj)/config.h
 	@printf "    CC      $(subst $(obj)/,,$(@))\n"
 	$(CC) $(bootblock-c-ccopts) $(INCLUDES) -MM \
 		-MT$(objgenerated)/bootblock.inc \
 		$< > $(objgenerated)/bootblock.inc.d
 	$(CC) $(bootblock-c-ccopts) -c -S $(CFLAGS) -I. $(INCLUDES) $< -o $@
 
-$(objcbfs)/bootblock.debug:  $(objgenerated)/bootblock.o $(objgenerated)/bootblock.ld $$(bootblock-objs) $(stages)
+$(objcbfs)/bootblock.debug:  $(objgenerated)/bootblock.o $(objgenerated)/bootblock.ld $$(bootblock-objs) $(stages) $(obj)/config.h
 	@printf "    LINK       $(subst $(obj)/,,$(@))\n"
 ifeq ($(CONFIG_COMPILER_LLVM_CLANG),y)
 	$(LD) -m armelf_linux_eabi -include $(obj)/config.h -static -o $@.tmp -L$(obj) $< -T $(objgenerated)/bootblock.ld

@@ -17,34 +17,67 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __PRE_RAM__
-#define __PRE_RAM__ // Use simple device model for this file even in ramstage
-#endif
+// Use simple device model for this file even in ramstage
+#define __SIMPLE_DEVICE__
+
 #include <stdint.h>
 #include <arch/io.h>
 #include <console/console.h>
 #include <usbdebug.h>
 #include <device/pci_def.h>
 
+pci_devfn_t pci_ehci_dbg_dev(unsigned int hcd_idx)
+{
+	u32 class;
+	pci_devfn_t dev;
+
+#if CONFIG_HAVE_USBDEBUG_OPTIONS
+	if (hcd_idx==2)
+		dev = PCI_DEV(0, 0x1a, 0);
+	else
+		dev = PCI_DEV(0, 0x1d, 0);
+#else
+	dev = PCI_DEV(0, 0x1d, 7);
+#endif
+
+	class = pci_read_config32(dev, PCI_CLASS_REVISION) >> 8;
+#if CONFIG_HAVE_USBDEBUG_OPTIONS
+	if (class != PCI_EHCI_CLASSCODE) {
+		/* If we enter here before RCBA programming, EHCI function may
+		 * appear with the highest function number instead.
+		 */
+		dev |= PCI_DEV(0, 0, 7);
+		class = pci_read_config32(dev, PCI_CLASS_REVISION) >> 8;
+	}
+#endif
+	if (class != PCI_EHCI_CLASSCODE)
+		return 0;
+
+	return dev;
+}
+
 /* Required for successful build, but currently empty. */
-void set_debug_port(unsigned int port)
+void pci_ehci_dbg_set_port(pci_devfn_t dev, unsigned int port)
 {
 	/* Not needed, the ICH* southbridges hardcode physical USB port 1. */
 }
 
-void enable_usbdebug(unsigned int port)
+void pci_ehci_dbg_enable(pci_devfn_t dev, unsigned long base)
 {
 	u32 dbgctl;
-	device_t dev = PCI_DEV(0, 0x1d, 7); /* USB EHCI, D29:F7 */
+
+	/* Bail out. No console to complain in. */
+	if (!dev)
+		return;
 
 	/* Set the EHCI BAR address. */
-	pci_write_config32(dev, EHCI_BAR_INDEX, CONFIG_EHCI_BAR);
+	pci_write_config32(dev, EHCI_BAR_INDEX, base);
 
 	/* Enable access to the EHCI memory space registers. */
 	pci_write_config8(dev, PCI_COMMAND, PCI_COMMAND_MEMORY);
 
 	/* Force ownership of the Debug Port to the EHCI controller. */
-	dbgctl = read32(CONFIG_EHCI_BAR + CONFIG_EHCI_DEBUG_OFFSET);
+	dbgctl = read32(base + CONFIG_EHCI_DEBUG_OFFSET);
 	dbgctl |= (1 << 30);
-	write32(CONFIG_EHCI_BAR + CONFIG_EHCI_DEBUG_OFFSET, dbgctl);
+	write32(base + CONFIG_EHCI_DEBUG_OFFSET, dbgctl);
 }

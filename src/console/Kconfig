@@ -1,14 +1,30 @@
 menu "Console"
 
-config DEFAULT_EARLY_CONSOLE
-	bool
+config BOOTBLOCK_CONSOLE
+	bool "Enable early (bootblock) console output."
+	depends on ARCH_ARMV7
 	default n
+	help
+	  Use console during the bootblock if supported
 
 config EARLY_CONSOLE
 	bool "Enable early (pre-RAM) console output."
-	default DEFAULT_EARLY_CONSOLE
+	default y if CACHE_AS_RAM
+	default n
 	help
 	  Use console during early (pre-RAM) boot stages
+
+config SQUELCH_EARLY_SMP
+	bool "Squelch AP CPUs from early console."
+	default y
+	depends on EARLY_CONSOLE
+	help
+	  When selected only the BSP CPU will output to early console.
+
+	  Console drivers have unpredictable behaviour if multiple threads
+	  attempt to share the same resources without a spinlock.
+
+	  If unsure, say Y.
 
 config CONSOLE_SERIAL
 	bool "Serial port console output"
@@ -127,9 +143,13 @@ config SPKMODEM
 
 # Use "select HAVE_USBDEBUG" on southbridges which have Debug Port code.
 config HAVE_USBDEBUG
-	def_bool n
+	bool
+	default y if HAVE_USBDEBUG_OPTIONS
+	default n
 
-config USBDEBUG
+# Use "select HAVE_USBDEBUG_OPTIONS" on southbridges with multiple
+# EHCI controllers or multiple ports with Debug Port capability
+config HAVE_USBDEBUG_OPTIONS
 	def_bool n
 
 config USBDEBUG
@@ -153,26 +173,60 @@ config USBDEBUG
 
 	  If unsure, say N.
 
-# Note: This option doesn't make sense on Intel ICH / AMD SB600 southbridges
-# as those hardcode the physical USB port to be used as Debug Port to 1.
-# It cannot be changed by coreboot.
+config USBDEBUG_IN_ROMSTAGE
+	bool
+	default y if USBDEBUG && EARLY_CBMEM_INIT && EARLY_CONSOLE
+	default n
+
+if USBDEBUG
+
+config USBDEBUG_HCD_INDEX
+	int "Index for EHCI controller to use with usbdebug"
+	default 0
+	help
+	   Some boards have multiple EHCI controllers with possibly only
+	   one having the Debug Port capability on an external USB port.
+
+	   Mapping of this index to PCI device functions is southbridge
+	   specific and mainboard level Kconfig should already provide
+	   a working default value here.
+
 config USBDEBUG_DEFAULT_PORT
 	int "Default USB port to use as Debug Port"
-	default 1
-	depends on USBDEBUG && !SOUTHBRIDGE_INTEL_I82801GX && !SOUTHBRIDGE_AMD_SB600
+	default 0
 	help
-	  This option selects which physical USB port coreboot will try to
-	  use as EHCI Debug Port first (valid values are: 1-15).
+	  Selects which physical USB port usbdebug dongle is connected to.
+	  Setting of 0 means to scan possible ports starting from 1.
 
-	  If coreboot doesn't detect an EHCI Debug Port dongle on this port,
-	  it will try all the other ports one after the other. This will take
-	  a few seconds of time though, and thus slow down the booting process.
+	  Intel platforms have hardwired the debug port location and this
+	  setting makes no difference there.
 
 	  Hence, if you select the correct port here, you can speed up
-	  your boot time. Which USB port number (1-15) refers to which
-	  actual port on your mainboard (potentially also USB pin headers
-	  on your mainboard) is highly board-specific, and you'll likely
+	  your boot time. Which USB port number refers to which actual
+	  port on your mainboard (potentially also USB pin headers on
+	  your mainboard) is highly board-specific, and you'll likely
 	  have to find out by trial-and-error.
+
+choice
+	prompt "Type of dongle"
+	default USBDEBUG_DONGLE_STD
+
+config USBDEBUG_DONGLE_STD
+	bool "Net20DC or compatible"
+
+config USBDEBUG_DONGLE_BEAGLEBONE
+	bool "BeagleBone"
+	help
+	  Use this to configure the USB hub on BeagleBone board.
+
+endchoice
+
+config USBDEBUG_OPTIONAL_HUB_PORT
+	int
+	default 2 if USBDEBUG_DONGLE_BEAGLEBONE
+	default 0
+
+endif # USBDEBUG
 
 # TODO: Deps?
 # TODO: Improve description.
@@ -225,7 +279,6 @@ config CONSOLE_NE2K_IO_PORT
 	  boundary, qemu needs broader align)
 
 config CONSOLE_CBMEM
-	depends on (EARLY_CBMEM_INIT || DYNAMIC_CBMEM)
 	bool "Send console output to a CBMEM buffer"
 	default n
 	help

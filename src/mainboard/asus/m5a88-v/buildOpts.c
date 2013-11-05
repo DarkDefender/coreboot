@@ -144,14 +144,14 @@ CONST AP_MTRR_SETTINGS ROMDATA OntarioApMtrrSettingsList[] =
 };
 #define BLDCFG_PCI_MMIO_BASE                    CONFIG_MMCONF_BASE_ADDRESS
 #define BLDCFG_PCI_MMIO_SIZE                    CONFIG_MMCONF_BUS_NUMBER
- 
+
 #define BLDCFG_VRM_CURRENT_LIMIT                 120000
 #define BLDCFG_VRM_LOW_POWER_THRESHOLD           0
 #define BLDCFG_VRM_INRUSH_CURRENT_LIMIT          0
 #define BLDCFG_PLAT_NUM_IO_APICS                 3
 #define BLDCFG_CORE_LEVELING_MODE                CORE_LEVEL_LOWEST
 #define BLDCFG_MEM_INIT_PSTATE                   0
-#define BLDCFG_AMD_PSTATE_CAP_VALUE              0  
+#define BLDCFG_AMD_PSTATE_CAP_VALUE              0
 
 //#define BLDCFG_PROCESSOR_SCOPE_NAME0            'C'
 //#define BLDCFG_PROCESSOR_SCOPE_NAME1            '0'
@@ -303,7 +303,7 @@ CONST AP_MTRR_SETTINGS ROMDATA OntarioApMtrrSettingsList[] =
 #define DFLT_VRM_SLEW_RATE              (5000)
 
 // Instantiate all solution relevant data.
-#include "PlatformInstall.h" 
+#include "PlatformInstall.h"
 /*----------------------------------------------------------------------------------------
  *                        CUSTOMER OVERIDES MEMORY TABLE
  *----------------------------------------------------------------------------------------

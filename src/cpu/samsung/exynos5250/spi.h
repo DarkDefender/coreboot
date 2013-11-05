@@ -1,11 +1,11 @@
 /*
- * (C) Copyright 2012 SAMSUNG Electronics
- * Padmavathi Venna <padma.v@samsung.com>
+ * This file is part of the coreboot project.
+ *
+ * Copyright (C) 2012 Samsung Electronics
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * the Free Software Foundation; version 2 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,13 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __ASM_ARCH_EXYNOS_COMMON_SPI_H_
-#define __ASM_ARCH_EXYNOS_COMMON_SPI_H_
+#ifndef CPU_SAMSUNG_EXYNOS5250_SPI_H
+#define CPU_SAMSUNG_EXYNOS5250_SPI_H
 
-#ifndef __ASSEMBLER__
+/* This driver serves as a CBFS media source. */
+#include <cbfs.h>
 
 /* SPI peripheral register map; padded to 64KB */
 struct exynos_spi {
@@ -85,5 +86,13 @@ struct exynos_spi {
 #define SPI_RX_BYTE_SWAP	(1 << 6)
 #define SPI_RX_HWORD_SWAP	(1 << 7)
 
-#endif /* __ASSEMBLER__ */
+/* API */
+int exynos_spi_open(struct exynos_spi *regs);
+int exynos_spi_read(struct exynos_spi *regs, void *dest, u32 len, u32 off);
+int exynos_spi_close(struct exynos_spi *regs);
+
+/* Serve as CBFS media source */
+int initialize_exynos_spi_cbfs_media(struct cbfs_media *media,
+				     void *buffer_address,
+				     size_t buffer_size);
 #endif

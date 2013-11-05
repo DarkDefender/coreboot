@@ -1,11 +1,12 @@
 /*
- * (C) Copyright 2012 Samsung Electronics
- * Minkyu Kang <mk7.kang@samsung.com>
+ * This file is part of the coreboot project.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
+ * Copyright 2013 Google Inc.
+ * Copyright (C) 2012 Samsung Electronics
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,16 +15,56 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- *
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __EXYNOS5_CLK_H__
-#define __EXYNOS5_CLK_H__
+#ifndef CPU_SAMSUNG_EXYNOS5250_CLK_H
+#define CPU_SAMSUNG_EXYNOS5250_CLK_H
 
-#include <cpu/samsung/exynos5-common/clk.h>
-#include <cpu/samsung/exynos5250/pinmux.h>
+#include <stdint.h>
+
+enum periph_id;
+
+#define APLL	0
+#define MPLL	1
+#define EPLL	2
+#define HPLL	3
+#define VPLL	4
+#define BPLL	5
+
+enum pll_src_bit {
+	SRC_MPLL = 6,
+	SRC_EPLL,
+	SRC_VPLL,
+};
+
+/* *
+ * This structure is to store the src bit, div bit and prediv bit
+ * positions of the peripheral clocks of the src and div registers
+ */
+struct clk_bit_info {
+	s8 src_bit;    /* offset in register to clock source field */
+	s8 n_src_bits; /* number of bits in 'src_bit' field */
+	s8 div_bit;
+	s8 prediv_bit;
+};
+
+unsigned long get_pll_clk(int pllreg);
+unsigned long get_arm_clk(void);
+unsigned long get_pwm_clk(void);
+unsigned long get_uart_clk(int dev_index);
+void set_mmc_clk(int dev_index, unsigned int div);
+
+/**
+ * get the clk frequency of the required peripherial
+ *
+ * @param peripherial	Peripherial id
+ *
+ * @return frequency of the peripherial clk
+ */
+unsigned long clock_get_periph_rate(enum periph_id peripheral);
+
+#include "pinmux.h"
 
 
 #define MCT_ADDRESS 0x101c0000
@@ -31,7 +72,7 @@
 #define MCT_HZ 24000000
 
 /*
- * Set mshci controller instances clock drivder
+ * Set mshci controller instances clock divider
  *
  * @param enum periph_id instance of the mshci controller
  *
@@ -64,8 +105,6 @@ void clock_select_i2s_clk_source(void);
  */
 int clock_set_i2s_clk_prescaler(unsigned int src_frq, unsigned int dst_frq);
 
-/* FIXME(dhendrix): below is stuff from arch/arm/include/asm/arch-exynos5/clock.h
-   (as opposed to the two clk.h files as they were named in u-boot... */
 struct exynos5_clock {
 	unsigned int	apll_lock;		/* base + 0 */
 	unsigned char	res1[0xfc];
@@ -482,7 +521,7 @@ struct exynos5_mct_regs {
 };
 
 #define EXYNOS5_EPLLCON0_LOCKED_SHIFT	29  /* EPLL Locked bit position*/
-#define EPLL_SRC_CLOCK			24000000  /*24 MHz Cristal Input */
+#define EPLL_SRC_CLOCK			24000000  /*24 MHz Crystal Input */
 #define TIMEOUT_EPLL_LOCK		1000
 
 #define AUDIO_0_RATIO_MASK		0x0f
@@ -542,50 +581,44 @@ void clock_ll_set_ratio(enum periph_id periph_id, unsigned divisor);
  */
 int clock_set_rate(enum periph_id periph_id, unsigned int rate);
 
-/**
- * Decode a peripheral ID from a device node.
- *
- * Drivers should always use this function since the actual means of
- * encoding this information may change in the future as fdt support for
- * exynos evolves.
- *
- * @param blob	FDT blob to read from
- * @param node	Node containing the information
- */
-int clock_decode_periph_id(const void *blob, int node);
-
 /* Clock gate unused IP */
 void clock_gate(void);
 
-enum ddr_mode;
-enum mem_manuf;
-
-const char *clock_get_mem_type_name(enum ddr_mode mem_type);
-
-const char *clock_get_mem_manuf_name(enum mem_manuf mem_manuf);
-
-/*
- * TODO(sjg@chromium.org): Remove this when we have more SPL space.
- * At present we are using 14148 of 14336 bytes. If we change this function
- * to be exported in SPL, we go over the edge.
- */
-/**
- * Get the required memory type and speed (Main U-Boot version).
- *
- * This should use the device tree. For now we cannot since this function is
- * called before the FDT is available.
- *
- * @param mem_type	Returns memory type
- * @param frequency_mhz	Returns memory speed in MHz
- * @param arm_freq	Returns ARM clock speed in MHz
- * @param mem_manuf	Return Memory Manufacturer name
- * @return 0 if all ok (if not, this function currently does not return)
- */
-int clock_get_mem_selection(enum ddr_mode *mem_type,
-		unsigned *frequency_mhz, unsigned *arm_freq,
-		enum mem_manuf *mem_manuf);
-
 void mct_start(void);
 uint64_t mct_raw_value(void);
+
+#include "dmc.h"
+
+/* These are the ratio's for configuring ARM clock */
+struct arm_clk_ratios {
+	unsigned int arm_freq_mhz;	/* Frequency of ARM core in MHz */
+
+	unsigned int apll_mdiv;
+	unsigned int apll_pdiv;
+	unsigned int apll_sdiv;
+
+	unsigned int arm2_ratio;
+	unsigned int apll_ratio;
+	unsigned int pclk_dbg_ratio;
+	unsigned int atb_ratio;
+	unsigned int periph_ratio;
+	unsigned int acp_ratio;
+	unsigned int cpud_ratio;
+	unsigned int arm_ratio;
+};
+
+/**
+ * Get the clock ratios for CPU configuration
+ *
+ * @return pointer to the clock ratios that we should use
+ */
+struct arm_clk_ratios *get_arm_clk_ratios(void);
+
+/*
+ * Initialize clock for the device
+ */
+struct mem_timings;
+void system_clock_init(struct mem_timings *mem,
+		struct arm_clk_ratios *arm_clk_ratio);
 
 #endif

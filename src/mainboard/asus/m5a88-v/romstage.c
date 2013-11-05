@@ -79,13 +79,13 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 		printk(BIOS_DEBUG, "error level: %x \n", val);
 	else
 		printk(BIOS_DEBUG, "passed.\n");
-                                           
+
     if (!cpu_init_detectedx && boot_cpu()) {
 	    post_code(0x38);
 
 		//enable port80 decoding and southbridge poweron init
 		post_code(0x3A);
-		sb_Poweron_Init(); 
+		sb_Poweron_Init();
 	}
 
 	post_code(0x3B);
@@ -122,7 +122,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	if (val)
 		printk(BIOS_DEBUG, "error level: %x \n", val);
 	else
-		printk(BIOS_DEBUG, "passed.\n"); 
+		printk(BIOS_DEBUG, "passed.\n");
 
 	/* Initialize i8259 pic */
 	post_code(0x41);
@@ -130,7 +130,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 	/* Initialize i8254 timers */
 	post_code(0x42);
-	setup_i8254();  
+	setup_i8254();
 
 	post_code(0x50);
 	print_debug("Disabling cache as ram ");
@@ -142,6 +142,6 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 	/* We will not return,  Should never see this message and post code. */
 	print_debug("should not be here -\n");
-	post_code(0x54);  
+	post_code(0x54);
 }
 

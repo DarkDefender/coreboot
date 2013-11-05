@@ -34,7 +34,7 @@
 #include <arch/byteorder.h>
 #include <console/console.h>
 #include <pc80/tpm.h>
-#include <cpu/x86/car.h>
+#include <arch/early_variables.h>
 
 #define PREFIX "lpc_tpm: "
 
@@ -565,7 +565,7 @@ int tis_open(void)
 /*
  * tis_close()
  *
- * terminate the currect session with the TPM by releasing the locked
+ * terminate the current session with the TPM by releasing the locked
  * locality. Returns 0 on success of TPM_DRIVER_ERR on failure (in case lock
  * removal did not succeed).
  */

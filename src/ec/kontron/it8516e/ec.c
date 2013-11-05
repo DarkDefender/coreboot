@@ -30,6 +30,8 @@
 typedef struct ec_kontron_it8516e_config config_t;
 
 enum { /* EC commands */
+	IT8516E_CMD_SET_SYSTEMP_TYPE	= 0x06,
+	IT8516E_CMD_GET_SYSTEMP_TYPE	= 0x07,
 	IT8516E_CMD_GET_FAN_MODE	= 0x10,
 	IT8516E_CMD_SET_FAN_MODE	= 0x11,
 	IT8516E_CMD_GET_FAN_PWM		= 0x12,
@@ -38,8 +40,27 @@ enum { /* EC commands */
 	IT8516E_CMD_SET_FAN_SPEED	= 0x15,
 	IT8516E_CMD_GET_FAN_TEMP	= 0x16,
 	IT8516E_CMD_SET_FAN_TEMP	= 0x17,
+	IT8516E_CMD_SET_FAN_LIMITS	= 0x1a,
 };
 
+/**
+ * Sets the type of the external temperature sensor used
+ *
+ * @param type Type of sensor to set
+ */
+static void it8516e_set_systemp_type(const u8 type)
+{
+	if (send_ec_command(IT8516E_CMD_SET_SYSTEMP_TYPE))
+		return;
+	send_ec_data(type);
+}
+
+/**
+ * Sets the operating mode of a fan
+ *
+ * @param idx Selects the fan; 0: CPU, 1: System
+ * @param mode Mode to set
+ */
 static void it8516e_set_fan_mode(const u8 idx, const u8 mode)
 {
 	if (send_ec_command(IT8516E_CMD_SET_FAN_MODE))
@@ -49,6 +70,12 @@ static void it8516e_set_fan_mode(const u8 idx, const u8 mode)
 	send_ec_data(mode);
 }
 
+/**
+ * Sets the PWM rate of a fan in IT8516E_MODE_PWM
+ *
+ * @param idx Selects the fan; 0: CPU, 1: System
+ * @param pwm PWM rate measured in 255ths
+ */
 static void it8516e_set_fan_pwm(const u8 idx, const u8 pwm)
 {
 	if (send_ec_command(IT8516E_CMD_SET_FAN_PWM))
@@ -58,6 +85,12 @@ static void it8516e_set_fan_pwm(const u8 idx, const u8 pwm)
 	send_ec_data(pwm);
 }
 
+/**
+ * Sets the target speed in RPM for a fan in IT8516E_MODE_SPEED
+ *
+ * @param idx Selects the fan; 0: CPU, 1: System
+ * @param speed Speed in RPM
+ */
 static void it8516e_set_fan_speed(const u8 idx, const u16 speed)
 {
 	if (send_ec_command(IT8516E_CMD_SET_FAN_SPEED))
@@ -69,15 +102,39 @@ static void it8516e_set_fan_speed(const u8 idx, const u16 speed)
 	send_ec_data(speed >> 8);
 }
 
-static void it8516e_set_fan_temperature(const u8 idx, const u8 temp)
+/**
+ * Sets the target temperature for a fan in IT8516E_MODE_THERMAL
+ *
+ * @param idx Selects the fan; 0: CPU, 1: System
+ * @param temp Temperature in 64ths degree C
+ */
+static void it8516e_set_fan_temperature(const u8 idx, const u16 temp)
 {
 	if (send_ec_command(IT8516E_CMD_SET_FAN_TEMP))
 		return;
 	if (send_ec_data(idx))
 		return;
-	if (send_ec_data((temp << 6) & 0xff))
+	if (send_ec_data(temp & 0xff))
 		return;
-	send_ec_data(((temp << 6) >> 8) & 0xff);
+	send_ec_data(temp >> 8);
+}
+
+/**
+ * Sets the minimum and maximum PWM rate of a fan in IT8516E_MODE_THERMAL
+ *
+ * @param idx Selects the fan; 0: CPU, 1: System
+ * @param min Minimum PWM rate in %
+ * @param max Maximum PWM rate in %
+ */
+static void it8516e_set_fan_limits(const u8 idx, const u8 min, const u8 max)
+{
+	if (send_ec_command(IT8516E_CMD_SET_FAN_LIMITS))
+		return;
+	if (send_ec_data(idx))
+		return;
+	if (send_ec_data(min))
+		return;
+	send_ec_data(max);
 }
 
 static void it8516e_set_fan_from_options(const config_t *const config,
@@ -85,9 +142,13 @@ static void it8516e_set_fan_from_options(const config_t *const config,
 {
 	static char fanX_mode[]		= "fanX_mode";
 	static char fanX_target[]	= "fanX_target";
+	static char fanX_min[]		= "fanX_min";
+	static char fanX_max[]		= "fanX_max";
 
-	u8 fan_mode = config->default_fan_mode[fan_idx];
-	u16 fan_target = config->default_fan_target[fan_idx];
+	u8 fan_mode	= config->default_fan_mode[fan_idx];
+	u16 fan_target	= config->default_fan_target[fan_idx];
+	u8 fan_min	= config->default_fan_min[fan_idx];
+	u8 fan_max	= config->default_fan_max[fan_idx];
 
 	fanX_mode[3] = '1' + fan_idx;
 	get_option(&fan_mode, fanX_mode);
@@ -109,7 +170,9 @@ static void it8516e_set_fan_from_options(const config_t *const config,
 		       "Setting it8516e fan%d "
 		       "control to %d%% PWM.\n",
 		       fan_idx + 1, fan_target);
-		it8516e_set_fan_pwm(fan_idx, fan_target);
+		if (fan_target > 100)		/* Constrain to 100% */
+			fan_target = 100;
+		it8516e_set_fan_pwm(fan_idx, (fan_target * 255) / 100);
 		break;
 	case IT8516E_MODE_SPEED:
 		printk(BIOS_DEBUG,
@@ -120,11 +183,30 @@ static void it8516e_set_fan_from_options(const config_t *const config,
 		break;
 	case IT8516E_MODE_THERMAL:
 		printk(BIOS_DEBUG,
-		       "Setting it8516e fan%d "
-		       "control to %d°C.\n",
+		       "Setting it8516e fan%d control to %d C.\n",
 		       fan_idx + 1, fan_target);
-		it8516e_set_fan_temperature(
-			fan_idx, fan_target);
+		if (fan_target > 1024)		/* Constrain to 1K */
+			fan_target = 1024;
+		it8516e_set_fan_temperature(fan_idx, fan_target * 64);
+
+		fanX_min[3] = '1' + fan_idx;
+		fanX_max[3] = '1' + fan_idx;
+		get_option(&fan_min, fanX_min);
+		get_option(&fan_max, fanX_max);
+
+		if (!fan_max || fan_max > 100)	/* Constrain fan_max to 100% */
+			fan_max = 100;
+		if (fan_min >= 100)		/* Constrain fan_min to  99% */
+			fan_min = 99;
+		if (fan_max <= fan_min)	/* If fan_min is the higher of the two,
+					   it's safer for the hardware to keep
+					   its value. Therefore, update fan_max. */
+			fan_max = fan_min + 1;
+
+		printk(BIOS_DEBUG,
+		       "Setting it8516e fan%d limits to %d%% - %d%% PWM.\n",
+		       fan_idx + 1, fan_min, fan_max);
+		it8516e_set_fan_limits(fan_idx, fan_min, fan_max);
 		break;
 	}
 }
@@ -137,6 +219,12 @@ static void it8516e_pm2_init(const device_t dev)
 
 	ec_set_ports(find_resource(dev, PNP_IDX_IO1)->base,
 		     find_resource(dev, PNP_IDX_IO0)->base);
+
+	u8 systemp_type = config->default_systemp;
+	get_option(&systemp_type, "systemp_type");
+	if (systemp_type >= IT8516E_SYSTEMP_LASTPLUSONE)
+		systemp_type = IT8516E_SYSTEMP_NONE;
+	it8516e_set_systemp_type(systemp_type);
 
 	it8516e_set_fan_from_options(config, 0);
 	it8516e_set_fan_from_options(config, 1);

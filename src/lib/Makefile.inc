@@ -26,6 +26,9 @@ ifneq ($(CONFIG_HAVE_ARCH_MEMCPY),y)
 bootblock-y += memcpy.c
 endif
 bootblock-y += memcmp.c
+ifneq ($(CONFIG_HAVE_ARCH_MEMMOVE),y)
+bootblock-y += memmove.c
+endif
 
 ifneq ($(CONFIG_HAVE_ARCH_MEMSET),y)
 romstage-y += memset.c
@@ -39,24 +42,24 @@ endif
 romstage-y += memcmp.c
 rmodules-y += memcmp.c
 romstage-y += cbfs.c
-romstage-y += lzma.c
+romstage-$(CONFIG_COMPRESS_RAMSTAGE) += lzma.c
 #romstage-y += lzmadecode.c
 romstage-$(CONFIG_CACHE_AS_RAM) += ramtest.c
 romstage-$(CONFIG_CONSOLE_SERIAL8250) += uart8250.c
 romstage-$(CONFIG_CONSOLE_SERIAL8250MEM) += uart8250mem.c
-romstage-$(CONFIG_CONSOLE_CBMEM) += cbmem_console.c
 romstage-$(CONFIG_CONSOLE_NE2K) += ne2k.c
-romstage-$(CONFIG_USBDEBUG) += usbdebug.c
 romstage-$(CONFIG_SPKMODEM) += spkmodem.c
+romstage-$(CONFIG_USBDEBUG_IN_ROMSTAGE) += usbdebug.c
 
+ifeq ($(CONFIG_EARLY_CBMEM_INIT),y)
 romstage-$(CONFIG_COLLECT_TIMESTAMPS) += timestamp.c
-
-ifneq ($(CONFIG_DYNAMIC_CBMEM),y)
-romstage-$(CONFIG_EARLY_CBMEM_INIT) += cbmem.c
+romstage-$(CONFIG_CONSOLE_CBMEM) += cbmem_console.c
 endif
 
 romstage-y += compute_ip_checksum.c
+ifneq ($(CONFIG_HAVE_ARCH_MEMMOVE),y)
 romstage-y += memmove.c
+endif
 romstage-$(CONFIG_ARCH_X86) += gcc.c
 
 ramstage-y += hardwaremain.c
@@ -70,7 +73,9 @@ ifneq ($(CONFIG_HAVE_ARCH_MEMCPY),y)
 ramstage-y += memcpy.c
 endif
 ramstage-y += memcmp.c
+ifneq ($(CONFIG_HAVE_ARCH_MEMMOVE),y)
 ramstage-y += memmove.c
+endif
 ramstage-y += malloc.c
 smm-$(CONFIG_SMM_TSEG) += malloc.c
 ramstage-y += delay.c
@@ -103,6 +108,7 @@ ramstage-y += dynamic_cbmem.c
 romstage-y += dynamic_cbmem.c
 else
 ramstage-y += cbmem.c
+romstage-$(CONFIG_EARLY_CBMEM_INIT) += cbmem.c
 romstage-$(CONFIG_HAVE_ACPI_RESUME) += cbmem.c
 endif # CONFIG_DYNAMIC_CBMEM
 ramstage-y += cbmem_info.c
@@ -115,10 +121,12 @@ endif
 ifneq ($(CONFIG_HAVE_ARCH_MEMCPY),y)
 smm-y += memcpy.c
 endif
+ifneq ($(CONFIG_HAVE_ARCH_MEMMOVE),y)
+smm-y += memmove.c
+endif
 smm-y += cbfs.c memcmp.c
 smm-$(CONFIG_CONSOLE_SERIAL8250) += uart8250.c
 smm-$(CONFIG_CONSOLE_SERIAL8250MEM) += uart8250mem.c
-smm-$(CONFIG_USBDEBUG) += usbdebug.c
 smm-y += gcc.c
 
 $(obj)/lib/version.ramstage.o : $(obj)/build.h

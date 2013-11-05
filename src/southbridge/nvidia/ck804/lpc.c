@@ -32,6 +32,7 @@
 #include <arch/ioapic.h>
 #include <cpu/x86/lapic.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "ck804.h"
 
 #define CK804_CHIP_REV 2
@@ -52,16 +53,13 @@
 
 static void lpc_common_init(device_t dev)
 {
-	u8 byte;
 	u32 dword;
+	struct resource *res;
 
 	/* I/O APIC initialization. */
-	byte = pci_read_config8(dev, 0x74);
-	byte |= (1 << 0);	/* Enable APIC. */
-	pci_write_config8(dev, 0x74, byte);
-	dword = pci_read_config32(dev, PCI_BASE_ADDRESS_1);	/* 0x14 */
-
-	setup_ioapic(dword, 0); /* Don't rename IOAPIC ID. */
+	res = find_resource(dev, PCI_BASE_ADDRESS_1);  /* IOAPIC */
+	ASSERT(res != NULL);
+	setup_ioapic(res->base, 0); /* Don't rename IOAPIC ID. */
 
 #if 1
 	dword = pci_read_config32(dev, 0xe4);
@@ -202,7 +200,7 @@ static void ck804_lpc_read_resources(device_t dev)
 		     IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 
 	if (dev->device != PCI_DEVICE_ID_NVIDIA_CK804_SLAVE) {
-		res = find_resource(dev, 0x14); /* IOAPIC */
+		res = find_resource(dev, PCI_BASE_ADDRESS_1); /* IOAPIC */
 		if (res) {
 			res->base = IO_APIC_ADDR;
 			res->flags |= IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
@@ -218,16 +216,23 @@ static void ck804_lpc_read_resources(device_t dev)
 
 static void ck804_lpc_set_resources(device_t dev)
 {
+	u8 byte;
 	struct resource *res;
 
 	pci_dev_set_resources(dev);
 
 	/* APIC */
-	res = find_resource(dev, 0x14);
+	res = find_resource(dev, PCI_BASE_ADDRESS_1);
 	if (res) {
-		pci_write_config32(dev, 0x14, res->base);
+		byte = pci_read_config8(dev, 0x74);
+		byte |= (1 << 1);	/* enable access to PCI_BASE_ADDRESS_1 */
+		pci_write_config8(dev, 0x74, byte);
+		pci_write_config32(dev, PCI_BASE_ADDRESS_1, res->base);
 		res->flags |= IORESOURCE_STORED;
 		report_resource_stored(dev, res, "");
+		byte |= (1 << 0);	/* enable decode of IOAPIC space */
+		byte &= ~(1 << 1);	/* hide PCI_BASE_ADDRESS_1 */
+		pci_write_config8(dev, 0x74, byte);
 	}
 
 	/* HPET */

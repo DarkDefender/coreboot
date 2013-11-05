@@ -874,6 +874,7 @@ static void amdk8_domain_set_resources(device_t dev)
 #endif
 	unsigned long mmio_basek;
 	u32 pci_tolm;
+	u64 ramtop = 0;
 	int i, idx;
 #if CONFIG_HW_MEM_HOLE_SIZEK != 0
 	struct hw_mem_hole_info mem_hole;
@@ -1042,17 +1043,8 @@ static void amdk8_domain_set_resources(device_t dev)
 					ram_resource(dev, (idx | i), basek, pre_sizek);
 					idx += 0x10;
 					sizek -= pre_sizek;
-					if (high_tables_base==0) {
-					/* Leave some space for ACPI, PIRQ and MP tables */
-#if CONFIG_GFXUMA
-						high_tables_base = uma_memory_base - HIGH_MEMORY_SIZE;
-#else
-						high_tables_base = (mmio_basek * 1024) - HIGH_MEMORY_SIZE;
-#endif
-						high_tables_size = HIGH_MEMORY_SIZE;
-						printk(BIOS_DEBUG, " split: %dK table at =%08llx\n",
-							HIGH_MEMORY_SIZE / 1024, high_tables_base);
-					}
+					if (!ramtop)
+						ramtop = mmio_basek * 1024;
 				}
 				#if CONFIG_HW_MEM_HOLE_SIZEK != 0
 				if(reset_memhole)
@@ -1077,19 +1069,15 @@ static void amdk8_domain_set_resources(device_t dev)
 		idx += 0x10;
 		printk(BIOS_DEBUG, "%d: mmio_basek=%08lx, basek=%08x, limitk=%08x\n",
 			     i, mmio_basek, basek, limitk);
-		if (high_tables_base==0) {
-		/* Leave some space for ACPI, PIRQ and MP tables */
-#if CONFIG_GFXUMA
-			high_tables_base = uma_memory_base - HIGH_MEMORY_SIZE;
-#else
-			high_tables_base = (limitk * 1024) - HIGH_MEMORY_SIZE;
-#endif
-			high_tables_size = HIGH_MEMORY_SIZE;
-		}
+		if (!ramtop)
+			ramtop = limitk * 1024;
 	}
 
 #if CONFIG_GFXUMA
+	set_top_of_ram(uma_memory_base);
 	uma_resource(dev, 7, uma_memory_base >> 10, uma_memory_size >> 10);
+#else
+	set_top_of_ram(ramtop);
 #endif
 	assign_resources(dev->link_list);
 
@@ -1135,7 +1123,7 @@ static struct device_operations pci_domain_ops = {
 	.enable_resources = NULL,
 	.init		  = NULL,
 	.scan_bus	  = amdk8_domain_scan_bus,
-	.ops_pci_bus	  = &pci_cf8_conf1,
+	.ops_pci_bus	  = pci_bus_default_ops,
 };
 
 static void add_more_links(device_t dev, unsigned total_links)

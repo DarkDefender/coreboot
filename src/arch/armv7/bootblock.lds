@@ -22,15 +22,19 @@
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
 
+PHDRS
+{
+	to_load PT_LOAD;
+}
+
 TARGET(binary)
 SECTIONS
 {
-	ROMLOC = CONFIG_BOOTBLOCK_BASE - (CONFIG_BL1_SIZE_KB * 1024);
+	ROMLOC = CONFIG_BOOTBLOCK_BASE;
 
 	/* This section might be better named .setup */
 	.rom ROMLOC : {
 		_rom = .;
-		*(.bl1);
 		*(.start);
 		*(.id);
 		*(.text);
@@ -40,7 +44,7 @@ SECTIONS
 		*(.rom.data.*);
 		*(.rodata.*);
 		_erom = .;
-	} = 0xff
+	} : to_load = 0xff
 
 	/DISCARD/ : {
 		*(.comment)

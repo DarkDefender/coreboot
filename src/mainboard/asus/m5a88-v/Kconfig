@@ -95,6 +95,6 @@ config VGA_BIOS_ID
 
 config WARNINGS_ARE_ERRORS
 	bool
-	default n 
+	default n
 
 endif #BOARD_ASUS_M5A88_V

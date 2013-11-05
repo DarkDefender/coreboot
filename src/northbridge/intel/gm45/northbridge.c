@@ -166,9 +166,7 @@ static void mch_domain_read_resources(device_t dev)
 			pcie_config_size >> 10, IORESOURCE_RESERVE);
 	}
 
-	/* Leave some space for ACPI, PIRQ and MP tables */
-	high_tables_base = (tomk << 10) - HIGH_MEMORY_SIZE;
-	high_tables_size = HIGH_MEMORY_SIZE;
+	set_top_of_ram(tomk << 10);
 }
 
 static void mch_domain_set_resources(device_t dev)
@@ -202,11 +200,7 @@ static struct device_operations pci_domain_ops = {
 	.enable_resources = NULL,
 	.init             = mch_domain_init,
 	.scan_bus         = pci_domain_scan_bus,
-#if CONFIG_MMCONF_SUPPORT_DEFAULT
-	.ops_pci_bus	  = &pci_ops_mmconf,
-#else
-	.ops_pci_bus	  = &pci_cf8_conf1,
-#endif
+	.ops_pci_bus	  = pci_bus_default_ops,
 };
 
 

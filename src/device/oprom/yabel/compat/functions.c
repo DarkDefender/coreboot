@@ -10,7 +10,7 @@
  ****************************************************************************/
 
 /* this file contains functions provided by SLOF, that the current biosemu implementation needs
- * they should go away  inthe future...
+ * they should go away  in the future...
  */
 
 #include <types.h>
@@ -18,7 +18,7 @@
 #include <device/device.h>
 #include "../debug.h"
 #include "../biosemu.h"
-#include "../vbe.h"
+#include <vbe.h>
 #include "../compat/time.h"
 
 #define VMEM_SIZE (1024 * 1024) /* 1 MB */

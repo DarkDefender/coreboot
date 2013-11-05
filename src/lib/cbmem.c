@@ -21,8 +21,9 @@
 #include <string.h>
 #include <bootstate.h>
 #include <cbmem.h>
+#include <boot/coreboot_tables.h>
 #include <console/console.h>
-#include <cpu/x86/car.h>
+#include <arch/early_variables.h>
 #if CONFIG_HAVE_ACPI_RESUME && !defined(__PRE_RAM__)
 #include <arch/acpi.h>
 #endif
@@ -42,25 +43,46 @@ struct cbmem_entry {
 } __attribute__((packed));
 
 #ifndef __PRE_RAM__
-static struct cbmem_entry *bss_cbmem_toc;
+static uint64_t cbmem_base = 0;
+static uint64_t cbmem_size = 0;
+#endif
 
-struct cbmem_entry *__attribute__((weak)) get_cbmem_toc(void)
+static void cbmem_trace_location(uint64_t base, uint64_t size, const char *s)
 {
-	return bss_cbmem_toc;
+	if (base && size && s) {
+		printk(BIOS_DEBUG, "CBMEM region %llx-%llx (%s)\n",
+			base, base + size - 1, s);
+	}
 }
 
-void __attribute__((weak)) set_cbmem_toc(struct cbmem_entry * x)
+static void cbmem_locate_table(uint64_t *base, uint64_t *size)
 {
-	/* do nothing, this should be called by chipset to save TOC in NVRAM */
-}
+#ifdef __PRE_RAM__
+	get_cbmem_table(base, size);
 #else
-
-struct cbmem_entry *__attribute__((weak)) get_cbmem_toc(void)
-{
-	printk(BIOS_WARNING, "WARNING: you need to define get_cbmem_toc() for your chipset\n");
-	return NULL;
+	if (!(cbmem_base && cbmem_size)) {
+		get_cbmem_table(&cbmem_base, &cbmem_size);
+		cbmem_trace_location(cbmem_base, cbmem_size, __FUNCTION__);
+	}
+	*base = cbmem_base;
+	*size = cbmem_size;
+#endif
 }
 
+struct cbmem_entry *get_cbmem_toc(void)
+{
+	uint64_t base, size;
+	cbmem_locate_table(&base, &size);
+	return (struct cbmem_entry *)(unsigned long)base;
+}
+
+#if !defined(__PRE_RAM__)
+void cbmem_late_set_table(uint64_t base, uint64_t size)
+{
+	cbmem_trace_location(base, size, __FUNCTION__);
+	cbmem_base = base;
+	cbmem_size = size;
+}
 #endif
 
 /**
@@ -73,27 +95,22 @@ struct cbmem_entry *__attribute__((weak)) get_cbmem_toc(void)
  *  - suspend/resume backup memory
  */
 
-void cbmem_init(u64 baseaddr, u64 size)
+#if CONFIG_EARLY_CBMEM_INIT || !defined(__PRE_RAM__)
+static void cbmem_init(void)
 {
+	uint64_t baseaddr, size;
 	struct cbmem_entry *cbmem_toc;
+
+	cbmem_locate_table(&baseaddr, &size);
+	cbmem_trace_location(baseaddr, size, __FUNCTION__);
+
 	cbmem_toc = (struct cbmem_entry *)(unsigned long)baseaddr;
-
-#ifndef __PRE_RAM__
-	bss_cbmem_toc = cbmem_toc;
-#endif
-
-	printk(BIOS_DEBUG, "Initializing CBMEM area to 0x%llx (%lld bytes)\n",
-	       baseaddr, size);
 
 	if (size < (64 * 1024)) {
 		printk(BIOS_DEBUG, "Increase CBMEM size!\n");
 		for (;;) ;
 	}
 
-	/* we don't need to call this in romstage, usefull only from ramstage */
-#ifndef __PRE_RAM__
-	set_cbmem_toc((struct cbmem_entry *)(unsigned long)baseaddr);
-#endif
 	memset(cbmem_toc, 0, CBMEM_TOC_RESERVED);
 
 	cbmem_toc[0] = (struct cbmem_entry) {
@@ -103,18 +120,17 @@ void cbmem_init(u64 baseaddr, u64 size)
 		.size	= size - CBMEM_TOC_RESERVED
 	};
 }
-
-int cbmem_reinit(u64 baseaddr)
-{
-	struct cbmem_entry *cbmem_toc;
-	cbmem_toc = (struct cbmem_entry *)(unsigned long)baseaddr;
-
-	printk(BIOS_DEBUG, "Re-Initializing CBMEM area to 0x%lx\n",
-	       (unsigned long)baseaddr);
-
-#ifndef __PRE_RAM__
-	bss_cbmem_toc = cbmem_toc;
 #endif
+
+int cbmem_reinit(void)
+{
+	uint64_t baseaddr, size;
+	struct cbmem_entry *cbmem_toc;
+
+	cbmem_locate_table(&baseaddr, &size);
+	cbmem_trace_location(baseaddr, size, __FUNCTION__);
+
+	cbmem_toc = (struct cbmem_entry *)(unsigned long)baseaddr;
 
 	return (cbmem_toc[0].magic == CBMEM_MAGIC);
 }
@@ -205,25 +221,19 @@ void *cbmem_find(u32 id)
 }
 
 #if CONFIG_EARLY_CBMEM_INIT || !defined(__PRE_RAM__)
-/* Returns True if it was not intialized before. */
+/* Returns True if it was not initialized before. */
 int cbmem_initialize(void)
 {
 	int rv = 0;
 
-#ifdef __PRE_RAM__
-	extern unsigned long get_top_of_ram(void);
-	uint64_t high_tables_base = get_top_of_ram() - HIGH_MEMORY_SIZE;
-	uint64_t high_tables_size = HIGH_MEMORY_SIZE;
-#endif
-
 	/* We expect the romstage to always initialize it. */
-	if (!cbmem_reinit(high_tables_base)) {
+	if (!cbmem_reinit()) {
 #if CONFIG_HAVE_ACPI_RESUME && !defined(__PRE_RAM__)
 		/* Something went wrong, our high memory area got wiped */
 		if (acpi_slp_type == 3 || acpi_slp_type == 2)
 			acpi_slp_type = 0;
 #endif
-		cbmem_init(high_tables_base, high_tables_size);
+		cbmem_init();
 		rv = 1;
 	}
 #ifndef __PRE_RAM__
@@ -249,6 +259,22 @@ BOOT_STATE_INIT_ENTRIES(cbmem_bscb) = {
 	BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE, BS_ON_ENTRY,
 	                      init_cbmem_post_device, NULL),
 };
+
+int cbmem_base_check(void)
+{
+	if (!cbmem_base) {
+		printk(BIOS_ERR, "ERROR: CBMEM Base is not set.\n");
+		// Are there any boards without?
+		// Stepan thinks we should die() here!
+	}
+	printk(BIOS_DEBUG, "CBMEM Base is %llx.\n", cbmem_base);
+	return !!cbmem_base;
+}
+
+void cbmem_add_lb_mem(struct lb_memory *mem)
+{
+	lb_add_memory_range(mem, LB_MEM_TABLE, cbmem_base, cbmem_size);
+}
 
 void cbmem_list(void)
 {

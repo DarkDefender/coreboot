@@ -113,6 +113,7 @@ Device(SIO) {
 		LCKC,   1,     /* Lock Configuration Registers */
 		Offset (0x29),
 		IO3S,   8,     /* GPIO3 pin selection register */
+		Offset (0x30),
 		ACTR,   1,     /* Logical device activation */
 		ACT1,   1,     /* Logical part activation 1 (mostly unused) */
 		ACT2,   1,     /* Logical part activation 2 (mostly unused) */
@@ -211,24 +212,6 @@ Device(SIO) {
 		Name (_STR, Unicode ("W83627HF Floppy Disk Controller"))
 		Name (_UID, "w83627hf-fdc")
 
-		#ifndef NO_W83627HF_FDC_ENUM
-		/* Initialization method: Should be run once on boot
-		   If FDC is active, enumerate all connected devices */
-		Method (_INI) {
-			ENCM (0)
-			Store (ACTR, Local0)
-			Store (IO1H, Local1)
-			Store (IO1L, Local2)
-			EXCM ()
-			ShiftLeft(Local1, 8, Local1)
-			Or(Local1, Local2, Local1)
-			If (Local0) {
-				/* Try probing drives and save result in _FDE */
-				PROB(Local1)
-			}
-		}
-		#endif
-
 		Method (_STA)
 		{
 			Store (0x00, Local0)
@@ -259,13 +242,13 @@ Device(SIO) {
 		/* Disable power saving mode */
 		Method (_PS0) {
 			ENCM (0xFF)
-			Store (Zero, FDPW)
+			Store (One, FDPW)
 			EXCM ()
 		}
 		/* Enable power saving mode */
 		Method (_PS1) {
 			ENCM (0xFF)
-			Store (One, FDPW)
+			Store (Zero, FDPW)
 			EXCM ()
 		}
 
@@ -316,18 +299,33 @@ Device(SIO) {
 		}
 
 		#ifndef NO_W83627HF_FDC_ENUM
-		Name(_FDE, Buffer(){0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
-		#endif
-
-		Method (PROB, 1) {
-			#ifndef NO_W83627HF_FDC_ENUM
-			/* Try probing drives and save result in _FDE
+		Method (_FDE, 0) {
+			/* Try probing drives.
 			   Probing is done through selecting and activating a drive
 			   and reading 0x03F7 aka the "shared IDE and floppy register"
 			   as any value there besides zero seems to indicate a
 			   connected drive.
 			*/
-			OperationRegion (FIO1, SystemIO, Arg0, 0x06)
+			// Create template
+			Name(FDE, Buffer(){0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+			CreateByteField (FDE, 1, FD1)
+			CreateByteField (FDE, 4, FD2)
+			CreateByteField (FDE, 8, FD3)
+			CreateByteField (FDE, 12, FD4)
+
+			// Get resources from logical device
+			ENCM (0)
+			Store (ACTR, Local0)
+			Store (IO1H, Local1)
+			Store (IO1L, Local2)
+			EXCM ()
+			ShiftLeft(Local1, 8, Local1)
+			Or(Local1, Local2, Local1)
+			If (LNot(Local0)) {
+				Return (FDE)
+			}
+
+			OperationRegion (FIO1, SystemIO, Local1, 0x06)
 			Field (FIO1, ByteAcc, NoLock, Preserve)
 			{
 				Offset(0x02),
@@ -350,38 +348,39 @@ Device(SIO) {
 				DATA,  8,
 			}
 			OperationRegion (FIO2, SystemIO, 0x3F7, 0x01)
-
-			CreateByteField (_FDE, 3, FD1)
-			CreateByteField (_FDE, 7, FD2)
-			CreateByteField (_FDE, 11, FD3)
-			CreateByteField (_FDE, 15, FD4)
+			Field (FIO2, ByteAcc, NoLock, Preserve)
+			{
+				SIFR, 8
+			}
 
 			Store(One, ACT1)
 			Store(0, SELE)
 			Sleep(0x64)
-			If (FIO2) { Store (One, FD1) }
+			If (SIFR) { Store (One, FD1) }
 
 			Store(Zero, ACT1)
 			Store(One, ACT2)
 			Store(1, SELE)
 			Sleep(0x64)
-			If (FIO2) { Store (One, FD2) }
+			If (SIFR) { Store (One, FD2) }
 
 			Store(Zero, ACT2)
 			Store(One, ACT3)
 			Store(2, SELE)
 			Sleep(0x64)
-			If (FIO2) { Store (One, FD3) }
+			If (SIFR) { Store (One, FD3) }
 
 			Store(Zero, ACT3)
 			Store(One, ACT4)
 			Store(3, SELE)
 			Sleep(0x64)
-			If (FIO2) { Store (One, FD4) }
+			If (SIFR) { Store (One, FD4) }
 			Store(Zero, ACT4)
 			Store(Zero, SELE)
-			#endif
+
+			Return (FDE)
 		}
+		#endif
 
 
 		Method (_SRS, 1, Serialized)
@@ -402,9 +401,6 @@ Device(SIO) {
 			Store (Local1, IO1H)
 			Store (One, ACTR)
 			EXCM ()
-
-			/* Try probing drives and save result in _FDE */
-			PROB(IOA0)
 		}
 	}
 	#endif
@@ -466,12 +462,12 @@ Device(SIO) {
 		}
 		Method (_PS0) {
 			ENCM (0xFF)
-			Store (Zero, PRPW)
+			Store (One, PRPW)
 			EXCM ()
 		}
 		Method (_PS1) {
 			ENCM (0xFF)
-			Store (One, PRPW)
+			Store (Zero, PRPW)
 			EXCM ()
 		}
 
@@ -529,6 +525,7 @@ Device(SIO) {
 
 		Name (_PRS, ResourceTemplate ()
 		{
+			/* Traditional configurations (SPP mode) */
 			StartDependentFn (0,1)
 			{
 				IO (Decode16, 0x0378, 0x0378, 0x04, 0x08)
@@ -544,6 +541,7 @@ Device(SIO) {
 				IO (Decode16, 0x03BC, 0x03BC, 0x04, 0x04)
 				IRQNoFlags () {3,4,5,7,9,10,11,12}
 			}
+			/* Traditional configurations (EPP mode) */
 			StartDependentFn (0,0)
 			{
 				IO (Decode16, 0x0378, 0x0378, 0x08, 0x08)
@@ -554,11 +552,13 @@ Device(SIO) {
 				IO (Decode16, 0x0278, 0x0278, 0x08, 0x08)
 				IRQNoFlags () {3,4,5,7,9,10,11,12}
 			}
+			/* Any configurable address (EPP mode) */
 			StartDependentFn (2,0)
 			{
-				IO (Decode16, 0x0100, 0x0FFC, 0x08, 0x08)
+				IO (Decode16, 0x0100, 0x0FF8, 0x08, 0x08)
 				IRQNoFlags () {3,4,5,7,9,10,11,12}
 			}
+			/* Any configurable address (No EPP mode) */
 			StartDependentFn (2,1)
 			{
 				IO (Decode16, 0x0100, 0x0FFC, 0x04, 0x08)
@@ -639,12 +639,12 @@ Device(SIO) {
 		}
 		Method (_PS0) {
 			ENCM (0xFF)
-			Store (Zero, UAPW)
+			Store (One, UAPW)
 			EXCM ()
 		}
 		Method (_PS1) {
 			ENCM (0xFF)
-			Store (One, UAPW)
+			Store (Zero, UAPW)
 			EXCM ()
 		}
 
@@ -764,12 +764,12 @@ Device(SIO) {
 		}
 		Method (_PS0) {
 			ENCM (0xFF)
-			Store (Zero, UBPW)
+			Store (One, UBPW)
 			EXCM ()
 		}
 		Method (_PS1) {
 			ENCM (0xFF)
-			Store (One, UBPW)
+			Store (Zero, UBPW)
 			EXCM ()
 		}
 
@@ -889,12 +889,12 @@ Device(SIO) {
 		}
 		Method (_PS0) {
 			ENCM (0xFF)
-			Store (Zero, UBPW)
+			Store (One, UBPW)
 			EXCM ()
 		}
 		Method (_PS1) {
 			ENCM (0xFF)
-			Store (One, UBPW)
+			Store (Zero, UBPW)
 			EXCM ()
 		}
 
@@ -1414,14 +1414,14 @@ Device(SIO) {
 		Method (_PS0)
 		{
 			ENCM (0xFF)
-			Store (Zero, HWPW)
+			Store (One, HWPW)
 			EXCM ()
 		}
 
 		Method (_PS1)
 		{
 			ENCM (0xFF)
-			Store (One, HWPW)
+			Store (Zero, HWPW)
 			EXCM ()
 		}
 

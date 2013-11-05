@@ -31,7 +31,9 @@
 #if CONFIG_SPKMODEM
 #include <console/spkmodem.h>
 #endif
-
+#if CONFIG_SQUELCH_EARLY_SMP
+#include <cpu/x86/lapic.h>
+#endif
 
 void console_tx_byte(unsigned char byte)
 {
@@ -47,13 +49,13 @@ void console_tx_byte(unsigned char byte)
 #if CONFIG_CONSOLE_SERIAL8250
 	uart8250_tx_byte(CONFIG_TTYS0_BASE, byte);
 #endif
-#if CONFIG_USBDEBUG
-	usbdebug_tx_byte(0, byte);
+#if CONFIG_USBDEBUG && (CONFIG_EARLY_CBMEM_INIT || !defined(__PRE_RAM__))
+	usbdebug_tx_byte(dbgp_console_output(), byte);
 #endif
 #if CONFIG_CONSOLE_NE2K
 	ne2k_append_data(&byte, 1, CONFIG_CONSOLE_NE2K_IO_PORT);
 #endif
-#if CONFIG_CONSOLE_CBMEM
+#if CONFIG_CONSOLE_CBMEM && (CONFIG_EARLY_CBMEM_INIT || !defined(__PRE_RAM__))
 	cbmemc_tx_byte(byte);
 #endif
 #if CONFIG_SPKMODEM
@@ -72,8 +74,8 @@ void console_tx_flush(void)
 #if CONFIG_CONSOLE_NE2K
 	ne2k_transmit(CONFIG_CONSOLE_NE2K_IO_PORT);
 #endif
-#if CONFIG_USBDEBUG
-	usbdebug_tx_flush(0);
+#if CONFIG_USBDEBUG && (CONFIG_EARLY_CBMEM_INIT || !defined(__PRE_RAM__))
+	usbdebug_tx_flush(dbgp_console_output());
 #endif
 }
 
@@ -85,6 +87,11 @@ int do_printk(int msg_level, const char *fmt, ...)
 	if (msg_level > console_loglevel) {
 		return 0;
 	}
+
+#if CONFIG_SQUELCH_EARLY_SMP
+	if (!boot_cpu())
+		return 0;
+#endif
 
 	va_start(args, fmt);
 	i = vtxprintf(console_tx_byte, fmt, args);

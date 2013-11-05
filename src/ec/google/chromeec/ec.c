@@ -21,12 +21,12 @@
 #include <console/console.h>
 #include <arch/io.h>
 #include <delay.h>
+#include <arch/hlt.h>
+#include <reset.h>
 #ifndef __PRE_RAM__
 #include <elog.h>
 #include <stdlib.h>
 #include <string.h>
-#include <reset.h>
-#include <arch/hlt.h>
 #include "chip.h"
 #endif
 #include "ec.h"
@@ -99,7 +99,130 @@ u32 google_chromeec_get_events_b(void)
 	return google_chromeec_get_mask(EC_CMD_HOST_EVENT_GET_B);
 }
 
+#ifndef __SMM__
+/* Check for recovery mode and ensure EC is in RO */
+void google_chromeec_early_init(void)
+{
+	struct chromeec_command cec_cmd;
+	struct ec_response_get_version cec_resp = {{0}};
+
+	cec_cmd.cmd_code = EC_CMD_GET_VERSION;
+	cec_cmd.cmd_version = 0;
+	cec_cmd.cmd_data_out = &cec_resp;
+	cec_cmd.cmd_size_in = 0;
+	cec_cmd.cmd_size_out = sizeof(cec_resp);
+	google_chromeec_command(&cec_cmd);
+
+	if (cec_cmd.cmd_code ||
+	    (recovery_mode_enabled() &&
+	     (cec_resp.current_image != EC_IMAGE_RO))) {
+		struct ec_params_reboot_ec reboot_ec;
+		/* Reboot the EC and make it come back in RO mode */
+		reboot_ec.cmd = EC_REBOOT_COLD;
+		reboot_ec.flags = 0;
+		cec_cmd.cmd_code = EC_CMD_REBOOT_EC;
+		cec_cmd.cmd_version = 0;
+		cec_cmd.cmd_data_in = &reboot_ec;
+		cec_cmd.cmd_size_in = sizeof(reboot_ec);
+		cec_cmd.cmd_size_out = 0; /* ignore response, if any */
+		printk(BIOS_DEBUG, "Rebooting with EC in RO mode:\n");
+		google_chromeec_command(&cec_cmd);
+		udelay(1000);
+		hard_reset();
+		hlt();
+	}
+}
+#endif /* ! __SMM__ */
+
 #ifndef __PRE_RAM__
+
+int google_chromeec_i2c_xfer(uint8_t chip, uint8_t addr, int alen,
+			     uint8_t *buffer, int len, int is_read)
+{
+	union {
+		struct ec_params_i2c_passthru p;
+		uint8_t outbuf[EC_HOST_PARAM_SIZE];
+	} params;
+	union {
+		struct ec_response_i2c_passthru r;
+		uint8_t inbuf[EC_HOST_PARAM_SIZE];
+	} response;
+	struct ec_params_i2c_passthru *p = &params.p;
+	struct ec_response_i2c_passthru *r = &response.r;
+	struct ec_params_i2c_passthru_msg *msg = p->msg;
+	struct chromeec_command cmd;
+	uint8_t *pdata;
+	int read_len, write_len;
+	int size;
+	int rv;
+
+	p->port = 0;
+
+	if (alen != 1) {
+		printk(BIOS_ERR, "Unsupported address length %d\n", alen);
+		return -1;
+	}
+	if (is_read) {
+		read_len = len;
+		write_len = alen;
+		p->num_msgs = 2;
+	} else {
+		read_len = 0;
+		write_len = alen + len;
+		p->num_msgs = 1;
+	}
+
+	size = sizeof(*p) + p->num_msgs * sizeof(*msg);
+	if (size + write_len > sizeof(params)) {
+		printk(BIOS_ERR, "Params too large for buffer\n");
+		return -1;
+	}
+	if (sizeof(*r) + read_len > sizeof(response)) {
+		printk(BIOS_ERR, "Read length too big for buffer\n");
+		return -1;
+	}
+
+	/* Create a message to write the register address and optional data */
+	pdata = (uint8_t *)p + size;
+	msg->addr_flags = chip;
+	msg->len = write_len;
+	pdata[0] = addr;
+	if (!is_read)
+		memcpy(pdata + 1, buffer, len);
+	msg++;
+
+	if (read_len) {
+		msg->addr_flags = chip | EC_I2C_FLAG_READ;
+		msg->len = read_len;
+	}
+
+	cmd.cmd_code = EC_CMD_I2C_PASSTHRU;
+	cmd.cmd_version = 0;
+	cmd.cmd_data_in = p;
+	cmd.cmd_size_in = size + write_len;
+	cmd.cmd_data_out = r;
+	cmd.cmd_size_out = sizeof(*r) + read_len;
+	rv = google_chromeec_command(&cmd);
+	if (rv != 0)
+		return rv;
+
+	/* Parse response */
+	if (r->i2c_status & EC_I2C_STATUS_ERROR) {
+		printk(BIOS_ERR, "Transfer failed with status=0x%x\n",
+		       r->i2c_status);
+		return -1;
+	}
+
+	if (cmd.cmd_size_out < sizeof(*r) + read_len) {
+		printk(BIOS_ERR, "Truncated read response\n");
+		return -1;
+	}
+
+	if (read_len)
+		memcpy(buffer, r->data, read_len);
+
+	return 0;
+}
 
 static int google_chromeec_set_mask(u8 type, u32 mask)
 {

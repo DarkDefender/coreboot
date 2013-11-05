@@ -290,9 +290,7 @@ static void pci_domain_set_resources(device_t dev)
 		ram_resource(dev, idx++, 0, 640);
 		ram_resource(dev, idx++, 768, tomk - 768);	/* Systop - 0xc0000 -> KB */
 
-		/* Leave some space for ACPI, PIRQ and MP tables */
-		high_tables_base = (tomk * 1024) - HIGH_MEMORY_SIZE;
-		high_tables_size = HIGH_MEMORY_SIZE;
+		set_top_of_ram(tomk * 1024);
 	}
 
 	assign_resources(dev->link_list);
@@ -309,7 +307,6 @@ static void pci_domain_enable(device_t dev)
 	print_conf();
 	do_vsmbios();
 	graphics_init();
-	pci_set_method(dev);
 }
 
 static struct device_operations pci_domain_ops = {
@@ -318,6 +315,7 @@ static struct device_operations pci_domain_ops = {
 	.enable_resources = NULL,
 	.scan_bus = pci_domain_scan_bus,
 	.enable = pci_domain_enable,
+	.ops_pci_bus = pci_bus_default_ops,
 };
 
 static void cpu_bus_init(device_t dev)

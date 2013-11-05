@@ -30,6 +30,7 @@
 #include <cpu/x86/lapic.h>
 #include <lib.h>
 #include <cbmem.h>
+#include <timestamp.h>
 #include <pc80/mc146818rtc.h>
 #include <console/console.h>
 #include <cpu/x86/bist.h>
@@ -218,6 +219,10 @@ void main(unsigned long bist)
 	int cbmem_was_initted;
 	const u8 spd_addrmap[2 * DIMM_SOCKETS] = { 0x50, 0x52, 0x51, 0x53 };
 
+
+	timestamp_init(get_initial_timestamp());
+	timestamp_add_now(TS_START_ROMSTAGE);
+
 	if (bist == 0)
 		enable_lapic();
 
@@ -281,7 +286,9 @@ void main(unsigned long bist)
 	dump_spd_registers();
 #endif
 
+	timestamp_add_now(TS_BEFORE_INITRAM);
 	sdram_initialize(boot_mode, spd_addrmap);
+	timestamp_add_now(TS_AFTER_INITRAM);
 
 	/* Perform some initialization that must run before stage2 */
 	early_ich7_init();
@@ -340,8 +347,6 @@ void main(unsigned long bist)
 	}
 #endif
 
-#if CONFIG_CONSOLE_CBMEM
-	/* Keep this the last thing this function does. */
-	cbmemc_reinit();
-#endif
+	timestamp_add_now(TS_END_ROMSTAGE);
+
 }

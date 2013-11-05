@@ -55,6 +55,8 @@
 #endif
 
 /*
- * Cache alligned
+ * Cache aligned
  */
 #define CALGN(code...) code
+
+#define W(instr)	instr

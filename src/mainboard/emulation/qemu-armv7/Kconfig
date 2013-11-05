@@ -26,7 +26,6 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select ARCH_ARMV7
 	select CPU_ARMLTD_CORTEX_A9
 	select HAVE_UART_MEMORY_MAPPED
-	select DEFAULT_EARLY_CONSOLE
 	select HAVE_UART_SPECIAL
 	select BOARD_ROMSIZE_KB_4096
 
@@ -80,6 +79,10 @@ config ROMSTAGE_BASE
 config ROMSTAGE_SIZE
 	hex
 	default 0x20000
+
+config BOOTBLOCK_ROM_OFFSET
+	hex
+	default 0x0
 
 config CBFS_HEADER_ROM_OFFSET
 	hex

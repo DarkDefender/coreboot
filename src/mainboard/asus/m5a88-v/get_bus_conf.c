@@ -34,7 +34,7 @@
 */
 u8 bus_isa;
 u8 bus_rs780[11];
-u8 bus_sb800[3];
+u8 bus_sb800[6];
 u32 apicid_sb800;
 
 /*
@@ -90,9 +90,8 @@ void get_bus_conf(void)
 
 	sbdn_sb800 = 0;
 
-	for (i = 0; i < ARRAY_SIZE(bus_sb800); i++) {
-		bus_sb800[i] = 0;
-	}
+	memset(bus_sb800, 0, sizeof(bus_sb800));
+
 	for (i = 0; i < ARRAY_SIZE(bus_rs780); i++) {
 		bus_rs780[i] = 0;
 	}

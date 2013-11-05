@@ -29,6 +29,8 @@
 # define CBFS_MINI_BUILD
 #elif defined(__BOOT_BLOCK__)
   /* No LZMA in boot block. */
+#elif defined(__PRE_RAM__) && !CONFIG_COMPRESS_RAMSTAGE
+  /* No LZMA in romstage if ramstage is not compressed. */
 #else
 # define CBFS_CORE_WITH_LZMA
 # include <lib.h>
@@ -112,7 +114,7 @@ void *cbfs_load_optionrom(struct cbfs_media *media, uint16_t vendor,
 	if (! dest)
 		return src;
 
-	if (cbfs_decompress(ntohl(orom->compression),
+	if (!cbfs_decompress(ntohl(orom->compression),
 			     src,
 			     dest,
 			     ntohl(orom->len)))
@@ -204,8 +206,8 @@ static void *load_stage_from_cbfs(struct cbfs_media *media, const char *name,
 	LOG("Decompressing stage %s @ 0x%p (%d bytes)\n",
 	    name, &ramstage_region[rmodule_offset], stage->memlen);
 
-	if (cbfs_decompress(stage->compression, &stage[1],
-	                    &ramstage_region[rmodule_offset], stage->len))
+	if (!cbfs_decompress(stage->compression, &stage[1],
+	                     &ramstage_region[rmodule_offset], stage->len))
 		return (void *) -1;
 
 	if (rmodule_parse(&ramstage_region[rmodule_offset], &ramstage))
@@ -259,6 +261,7 @@ void * cbfs_load_stage(struct cbfs_media *media, const char *name)
 	/* this is a mess. There is no ntohll. */
 	/* for now, assume compatible byte order until we solve this. */
 	uint32_t entry;
+	uint32_t final_size;
 
 	if (stage == NULL)
 		return (void *) -1;
@@ -267,15 +270,18 @@ void * cbfs_load_stage(struct cbfs_media *media, const char *name)
 			name,
 			(uint32_t) stage->load, stage->memlen,
 			stage->entry);
-	/* Stages rely the below clearing so that the bss is initialized. */
-	memset((void *) (uint32_t) stage->load, 0, stage->memlen);
 
-	if (cbfs_decompress(stage->compression,
-			     ((unsigned char *) stage) +
-			     sizeof(struct cbfs_stage),
-			     (void *) (uint32_t) stage->load,
-			     stage->len))
+	final_size = cbfs_decompress(stage->compression,
+				     ((unsigned char *) stage) +
+				     sizeof(struct cbfs_stage),
+				     (void *) (uint32_t) stage->load,
+				     stage->len);
+	if (!final_size)
 		return (void *) -1;
+
+	/* Stages rely the below clearing so that the bss is initialized. */
+	memset((void *)((uintptr_t)stage->load + final_size), 0,
+	       stage->memlen - final_size);
 
 	DEBUG("stage loaded.\n");
 

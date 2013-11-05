@@ -68,10 +68,7 @@ static void pci_domain_set_resources(device_t dev)
 		tolmk -= 1024;	// TOP 1M SM Memory
 	}
 
-	high_tables_base = (tolmk * 1024) - HIGH_MEMORY_SIZE;
-	high_tables_size = HIGH_MEMORY_SIZE;
-	printk(BIOS_DEBUG, "tom: %lx, high_tables_base: %llx, high_tables_size: %llx\n",
-						tomk*1024, high_tables_base, high_tables_size);
+	set_top_of_ram(tolmk * 1024);
 
 	/* Report the memory regions */
 	idx = 10;
@@ -88,6 +85,7 @@ static struct device_operations pci_domain_ops = {
 	.enable_resources = NULL,
 	.init		  = NULL,
 	.scan_bus	  = pci_domain_scan_bus,
+	.ops_pci_bus  = pci_bus_default_ops,
 };
 
 static void cpu_bus_init(device_t dev)
@@ -112,7 +110,6 @@ static void enable_dev(struct device *dev)
 	/* Our wonderful device model */
 	if (dev->path.type == DEVICE_PATH_DOMAIN) {
 		dev->ops = &pci_domain_ops;
-		pci_set_method(dev);
 	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
 		dev->ops = &cpu_bus_ops;
 	}

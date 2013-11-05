@@ -1,1 +1,2 @@
-romstage-$(CONFIG_CAR_MIGRATION) += car.c
+romstage-$(CONFIG_EARLY_CBMEM_INIT) += car.c
+romstage-$(CONFIG_HAVE_ACPI_RESUME) += car.c

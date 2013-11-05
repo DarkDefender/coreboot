@@ -21,6 +21,7 @@ config SOUTHBRIDGE_AMD_CIMX_SB800
 	bool
 	default n
 	select IOAPIC
+	select HAVE_USBDEBUG
 	select AMD_SB_CIMX
 	select HAVE_HARD_RESET
 
@@ -203,6 +204,14 @@ config SB800_FWM_POSITION
 	default 0xFF820000 if SB800_FWM_AT_FF820000
 
 endif  #SB800_IMC_FWM
+
+config EHCI_BAR
+	hex
+	default 0xfef00000
+
+config EHCI_DEBUG_OFFSET
+	hex
+	default 0xe0
 
 choice
 	prompt "Fan Control"
